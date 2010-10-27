@@ -368,6 +368,10 @@ public class HttpBindServlet extends HttpServlet {
             content = "_BOSH_(\"" + StringEscapeUtils.escapeJavaScript(content) + "\")";
         }
 
+		response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
+
         if (JiveGlobals.getBooleanProperty("log.httpbind.enabled", false)) {
             System.out.println(new Date()+": HTTP SENT(" + session.getStreamID().getID() + "): " + content);
         }
