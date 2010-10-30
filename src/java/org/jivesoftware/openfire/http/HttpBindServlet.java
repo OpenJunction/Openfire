@@ -137,6 +137,19 @@ public class HttpBindServlet extends HttpServlet {
         parseDocument(request, response, request.getInputStream());
     }
 
+    @Override
+    protected void doOptions(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("text/plain");
+        response.setCharacterEncoding("UTF-8");
+
+		response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
+    }
+
     private void parseDocument(HttpServletRequest request, HttpServletResponse response,
                                InputStream documentContent)
             throws IOException {
