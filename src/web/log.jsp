@@ -1,22 +1,13 @@
 <%--
   -	$RCSfile$
-  -	$Revision: 11592 $
-  -	$Date: 2010-02-01 07:46:59 -0800 (Mon, 01 Feb 2010) $
+  -	$Revision: 10937 $
+  -	$Date: 2008-12-10 20:41:55 -0800 (Wed, 10 Dec 2008) $
   -
   - Copyright (C) 2004-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
-
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="java.io.*,
@@ -105,53 +96,47 @@
     File logDir = new File(Log.getLogDirectory());
     String filename = log + ".log";
     File logFile = new File(logDir, filename);
-    
-    String lines[] = new String[0];
-    int start = 0;
-    try {
-	    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
-	    String line;
-	    int totalNumLines = 0;
-	    while ((line=in.readLine()) != null) {
-	        totalNumLines++;
-	    }
-	    in.close();
-	    // adjust the 'numLines' var to match totalNumLines if 'all' was passed in:
-	    if ("All".equals(numLinesParam)) {
-	        numLines = totalNumLines;
-	    }
-	    lines = new String[numLines];
-	    in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
-	    // skip lines
-	    start = totalNumLines - numLines;
-	    if (start < 0) { start = 0; }
-	    for (int i=0; i<start; i++) {
-	        in.readLine();
-	    }
-	    int i = 0;
-	    if ("asc".equals(mode)) {
-	        while ((line=in.readLine()) != null && i<numLines) {
-	            line = StringUtils.escapeHTMLTags(line);
-	            line = parseDate(line);
-	            line = hilite(line);
-	            lines[i] = line;
-	            i++;
-	        }
-	    }
-	    else {
-	        int end = lines.length-1;
-	        while ((line=in.readLine()) != null && i<numLines) {
-	            line = StringUtils.escapeHTMLTags(line);
-	            line = parseDate(line);
-	            line = hilite(line);
-	            lines[end-i] = line;
-	            i++;
-	        }
-	    }
-	    numLines = start + i;
-    } catch (FileNotFoundException ex) {
-    	Log.info("Could not open (log)file.", ex);
+
+    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
+    String line;
+    int totalNumLines = 0;
+    while ((line=in.readLine()) != null) {
+        totalNumLines++;
     }
+    in.close();
+    // adjust the 'numLines' var to match totalNumLines if 'all' was passed in:
+    if ("All".equals(numLinesParam)) {
+        numLines = totalNumLines;
+    }
+    String[] lines = new String[numLines];
+    in = new BufferedReader(new InputStreamReader(new FileInputStream(logFile), "UTF-8"));
+    // skip lines
+    int start = totalNumLines - numLines;
+    if (start < 0) { start = 0; }
+    for (int i=0; i<start; i++) {
+        in.readLine();
+    }
+    int i = 0;
+    if ("asc".equals(mode)) {
+        while ((line=in.readLine()) != null && i<numLines) {
+            line = StringUtils.escapeHTMLTags(line);
+            line = parseDate(line);
+            line = hilite(line);
+            lines[i] = line;
+            i++;
+        }
+    }
+    else {
+        int end = lines.length-1;
+        while ((line=in.readLine()) != null && i<numLines) {
+            line = StringUtils.escapeHTMLTags(line);
+            line = parseDate(line);
+            line = hilite(line);
+            lines[end-i] = line;
+            i++;
+        }
+    }
+    numLines = start + i;
 %>
 
 <html>

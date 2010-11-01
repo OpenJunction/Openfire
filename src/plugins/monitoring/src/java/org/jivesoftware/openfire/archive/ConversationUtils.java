@@ -4,54 +4,35 @@
  *
  * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.archive;
 
-import java.awt.Color;
-import java.io.ByteArrayOutputStream;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
-
+import com.lowagie.text.*;
+import com.lowagie.text.Font;
+import com.lowagie.text.Image;
+import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfPageEventHelper;
+import com.lowagie.text.pdf.PdfWriter;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.plugin.MonitoringPlugin;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.NotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
 
-import com.lowagie.text.Chunk;
-import com.lowagie.text.Document;
-import com.lowagie.text.DocumentException;
-import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
-import com.lowagie.text.Image;
-import com.lowagie.text.PageSize;
-import com.lowagie.text.Paragraph;
-import com.lowagie.text.pdf.PdfContentByte;
-import com.lowagie.text.pdf.PdfPageEventHelper;
-import com.lowagie.text.pdf.PdfWriter;
+import java.awt.*;
+import java.io.ByteArrayOutputStream;
+import java.net.URL;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.Future;
 
 /**
  * Utility class for asynchronous web calls for archiving tasks.
@@ -60,8 +41,6 @@ import com.lowagie.text.pdf.PdfWriter;
  */
 public class ConversationUtils {
 
-	private static final Logger Log = LoggerFactory.getLogger(ConversationUtils.class);
-			
     /**
      * Returns the status of the rebuilding of the messaging/metadata archives. This is done
      * asynchronously.
@@ -82,7 +61,7 @@ public class ConversationUtils {
                 return future.get();
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
 
@@ -106,7 +85,7 @@ public class ConversationUtils {
             info = toConversationInfo(conversation, formatParticipants);
         }
         catch (NotFoundException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
 
         return info;
@@ -387,8 +366,7 @@ public class ConversationUtils {
 
     class PDFEventListener extends PdfPageEventHelper {
 
-        @Override
-		public void onEndPage(PdfWriter writer, Document document) {
+        public void onEndPage(PdfWriter writer, Document document) {
             PdfContentByte cb = writer.getDirectContent();
 
             try {

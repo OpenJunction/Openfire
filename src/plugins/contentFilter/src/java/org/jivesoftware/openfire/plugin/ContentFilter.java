@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin;
@@ -141,9 +133,9 @@ public class ContentFilter {
         {
             //only check children if no match has yet been found            
             //or all content must be masked
-            Iterator<Element> iter = element.elementIterator();
+            Iterator iter = element.elementIterator();
             while (iter.hasNext()) {
-                matched |= process(iter.next());
+                matched |= process((Element)iter.next());
             }
         }
         
@@ -175,5 +167,43 @@ public class ContentFilter {
         }
         
         return match;
+    }
+    
+    /**
+     * Applies mask to the given <code>content</code>
+     * 
+     * @param content
+     * @return masked content
+     */
+    private String mask(String content) {
+        
+        for (Pattern pattern : compiledPatterns) {
+            Matcher m = pattern.matcher(content);
+            content = m.replaceAll(mask);
+        }
+        
+        return content;
+    }
+
+    /**
+     * Applies patterns against the given <code>content</code>. Terminates on
+     * first match.
+     *
+     * @param content the content to search against
+     * @return true if a match is found, false otherwise
+     */
+    private boolean hasMatch(String content) {
+        
+        boolean hasMatch = false;
+
+        for (Pattern pattern : compiledPatterns) {
+            Matcher matcher = pattern.matcher(content);
+            if (matcher.find()) {
+                hasMatch = true;
+                break;
+            }
+        }
+
+        return hasMatch;
     }
 }

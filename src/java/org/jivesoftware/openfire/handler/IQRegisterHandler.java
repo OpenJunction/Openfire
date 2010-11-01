@@ -5,27 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
-
-import gnu.inet.encoding.Stringprep;
-import gnu.inet.encoding.StringprepException;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -35,6 +20,10 @@ import org.jivesoftware.openfire.PacketException;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.disco.ServerFeaturesProvider;
+import org.jivesoftware.openfire.forms.DataForm;
+import org.jivesoftware.openfire.forms.FormField;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
+import org.jivesoftware.openfire.forms.spi.XFormFieldImpl;
 import org.jivesoftware.openfire.group.GroupManager;
 import org.jivesoftware.openfire.roster.RosterManager;
 import org.jivesoftware.openfire.session.ClientSession;
@@ -44,14 +33,16 @@ import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.stringprep.Stringprep;
+import org.jivesoftware.stringprep.StringprepException;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.StreamError;
+
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Implements the TYPE_IQ jabber:iq:register protocol (plain only). Clients
@@ -80,8 +71,6 @@ import org.xmpp.packet.StreamError;
  */
 public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvider {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQRegisterHandler.class);
-
     private static boolean registrationEnabled;
     private static boolean canChangePassword;
     private static Element probeResult;
@@ -99,8 +88,7 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
         info = new IQHandlerInfo("query", "jabber:iq:register");
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         userManager = server.getUserManager();
         rosterManager = server.getRosterManager();
@@ -117,45 +105,45 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
             // Create the registration form to include in the probeResult. The form will include
             // the basic information plus name and visibility of name and email.
             // TODO Future versions could allow plugin modules to add new fields to the form 
-            final DataForm registrationForm = new DataForm(DataForm.Type.form);
+            XDataFormImpl registrationForm = new XDataFormImpl(DataForm.TYPE_FORM);
             registrationForm.setTitle("XMPP Client Registration");
             registrationForm.addInstruction("Please provide the following information");
 
-            final FormField fieldForm = registrationForm.addField();
-            fieldForm.setVariable("FORM_TYPE");
-            fieldForm.setType(FormField.Type.hidden);
-            fieldForm.addValue("jabber:iq:register");
+            XFormFieldImpl field = new XFormFieldImpl("FORM_TYPE");
+            field.setType(FormField.TYPE_HIDDEN);
+            field.addValue("jabber:iq:register");
+            registrationForm.addField(field);
 
-            final FormField fieldUser = registrationForm.addField();
-            fieldUser.setVariable("username");
-            fieldUser.setType(FormField.Type.text_single);
-            fieldUser.setLabel("Username");
-            fieldUser.setRequired(true);
+            field = new XFormFieldImpl("username");
+            field.setType(FormField.TYPE_TEXT_SINGLE);
+            field.setLabel("Username");
+            field.setRequired(true);
+            registrationForm.addField(field);
 
-            final FormField fieldName = registrationForm.addField(); 
-        	fieldName.setVariable("name");
-            fieldName.setType(FormField.Type.text_single);
-            fieldName.setLabel("Full name");
+            field = new XFormFieldImpl("name");
+            field.setType(FormField.TYPE_TEXT_SINGLE);
+            field.setLabel("Full name");
             if (UserManager.getUserProvider().isNameRequired()) {
-                fieldName.setRequired(true);
+                field.setRequired(true);
             }
+            registrationForm.addField(field);
 
-            final FormField fieldMail = registrationForm.addField();
-            fieldMail.setVariable("email");
-            fieldMail.setType(FormField.Type.text_single);
-            fieldMail.setLabel("Email");
+            field = new XFormFieldImpl("email");
+            field.setType(FormField.TYPE_TEXT_SINGLE);
+            field.setLabel("Email");
             if (UserManager.getUserProvider().isEmailRequired()) {
-                fieldMail.setRequired(true);
+                field.setRequired(true);
             }
+            registrationForm.addField(field);
 
-            final FormField fieldPwd = registrationForm.addField();
-            fieldPwd.setVariable("password");
-            fieldPwd.setType(FormField.Type.text_private);
-            fieldPwd.setLabel("Password");
-            fieldPwd.setRequired(true);
+            field = new XFormFieldImpl("password");
+            field.setType(FormField.TYPE_TEXT_PRIVATE);
+            field.setLabel("Password");
+            field.setRequired(true);
+            registrationForm.addField(field);
 
             // Add the registration form to the probe result.
-            probeResult.add(registrationForm.getElement());
+            probeResult.add(registrationForm.asXMLElement());
         }
         // See if in-band registration should be enabled (default is true).
         registrationEnabled = JiveGlobals.getBooleanProperty("register.inband", true);
@@ -163,8 +151,7 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
         canChangePassword = JiveGlobals.getBooleanProperty("register.password", true);
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws PacketException, UnauthorizedException {
+    public IQ handleIQ(IQ packet) throws PacketException, UnauthorizedException {
         ClientSession session = sessionManager.getSession(packet.getFrom());
         IQ reply = null;
         // If no session was found then answer an error (if possible)
@@ -276,34 +263,35 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
                     String email = null;
                     String name = null;
                     User newUser;
-                    DataForm registrationForm;
+                    XDataFormImpl registrationForm;
                     FormField field;
 
                     Element formElement = iqElement.element("x");
                     // Check if a form was used to provide the registration info
                     if (formElement != null) {
                         // Get the sent form
-                        registrationForm = new DataForm(formElement);
+                        registrationForm = new XDataFormImpl();
+                        registrationForm.parse(formElement);
                         // Get the username sent in the form
-                        List<String> values = registrationForm.getField("username").getValues();
-                        username = (!values.isEmpty() ? values.get(0) : " ");
+                        Iterator<String> values = registrationForm.getField("username").getValues();
+                        username = (values.hasNext() ? values.next() : " ");
                         // Get the password sent in the form
                         field = registrationForm.getField("password");
                         if (field != null) {
                             values = field.getValues();
-                            password = (!values.isEmpty() ? values.get(0) : " ");
+                            password = (values.hasNext() ? values.next() : " ");
                         }
                         // Get the email sent in the form
                         field = registrationForm.getField("email");
                         if (field != null) {
                             values = field.getValues();
-                            email = (!values.isEmpty() ? values.get(0) : " ");
+                            email = (values.hasNext() ? values.next() : " ");
                         }
                         // Get the name sent in the form
                         field = registrationForm.getField("name");
                         if (field != null) {
                             values = field.getValues();
-                            name = (!values.isEmpty() ? values.get(0) : " ");
+                            name = (values.hasNext() ? values.next() : " ");
                         }
                     }
                     else {
@@ -422,7 +410,7 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
                 reply = IQ.createResultIQ(packet);
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(PacketError.Condition.not_acceptable);
-                Log.warn(e.getMessage(), e);
+                Log.warn(e);
             }
             catch (UnsupportedOperationException e) {
                 // The User provider is read-only so this operation is not allowed
@@ -435,7 +423,7 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
                 reply = IQ.createResultIQ(packet);
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(PacketError.Condition.internal_server_error);
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         if (reply != null) {
@@ -463,8 +451,7 @@ public class IQRegisterHandler extends IQHandler implements ServerFeaturesProvid
         JiveGlobals.setProperty("register.password", canChangePassword ? "true" : "false");
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 

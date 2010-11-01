@@ -5,40 +5,32 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.providers;
+
+import org.jivesoftware.xmpp.workgroup.AgentNotFoundException;
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
+import org.jivesoftware.xmpp.workgroup.WorkgroupProvider;
+import org.dom4j.Element;
+import org.jivesoftware.util.JiveGlobals;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.IQ;
+import org.xmpp.packet.PacketError;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import org.dom4j.Element;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.xmpp.workgroup.AgentNotFoundException;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
-import org.jivesoftware.xmpp.workgroup.WorkgroupProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.PacketError;
 
 /**
  * MetadataProvider is a generic data handler to retrieve name-value pairs
@@ -48,8 +40,6 @@ import org.xmpp.packet.PacketError;
  */
 public class MetadataProvider implements WorkgroupProvider {
 
-	private static final Logger Log = LoggerFactory.getLogger(MetadataProvider.class);
-	
     /**
      * Returns true if the IQ packet name equals "generic-metadata".
      *
@@ -100,7 +90,7 @@ public class MetadataProvider implements WorkgroupProvider {
                 Properties props = new Properties();
                 try {
                     props.load(new FileInputStream(file));
-                    Enumeration<?> properties = props.propertyNames();
+                    Enumeration properties = props.propertyNames();
                     while (properties.hasMoreElements()) {
                         String key = (String)properties.nextElement();
                         String value = props.getProperty(key);
@@ -108,7 +98,7 @@ public class MetadataProvider implements WorkgroupProvider {
                     }
                 }
                 catch (IOException e) {
-                    Log.error(e.getMessage(), e);
+                    ComponentManagerFactory.getComponentManager().getLog().error(e);
                 }
             }
         }
@@ -117,10 +107,10 @@ public class MetadataProvider implements WorkgroupProvider {
         //  it would never be mapped correctly.
         final Element genericSetting = reply.setChildElement("generic-metadata",
                 "http://jivesoftware.com/protocol/workgroup");
-
-        for (Map.Entry<String, String> entry : map.entrySet()) {
-            String key = entry.getKey();
-            String value = entry.getValue();
+        final Iterator mappings = map.keySet().iterator();
+        while (mappings.hasNext()) {
+            String key = (String)mappings.next();
+            String value = map.get(key);
 
             // Create a name-value element
             Element element = genericSetting.addElement("entry");

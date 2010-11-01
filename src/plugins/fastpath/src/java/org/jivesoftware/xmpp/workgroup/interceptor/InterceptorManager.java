@@ -5,41 +5,26 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.interceptor;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.BeanUtils;
-import org.jivesoftware.util.ClassUtils;
-import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.BeanUtils;
+import org.jivesoftware.util.ClassUtils;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Base class for fastpath packet interceptors.
@@ -48,8 +33,6 @@ import org.xmpp.packet.Packet;
  */
 public abstract class InterceptorManager {
 
-	private static final Logger Log = LoggerFactory.getLogger(InterceptorManager.class);
-	
     private List<PacketInterceptor> availableInterceptors =
             new CopyOnWriteArrayList<PacketInterceptor>();
 
@@ -204,7 +187,7 @@ public abstract class InterceptorManager {
      * @return true if the item was present in the list
      */
     public boolean removeInterceptor(String workgroup, PacketInterceptor interceptor) {
-        List<PacketInterceptor> interceptors = getLocalInterceptors(workgroup);
+        List interceptors = getLocalInterceptors(workgroup);
         if (interceptors == null) {
             return false;
         }
@@ -293,7 +276,7 @@ public abstract class InterceptorManager {
                 }
             }
             catch (Exception e) {
-               Log.error(e.getMessage(), e);
+               Log.error(e);
            }
         }
 
@@ -314,14 +297,14 @@ public abstract class InterceptorManager {
                 }
             }
             catch (Exception e) {
-               Log.error(e.getMessage(), e);
+               Log.error(e);
            }
         }
     }
 
-    private Map<String, String> getPropertiesMap(List<PacketInterceptor> interceptors, String context) {
+    private Map getPropertiesMap(List<PacketInterceptor> interceptors, String context) {
         // Build the properties map that will be saved later
-        Map<String, String> propertyMap = new HashMap<String, String>();
+        Map propertyMap = new HashMap();
 
         if (!interceptors.isEmpty()) {
             propertyMap.put(context + "interceptorCount", String.valueOf(interceptors.size()));
@@ -336,10 +319,10 @@ public abstract class InterceptorManager {
             propertyMap.put(interceptorContext + "className", interceptor.getClass().getName());
 
             // Write out all properties
-            Map<String, String> interceptorProps = BeanUtils.getProperties(interceptor);
-            for (Map.Entry<String, String> entry : interceptorProps.entrySet()) {
-                String name = entry.getKey();
-                String value = entry.getValue();
+            Map interceptorProps = BeanUtils.getProperties(interceptor);
+            for (Iterator iter=interceptorProps.keySet().iterator(); iter.hasNext(); ) {
+                String name = (String) iter.next();
+                String value = (String) interceptorProps.get(name);
                 if (value != null && !"".equals(value)) {
                     propertyMap.put(interceptorContext + "properties." + name, value);
                 }
@@ -425,11 +408,11 @@ public abstract class InterceptorManager {
         }
 
         // Now get custom interceptors.
-        List<String> classNames = JiveGlobals.getProperties("interceptor.interceptorClasses." +
+        List classNames = JiveGlobals.getProperties("interceptor.interceptorClasses." +
                 getPropertySuffix());
         for (int i=0; i<classNames.size(); i++) {
             install_interceptor: try {
-                Class interceptorClass = loadClass(classNames.get(i));
+                Class interceptorClass = loadClass((String)classNames.get(i));
                 // Make sure that the interceptor isn't already installed.
                 for (int j=0; j<interceptorList.size(); j++) {
                     if (interceptorClass.equals(interceptorList.get(j).getClass())) {
@@ -440,7 +423,7 @@ public abstract class InterceptorManager {
                 interceptorList.add(interceptor);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
 
@@ -463,12 +446,12 @@ public abstract class InterceptorManager {
                 interceptorList.add((PacketInterceptor) interceptorClass.newInstance());
 
                 // Load properties.
-                List<String> props = JiveGlobals.getPropertyNames(interceptorContext + "properties");
-                Map<String, String> interceptorProps = new HashMap<String, String>();
+                List props = JiveGlobals.getPropertyNames(interceptorContext + "properties");
+                Map interceptorProps = new HashMap();
 
                 for (int k = 0; k < props.size(); k++) {
-                    String key = props.get(k);
-                    String value = JiveGlobals.getProperty(props.get(k));
+                    String key = (String)props.get(k);
+                    String value = JiveGlobals.getProperty((String)props.get(k));
                     // Get the bean property name, which is everything after the last '.' in the
                     // xml property name.
                     interceptorProps.put(key.substring(key.lastIndexOf(".")+1), value);
@@ -508,7 +491,7 @@ public abstract class InterceptorManager {
                 interceptorList.add((PacketInterceptor) interceptorClass.newInstance());
 
                 // Load properties.
-                Map<String, String> interceptorProps = new HashMap<String, String>();
+                Map interceptorProps = new HashMap();
                 for (String key : getChildrenPropertyNames(interceptorContext + "properties",
                         workgroup.getProperties().getPropertyNames()))
                 {
@@ -565,7 +548,7 @@ public abstract class InterceptorManager {
                         interceptors = localInterceptors.get(workgroup);
                     }
                     catch (UserNotFoundException e) {
-                        Log.warn(e.getMessage(), e);
+                        Log.warn(e);
                     }
                 }
             }

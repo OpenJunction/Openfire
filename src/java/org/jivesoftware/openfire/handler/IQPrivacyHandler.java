@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
@@ -58,8 +50,7 @@ public class IQPrivacyHandler extends IQHandler
         info = new IQHandlerInfo("query", "jabber:iq:privacy");
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException {
         IQ.Type type = packet.getType();
         JID from = packet.getFrom();
         if (from.getNode() == null || !UserManager.getInstance().isRegisteredUser(from.getNode())) {
@@ -410,8 +401,7 @@ public class IQPrivacyHandler extends IQHandler
         return result;
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 
@@ -434,8 +424,7 @@ public class IQPrivacyHandler extends IQHandler
         //Do nothing
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
     }
 }

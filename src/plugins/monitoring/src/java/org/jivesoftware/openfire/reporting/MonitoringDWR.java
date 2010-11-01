@@ -5,51 +5,36 @@
  *
  * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.reporting;
 
-import java.io.IOException;
+import org.jivesoftware.util.Log;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import uk.ltd.getahead.dwr.Configuration;
+import uk.ltd.getahead.dwr.DWRServlet;
+import uk.ltd.getahead.dwr.impl.DefaultInterfaceProcessor;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequestWrapper;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-
-import uk.ltd.getahead.dwr.Configuration;
-import uk.ltd.getahead.dwr.DWRServlet;
-import uk.ltd.getahead.dwr.impl.DefaultInterfaceProcessor;
+import java.io.IOException;
 
 /**
  * Use the EnterpriseDWR servlet to register your own DWR mappings to Enteprise.
  */
 public class MonitoringDWR extends DWRServlet {
-	
-	private static final Logger Log = LoggerFactory.getLogger(MonitoringDWR.class);
-	
     private Document document;
 
-    @Override
-	public void configure(ServletConfig servletConfig, Configuration configuration) throws ServletException {
+    public void configure(ServletConfig servletConfig, Configuration configuration) throws ServletException {
 
         try {
             DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -108,8 +93,7 @@ public class MonitoringDWR extends DWRServlet {
         return element;
     }
 
-    @Override
-	protected void doPost(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
+    protected void doPost(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse)
             throws IOException, ServletException {
 
         super.doPost(new MyServletRequestWrapper(httpServletRequest), httpServletResponse);
@@ -123,8 +107,7 @@ public class MonitoringDWR extends DWRServlet {
             super(httpServletRequest);
         }
 
-        @Override
-		public String getPathInfo() {
+        public String getPathInfo() {
             String pathInfo = super.getPathInfo();
             return pathInfo.replaceAll("/monitoring/dwr", ""); 
         }

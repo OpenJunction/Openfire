@@ -4,50 +4,31 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.container;
 
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.net.SSLConfig;
+import org.jivesoftware.util.*;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Handler;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.handler.ContextHandlerCollection;
+import org.mortbay.jetty.handler.DefaultHandler;
+import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.security.SslSelectChannelConnector;
+import org.mortbay.jetty.servlet.Context;
+import org.mortbay.jetty.webapp.WebAppContext;
+
+import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.List;
-
-import javax.net.ssl.SSLContext;
-
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.net.SSLConfig;
-import org.jivesoftware.util.CertificateEventListener;
-import org.jivesoftware.util.CertificateManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.StringUtils;
-
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The admin console plugin. It starts a Jetty instance on the configured
@@ -56,8 +37,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class AdminConsolePlugin implements Plugin {
-
-    private static final Logger Log = LoggerFactory.getLogger(AdminConsolePlugin.class);
 
     /**
      * Random secret used by JVM to allow SSO. Only other cluster nodes can use this secret
@@ -82,7 +61,7 @@ public class AdminConsolePlugin implements Plugin {
         contexts = new ContextHandlerCollection();
         
         // Configure Jetty logging to a more reasonable default.
-        System.setProperty("org.eclipse.jetty.util.log.class", "org.jivesoftware.util.log.util.JettyLog");
+        System.setProperty("org.mortbay.log.class", "org.jivesoftware.util.log.util.JettyLog");
         // JSP 2.0 uses commons-logging, so also override that implementation.
         System.setProperty("org.apache.commons.logging.LogFactory", "org.jivesoftware.util.log.util.CommonsLogFactory");
     }
@@ -100,10 +79,6 @@ public class AdminConsolePlugin implements Plugin {
         adminPort = JiveGlobals.getXMLProperty("adminConsole.port", 9090);
         adminSecurePort = JiveGlobals.getXMLProperty("adminConsole.securePort", 9091);
         adminServer = new Server();
-        final QueuedThreadPool tp = new QueuedThreadPool(254);
-        tp.setName("Jetty-QTP-AdminConsole");
-        adminServer.setThreadPool(tp);
-        
         // Do not send Jetty info in HTTP headers
         adminServer.setSendServerVersion(false);
 
@@ -147,7 +122,7 @@ public class AdminConsolePlugin implements Plugin {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         // Make sure that at least one connector was registered.
@@ -158,9 +133,7 @@ public class AdminConsolePlugin implements Plugin {
             return;
         }
 
-        HandlerCollection collection = new HandlerCollection();
-        adminServer.setHandler(collection);
-        collection.setHandlers(new Handler[] { contexts, new DefaultHandler() });
+        adminServer.setHandlers(new Handler[] { contexts, new DefaultHandler() });
 
         try {
             adminServer.start();
@@ -223,15 +196,13 @@ public class AdminConsolePlugin implements Plugin {
      * will be available in all interfaces.
      */
     public String getBindInterface() {
-        String adminInterfaceName = JiveGlobals.getXMLProperty("adminConsole.interface");
-        String globalInterfaceName = JiveGlobals.getXMLProperty("network.interface");
+        String interfaceName = JiveGlobals.getXMLProperty("network.interface");
         String bindInterface = null;
-        if (adminInterfaceName != null && adminInterfaceName.trim().length() > 0) {
-            bindInterface = adminInterfaceName;
+        if (interfaceName != null) {
+            if (interfaceName.trim().length() > 0) {
+                bindInterface = interfaceName;
+            }
         }
-        else if (globalInterfaceName != null && globalInterfaceName.trim().length() > 0) {
-            bindInterface = globalInterfaceName;
-         }
         return bindInterface;
     }
 
@@ -282,12 +253,12 @@ public class AdminConsolePlugin implements Plugin {
             adminServer.start();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
     private void createWebAppContext() {
-        ServletContextHandler context;
+        Context context;
         // Add web-app. Check to see if we're in development mode. If so, we don't
         // add the normal web-app location, but the web-app in the project directory.
         if (Boolean.getBoolean("developmentMode")) {
@@ -310,9 +281,6 @@ public class AdminConsolePlugin implements Plugin {
     private void logAdminConsolePorts() {
         // Log what ports the admin console is running on.
         String listening = LocaleUtils.getLocalizedString("admin.console.listening");
-        String hostname = getBindInterface() == null ?
-                XMPPServer.getInstance().getServerInfo().getXMPPDomain() :
-                getBindInterface();
         boolean isPlainStarted = false;
         boolean isSecureStarted = false;
         for (Connector connector : adminServer.getConnectors()) {
@@ -326,16 +294,18 @@ public class AdminConsolePlugin implements Plugin {
 
         if (isPlainStarted && isSecureStarted) {
             log(listening + ":" + System.getProperty("line.separator") +
-                    "  http://" + hostname + ":" +
+                    "  http://" + XMPPServer.getInstance().getServerInfo().getXMPPDomain() + ":" +
                     adminPort + System.getProperty("line.separator") +
-                    "  https://" + hostname + ":" +
+                    "  https://" + XMPPServer.getInstance().getServerInfo().getXMPPDomain() + ":" +
                     adminSecurePort);
         }
         else if (isSecureStarted) {
-            log(listening + " https://" + hostname + ":" + adminSecurePort);
+            log(listening + " https://" +
+                    XMPPServer.getInstance().getServerInfo().getXMPPDomain() + ":" + adminSecurePort);
         }
         else if (isPlainStarted) {
-            log(listening + " http://" + hostname + ":" + adminPort);
+            log(listening + " http://" +
+                    XMPPServer.getInstance().getServerInfo().getXMPPDomain() + ":" + adminPort);
         }
     }
 

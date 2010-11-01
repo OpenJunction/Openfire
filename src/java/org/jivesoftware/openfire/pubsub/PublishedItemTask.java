@@ -5,28 +5,18 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
 
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
+
 import java.util.Queue;
 import java.util.TimerTask;
-
-import org.jivesoftware.openfire.pep.PEPService;
-import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A timed maintenance task that updates the database by adding and/or
@@ -35,9 +25,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class PublishedItemTask extends TimerTask {
-	
-	private static final Logger Log = LoggerFactory.getLogger(PublishedItemTask.class);
-
     /**
      * Queue that holds the items that need to be added to the database.
      */
@@ -64,8 +51,7 @@ public class PublishedItemTask extends TimerTask {
         this.itemsToDelete = service.getItemsToDelete();
     }
 
-    @Override
-	public void run() {
+    public void run() {
         try {
             PublishedItem entry;
             boolean success;
@@ -93,8 +79,4 @@ public class PublishedItemTask extends TimerTask {
             Log.error(LocaleUtils.getLocalizedString("admin.error"), e);
         }
     }
-    
-	protected PubSubService getService() {
-		return service;
-	}
 }

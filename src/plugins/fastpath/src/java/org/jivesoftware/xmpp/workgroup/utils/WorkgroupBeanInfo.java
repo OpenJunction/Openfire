@@ -5,19 +5,14 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.xmpp.workgroup.utils;
+
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 
 import java.beans.BeanDescriptor;
 import java.beans.BeanInfo;
@@ -32,18 +27,12 @@ import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public abstract class WorkgroupBeanInfo implements BeanInfo {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupBeanInfo.class);
-	
     private ResourceBundle bundle;
 
     public WorkgroupBeanInfo() {
-        List<String> bundleNames = new ArrayList<String>();
+        List bundleNames = new ArrayList();
         String prefix = "bean_";
         // fully qualified class name: bean_com.foo.MyClass.properties
         bundleNames.add(prefix + getClass().toString());
@@ -52,7 +41,7 @@ public abstract class WorkgroupBeanInfo implements BeanInfo {
         //Get the locale that should be used, then load the resource bundle.
         Locale currentLocale = JiveGlobals.getLocale();
         for (int i = 0, n = bundleNames.size(); i < n; i++) {
-            String name = bundleNames.get(i);
+            String name = (String)bundleNames.get(i);
             try {
                 // TODO - possibly use other class loaders?
                 bundle = ResourceBundle.getBundle(name, currentLocale);
@@ -130,9 +119,9 @@ public abstract class WorkgroupBeanInfo implements BeanInfo {
             catch (MissingResourceException ignored) {
             }
             // Add any other properties that are specified.
-            Enumeration<String> e = bundle.getKeys();
+            Enumeration e = bundle.getKeys();
             while (e.hasMoreElements()) {
-                String key = e.nextElement();
+                String key = (String)e.nextElement();
                 try {
                     String value = bundle.getString(key);
                     if (value != null) {
@@ -189,7 +178,7 @@ public abstract class WorkgroupBeanInfo implements BeanInfo {
             return descriptors;
         }
         catch (IntrospectionException ie) {
-            Log.error(ie.getMessage(), ie);
+            Log.error(ie);
             throw new Error(ie.toString());
         }
     }

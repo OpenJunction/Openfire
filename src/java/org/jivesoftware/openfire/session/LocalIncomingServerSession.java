@@ -5,27 +5,11 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.session;
-
-import java.io.IOException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.dom4j.Element;
 import org.dom4j.io.XMPPPacketReader;
@@ -39,12 +23,19 @@ import org.jivesoftware.openfire.net.SocketConnection;
 import org.jivesoftware.openfire.server.ServerDialback;
 import org.jivesoftware.util.CertificateManager;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
+
+import java.io.IOException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Server-to-server communication is done using two TCP connections between the servers. One
@@ -68,9 +59,6 @@ import org.xmpp.packet.Packet;
  * @author Gaston Dombiak
  */
 public class LocalIncomingServerSession extends LocalSession implements IncomingServerSession {
-	
-	private static final Logger Log = LoggerFactory.getLogger(LocalIncomingServerSession.class);
-
     /**
      * List of domains, subdomains and virtual hostnames of the remote server that were
      * validated with this server. The remote server is allowed to send packets to this
@@ -173,7 +161,7 @@ public class LocalIncomingServerSession extends LocalSession implements Incoming
             hasCertificates = SSLConfig.getKeyStore().size() > 0;
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         if (Connection.TLSPolicy.required == tlsPolicy && !hasCertificates) {
             Log.error("Server session rejected. TLS is required but no certificates " +
@@ -218,14 +206,12 @@ public class LocalIncomingServerSession extends LocalSession implements Incoming
         super(serverName, connection, streamID);
     }
 
-    @Override
-	boolean canProcess(Packet packet) {
+    boolean canProcess(Packet packet) {
         return true;
     }
 
 
-    @Override
-	void deliver(Packet packet) throws UnauthorizedException {
+    void deliver(Packet packet) throws UnauthorizedException {
         // Do nothing
     }
 
@@ -350,8 +336,7 @@ public class LocalIncomingServerSession extends LocalSession implements Incoming
         ServerDialback.verifyReceivedKey(doc, getConnection());
     }
 
-    @Override
-	public String getAvailableStreamFeatures() {
+    public String getAvailableStreamFeatures() {
         StringBuilder sb = new StringBuilder();
         // Include Stream Compression Mechanism
         if (conn.getCompressionPolicy() != Connection.CompressionPolicy.disabled &&

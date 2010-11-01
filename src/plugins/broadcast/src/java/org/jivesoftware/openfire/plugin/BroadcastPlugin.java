@@ -5,28 +5,12 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.SessionManager;
@@ -36,23 +20,17 @@ import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.group.Group;
 import org.jivesoftware.openfire.group.GroupManager;
 import org.jivesoftware.openfire.group.GroupNotFoundException;
-import org.jivesoftware.openfire.user.User;
-import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.PropertyEventDispatcher;
 import org.jivesoftware.util.PropertyEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.component.Component;
 import org.xmpp.component.ComponentException;
 import org.xmpp.component.ComponentManager;
 import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.xmpp.packet.*;
+
+import java.io.File;
+import java.util.*;
 
 /**
  * Broadcast service plugin. It accepts messages and broadcasts them out to
@@ -65,19 +43,14 @@ import org.xmpp.packet.Presence;
  */
 public class BroadcastPlugin implements Plugin, Component, PropertyEventListener {
 
-	private static final Logger Log = LoggerFactory.getLogger(BroadcastPlugin.class);
-
     private String serviceName;
     private SessionManager sessionManager;
     private GroupManager groupManager;
     private List<JID> allowedUsers;
     private boolean groupMembersAllowed;
     private boolean disableGroupPermissions;
-    private boolean all2ofline;
-    private String messagePrefix;
     private ComponentManager componentManager;
     private PluginManager pluginManager;
-    private UserManager userManager;
 
     /**
      * Constructs a new broadcast plugin.
@@ -89,8 +62,6 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
         groupMembersAllowed = JiveGlobals.getBooleanProperty(
                 "plugin.broadcast.groupMembersAllowed", true);
         allowedUsers = stringToList(JiveGlobals.getProperty("plugin.broadcast.allowedUsers", ""));
-        all2ofline = JiveGlobals.getBooleanProperty("plugin.broadcast.all2offline", false);
-        messagePrefix = JiveGlobals.getProperty("plugin.broadcast.messagePrefix", null);
     }
 
     // Plugin Interface
@@ -99,7 +70,6 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
         pluginManager = manager;
         sessionManager = SessionManager.getInstance();
         groupManager = GroupManager.getInstance();
-        userManager = UserManager.getInstance();
 
         // Register as a component.
         componentManager = ComponentManagerFactory.getComponentManager();
@@ -107,7 +77,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
             componentManager.addComponent(serviceName, this);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
         PropertyEventDispatcher.addListener(this);
     }
@@ -120,11 +90,10 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
                 componentManager.removeComponent(serviceName);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                componentManager.getLog().error(e);
             }
         }
         componentManager = null;
-        userManager = null;
         pluginManager = null;
         sessionManager = null;
         groupManager = null;
@@ -221,33 +190,11 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
                     componentManager.sendPacket(this, error);
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    componentManager.getLog().error(e);
                 }
                 return;
             }
-
-            if ( ( messagePrefix != null ) && ( message.getBody() != null ) ) {
-         		message.setBody(messagePrefix + " " + message.getBody());
-         	}
-           
-            if (all2ofline==false) {
-            	// send to online users
-            	sessionManager.broadcast(message);
-            } else {
- 	            // send to all users
-	      		Collection<User> users = userManager.getUsers();
-	      		String xmppdomain = "@" + JiveGlobals.getProperty("xmpp.domain");
-	      		for (User u : users)
-	      		{
-	      			Message newMessage = message.createCopy();
-	      			newMessage.setTo(u.getUsername() + xmppdomain);
-	               try {
-	                  componentManager.sendPacket(this, newMessage);
-	              } catch (Exception e) {
-	                  Log.error(e.getMessage(), e);
-	              }
-	      		}
-            }
+            sessionManager.broadcast(message);
         }
         // See if the name is a group.
         else {
@@ -267,15 +214,12 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
                     componentManager.sendPacket(this, error);
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    componentManager.getLog().error(e);
                 }
             }
             else if (canProceed) {
                 // Broadcast message to group users. Users that are offline will get
                 // the message when they come back online
-               if ( ( messagePrefix != null ) && ( message.getBody() != null ) ) {
-            		message.setBody(messagePrefix + " " + message.getBody());
-            	}
                 for (JID userJID : group.getMembers()) {
                     Message newMessage = message.createCopy();
                     newMessage.setTo(userJID);
@@ -283,7 +227,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
                         componentManager.sendPacket(this, newMessage);
                     }
                     catch (Exception e) {
-                        Log.error(e.getMessage(), e);
+                        componentManager.getLog().error(e);
                     }
                 }
             }
@@ -303,7 +247,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
                     componentManager.sendPacket(this, error);
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    componentManager.getLog().error(e);
                 }
             }
         }
@@ -349,7 +293,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
             }
         }
         catch (ComponentException e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
     }
 
@@ -435,7 +379,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
             componentManager.sendPacket(this, reply);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
     }
 
@@ -540,7 +484,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
 
     // PropertyEventListener Methods
 
-    public void propertySet(String property, Map<String, Object> params) {
+    public void propertySet(String property, Map params) {
         if (property.equals("plugin.broadcast.groupMembersAllowed")) {
             this.groupMembersAllowed = Boolean.parseBoolean((String)params.get("value"));
         }
@@ -555,7 +499,7 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
         }
     }
 
-    public void propertyDeleted(String property, Map<String, Object> params) {
+    public void propertyDeleted(String property, Map params) {
         if (property.equals("plugin.broadcast.groupMembersAllowed")) {
             this.groupMembersAllowed = true;
         }
@@ -570,11 +514,11 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
         }
     }
 
-    public void xmlPropertySet(String property, Map<String, Object> params) {
+    public void xmlPropertySet(String property, Map params) {
         // Ignore.
     }
 
-    public void xmlPropertyDeleted(String property, Map<String, Object> params) {
+    public void xmlPropertyDeleted(String property, Map params) {
         // Ignore.
     }
 
@@ -596,13 +540,13 @@ public class BroadcastPlugin implements Plugin, Component, PropertyEventListener
             componentManager.removeComponent(this.serviceName);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
         try {
             componentManager.addComponent(serviceName, this);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
         this.serviceName = serviceName;
     }

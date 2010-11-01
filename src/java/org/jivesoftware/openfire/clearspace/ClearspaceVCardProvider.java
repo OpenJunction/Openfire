@@ -4,39 +4,29 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.clearspace;
 
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
 import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.GET;
 import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.POST;
 import static org.jivesoftware.openfire.clearspace.ClearspaceVCardTranslator.Action.DELETE;
 import static org.jivesoftware.openfire.clearspace.ClearspaceVCardTranslator.Action.NO_ACTION;
 import static org.jivesoftware.openfire.clearspace.WSUtils.getReturn;
-
-import java.util.List;
-
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
 import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.openfire.vcard.VCardProvider;
 import org.jivesoftware.util.AlreadyExistsException;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.NotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * The ClearspaceLockOutProvider uses the UserService web service inside of Clearspace
@@ -47,7 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ClearspaceVCardProvider implements VCardProvider {
 
-	private static final Logger Log = LoggerFactory.getLogger(ClearspaceVCardProvider.class);
 
     protected static final String PROFILE_URL_PREFIX = "profileService/";
     protected static final String PROFILE_FIELDS_URL_PREFIX = "profileFieldService/";
@@ -354,7 +343,7 @@ public class ClearspaceVCardProvider implements VCardProvider {
         try {
 
             // Requests the user active avatar
-            String path = AVATAR_URL_PREFIX + "avatars";
+            String path = AVATAR_URL_PREFIX + "createAvatar";
             Element avatar = ClearspaceManager.getInstance().executeRequest(POST, path, avatarCreateParams.asXML());
 
             return Long.valueOf(avatar.element("return").element("WSAvatar").elementTextTrim("id"));

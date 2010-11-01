@@ -5,32 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.server;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 
 import org.jivesoftware.openfire.RoutableChannelHandler;
 import org.jivesoftware.openfire.RoutingTable;
@@ -38,16 +18,16 @@ import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.session.LocalOutgoingServerSession;
 import org.jivesoftware.openfire.spi.RoutingTableImpl;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.xmpp.packet.*;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
 
 /**
  * An OutgoingSessionPromise provides an asynchronic way for sending packets to remote servers.
@@ -56,21 +36,19 @@ import org.xmpp.packet.Presence;
  *
  * This class will queue packets and process them in another thread. The processing thread will
  * use a pool of thread that will actually do the hard work. The threads in the pool will try
- * to connect to remote servers and deliver the packets. If an error occurred while establishing
+ * to connect to remote servers and deliver the packets. If an error occured while establishing
  * the connection or sending the packet an error will be returned to the sender of the packet.
  *
  * @author Gaston Dombiak
  */
 public class OutgoingSessionPromise implements RoutableChannelHandler {
 
-	private static final Logger Log = LoggerFactory.getLogger(OutgoingSessionPromise.class);
-
     private static OutgoingSessionPromise instance = new OutgoingSessionPromise();
 
     /**
      * Queue that holds the packets pending to be sent to remote servers.
      */
-    private BlockingQueue<Packet> packets = new LinkedBlockingQueue<Packet>(10000);
+    private BlockingQueue<Packet> packets = new LinkedBlockingQueue<Packet>();
 
     /**
      * Pool of threads that will create outgoing sessions to remote servers and send
@@ -107,7 +85,7 @@ public class OutgoingSessionPromise implements RoutableChannelHandler {
             maxThreads = 10;
         }
         threadPool =
-                new ThreadPoolExecutor(maxThreads/4, maxThreads, 60, TimeUnit.SECONDS,
+                new ThreadPoolExecutor(Math.round(maxThreads/4), maxThreads, 60, TimeUnit.SECONDS,
                         new LinkedBlockingQueue<Runnable>(queueSize),
                         new ThreadPoolExecutor.CallerRunsPolicy());
 
@@ -151,7 +129,7 @@ public class OutgoingSessionPromise implements RoutableChannelHandler {
                         // Do nothing
                     }
                     catch (Exception e) {
-                        Log.error(e.getMessage(), e);
+                        Log.error(e);
                     }
                 }
             }
@@ -299,23 +277,12 @@ public class OutgoingSessionPromise implements RoutableChannelHandler {
                     routingTable.routePacket(reply.getTo(), reply, true);
                 }
                 else if (packet instanceof Presence) {
-                	// workaround for OF-23. "undo" the 'setFrom' to a bare JID 
-                	// by sending the error to all available resources.
-                	final List<JID> routes = new ArrayList<JID>(); 
-                	if (from.getResource() == null || from.getResource().trim().length() == 0) {
-                    	routes.addAll(routingTable.getRoutes(from, null));
-                    } else {
-                    	routes.add(from);
-                    }
-                	
-                	for (JID route : routes) {
-	                    Presence reply = new Presence();
-	                    reply.setID(packet.getID());
-	                    reply.setTo(route);
-	                    reply.setFrom(to);
-	                    reply.setError(PacketError.Condition.remote_server_not_found);
-	                    routingTable.routePacket(reply.getTo(), reply, true);
-                	}
+                    Presence reply = new Presence();
+                    reply.setID(packet.getID());
+                    reply.setTo(from);
+                    reply.setFrom(to);
+                    reply.setError(PacketError.Condition.remote_server_not_found);
+                    routingTable.routePacket(reply.getTo(), reply, true);
                 }
                 else if (packet instanceof Message) {
                     Message reply = new Message();

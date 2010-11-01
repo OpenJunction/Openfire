@@ -370,9 +370,9 @@ CREATE TABLE ofPubsubDefaultConf (
 INSERT INTO ofID (idType, id) VALUES (18, 1);
 INSERT INTO ofID (idType, id) VALUES (19, 1);
 INSERT INTO ofID (idType, id) VALUES (23, 1);
-INSERT INTO ofID (idType, id) VALUES (26, 2);
+INSERT INTO ofID (idType, id) VALUES (26, 1);
 
-INSERT INTO ofVersion (name, version) VALUES ('openfire', 21);
+INSERT INTO ofVersion (name, version) VALUES ('openfire', 20);
 
 // Entry for admin user
 INSERT INTO ofUser (username, plainPassword, name, email, creationDate, modificationDate)
@@ -380,12 +380,3 @@ INSERT INTO ofUser (username, plainPassword, name, email, creationDate, modifica
 
 // Entry for default conference service
 INSERT INTO ofMucService (serviceID, subdomain, isHidden) VALUES (1, 'conference', 0);
-
-// The value is the size in megabytes that the .log file can reach before an automatic
-// checkpoint occurs. A checkpoint rewrites the .script file and clears the .log file
-// see http://www.hsqldb.org/doc/guide/ch04.html#hsqldb.log_size
-SET LOGSIZE 20
-
-// This controls the frequency of file sync for the log file.
-// see http://www.hsqldb.org/doc/guide/ch09.html#set_write_delay-section
-SET WRITE_DELAY 1000 MILLIS;

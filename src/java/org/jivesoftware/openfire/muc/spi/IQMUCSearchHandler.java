@@ -4,32 +4,26 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.muc.spi;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.QName;
+import org.jivesoftware.openfire.forms.DataForm;
+import org.jivesoftware.openfire.forms.FormField;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
+import org.jivesoftware.openfire.forms.spi.XFormFieldImpl;
 import org.jivesoftware.openfire.muc.MUCRoom;
 import org.jivesoftware.openfire.muc.MultiUserChatService;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
+import org.jivesoftware.openfire.resultsetmanager.ResultSet;
+import org.jivesoftware.openfire.resultsetmanager.ResultSetImpl;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.PacketError.Condition;
-import org.xmpp.resultsetmanagement.ResultSet;
-import org.xmpp.resultsetmanagement.ResultSetImpl;
 
 import java.util.*;
 
@@ -67,54 +61,55 @@ public class IQMUCSearchHandler
 	 */
 	private static Element getDataElement()
 	{
-		final DataForm searchForm = new DataForm(DataForm.Type.form);
+		final XDataFormImpl searchForm = new XDataFormImpl(DataForm.TYPE_FORM);
 		searchForm.setTitle("Chat Rooms Search");
 		searchForm.addInstruction("Instructions");
 
-		final FormField typeFF = searchForm.addField();
-		typeFF.setVariable("FORM_TYPE");
-		typeFF.setType(FormField.Type.hidden);
+		final FormField typeFF = new XFormFieldImpl("FORM_TYPE");
+		typeFF.setType(FormField.TYPE_HIDDEN);
 		typeFF.addValue("jabber:iq:search");
+		searchForm.addField(typeFF);
 
-		final FormField nameFF = searchForm.addField();
-		nameFF.setVariable("name");
-		nameFF.setType(FormField.Type.text_single);
+		final FormField nameFF = new XFormFieldImpl("name");
+		nameFF.setType(FormField.TYPE_TEXT_SINGLE);
 		nameFF.setLabel("Name");
 		nameFF.setRequired(false);
+		searchForm.addField(nameFF);
 
-		final FormField matchFF = searchForm.addField();
-		matchFF.setVariable("name_is_exact_match");
-		matchFF.setType(FormField.Type.boolean_type);
+		final FormField matchFF = new XFormFieldImpl("name_is_exact_match");
+		matchFF.setType(FormField.TYPE_BOOLEAN);
 		matchFF.setLabel("Name must match exactly");
 		matchFF.setRequired(false);
+		searchForm.addField(matchFF);
 
-		final FormField subjectFF = searchForm.addField();
-		subjectFF.setVariable("subject");
-		subjectFF.setType(FormField.Type.text_single);
+		final FormField subjectFF = new XFormFieldImpl("subject");
+		subjectFF.setType(FormField.TYPE_TEXT_SINGLE);
 		subjectFF.setLabel("Subject");
 		subjectFF.setRequired(false);
+		searchForm.addField(subjectFF);
 
-		final FormField userAmountFF = searchForm.addField();
-		userAmountFF.setVariable("num_users");
-		userAmountFF.setType(FormField.Type.text_single);
+		final FormField userAmountFF = new XFormFieldImpl("num_users");
+		userAmountFF.setType(FormField.TYPE_TEXT_SINGLE);
 		userAmountFF.setLabel("Number of users");
 		userAmountFF.setRequired(false);
+		searchForm.addField(userAmountFF);
 
-		final FormField maxUsersFF = searchForm.addField();
-		maxUsersFF.setVariable("num_max_users");
-		maxUsersFF.setType(FormField.Type.text_single);
+		final FormField maxUsersFF = new XFormFieldImpl("num_max_users");
+		maxUsersFF.setType(FormField.TYPE_TEXT_SINGLE);
 		maxUsersFF.setLabel("Max number allowed of users");
 		maxUsersFF.setRequired(false);
+		searchForm.addField(maxUsersFF);
 
-		final FormField includePasswordProtectedFF = searchForm.addField();
-		includePasswordProtectedFF.setVariable("include_password_protected");
-		includePasswordProtectedFF.setType(FormField.Type.boolean_type);
+		final FormField includePasswordProtectedFF = new XFormFieldImpl(
+			"include_password_protected");
+		includePasswordProtectedFF.setType(FormField.TYPE_BOOLEAN);
 		includePasswordProtectedFF.setLabel("Include password protected rooms");
 		includePasswordProtectedFF.setRequired(false);
+		searchForm.addField(includePasswordProtectedFF);
 
 		final Element probeResult = DocumentHelper.createElement(QName.get(
 			"query", "jabber:iq:search"));
-		probeResult.add(searchForm.getElement());
+		probeResult.add(searchForm.asXMLElement());
 		return probeResult;
 	}
 
@@ -138,7 +133,8 @@ public class IQMUCSearchHandler
 		}
 
 		// parse params from request.
-		final DataForm df = new DataForm(formElement);
+		final XDataFormImpl df = new XDataFormImpl();
+		df.parse(formElement);
 		boolean name_is_exact_match = false;
 		String subject = null;
 		int numusers = -1;
@@ -146,18 +142,22 @@ public class IQMUCSearchHandler
 		boolean includePasswordProtectedRooms = true;
 
 		final Set<String> names = new HashSet<String>();
-		for (final FormField field : df.getFields()) 
+        @SuppressWarnings("unchecked")
+        final Iterator<FormField> formFields = df.getFields();
+		while (formFields.hasNext())
 		{
+
+			final FormField field = formFields.next();
 			if (field.getVariable().equals("name"))
 			{
-				names.add(field.getFirstValue());
+				names.add(getFirstValue(field));
 			}
 		}
 
 		final FormField matchFF = df.getField("name_is_exact_match");
 		if (matchFF != null)
 		{
-			final String b = matchFF.getFirstValue();
+			final String b = getFirstValue(matchFF);
 			if (b != null)
 			{
 				name_is_exact_match = b.equals("1")
@@ -169,7 +169,7 @@ public class IQMUCSearchHandler
 		final FormField subjectFF = df.getField("subject");
 		if (subjectFF != null)
 		{
-			subject = subjectFF.getFirstValue();
+			subject = getFirstValue(subjectFF);
 		}
 
 		try
@@ -177,7 +177,7 @@ public class IQMUCSearchHandler
 			final FormField userAmountFF = df.getField("num_users");
 			if (userAmountFF != null)
 			{
-                String value = userAmountFF.getFirstValue();
+                String value = getFirstValue(userAmountFF);
                 if (value != null && !"".equals(value)) {
                     numusers = Integer.parseInt(value);
                 }
@@ -186,7 +186,7 @@ public class IQMUCSearchHandler
 			final FormField maxUsersFF = df.getField("num_max_users");
 			if (maxUsersFF != null)
 			{
-                String value = maxUsersFF.getFirstValue();
+                String value = getFirstValue(maxUsersFF);
                 if (value != null && !"".equals(value)) {
                     numaxusers = Integer.parseInt(value);
                 }
@@ -201,7 +201,7 @@ public class IQMUCSearchHandler
 		final FormField includePasswordProtectedRoomsFF = df.getField("include_password_protected");
 		if (includePasswordProtectedRoomsFF != null)
 		{
-			final String b = includePasswordProtectedRoomsFF.getFirstValue();
+			final String b = getFirstValue(includePasswordProtectedRoomsFF);
 			if (b != null)
 			{
 				if (b.equals("0") || b.equalsIgnoreCase("false")
@@ -311,30 +311,74 @@ public class IQMUCSearchHandler
 		final Element res = DocumentHelper.createElement(QName.get("query",
 			"jabber:iq:search"));
 
-		final DataForm resultform = new DataForm(DataForm.Type.result);
+		final XDataFormImpl resultform = new XDataFormImpl(DataForm.TYPE_RESULT);
 		boolean atLeastoneResult = false;
 		for (MUCRoom room : mucrsm)
 		{
-			final Map<String, Object> fields = new HashMap<String, Object>();
-			fields.put("name", room.getNaturalLanguageName());
-			fields.put("subject", room.getSubject());
-			fields.put("num_users", room.getOccupantsCount());
-			fields.put("num_max_users", room.getMaxUsers());
-			fields.put("is_password_protected", room.isPasswordProtected());
-			fields.put("is_member_only", room.isMembersOnly());
-			fields.put("jid", room.getRole().getRoleAddress().toString());
+			ArrayList<XFormFieldImpl> fields = new ArrayList<XFormFieldImpl>();
+			XFormFieldImpl innerfield = new XFormFieldImpl("name");
+			innerfield.setType(FormField.TYPE_TEXT_SINGLE);
+			innerfield.addValue(room.getNaturalLanguageName());
+			fields.add(innerfield);
+			innerfield = new XFormFieldImpl("subject");
+			innerfield.setType(FormField.TYPE_TEXT_SINGLE);
+			innerfield.addValue(room.getSubject());
+			fields.add(innerfield);
+			innerfield = new XFormFieldImpl("num_users");
+			innerfield.setType(FormField.TYPE_TEXT_SINGLE);
+			innerfield.addValue(String.valueOf(room.getOccupantsCount()));
+			fields.add(innerfield);
+			innerfield = new XFormFieldImpl("num_max_users");
+			innerfield.setType(FormField.TYPE_TEXT_SINGLE);
+			innerfield.addValue(String.valueOf(room.getMaxUsers()));
+			fields.add(innerfield);
+			innerfield = new XFormFieldImpl("is_password_protected");
+			innerfield.setType(FormField.TYPE_BOOLEAN);
+			innerfield.addValue(Boolean.toString(room.isPasswordProtected()));
+			fields.add(innerfield);
+			innerfield = new XFormFieldImpl("is_member_only");
+			innerfield.setType(FormField.TYPE_BOOLEAN);
+			innerfield.addValue(Boolean.toString(room.isMembersOnly()));
+			fields.add(innerfield);
+            innerfield = new XFormFieldImpl("jid");
+            innerfield.setType(FormField.TYPE_TEXT_SINGLE);
+            innerfield.addValue(room.getRole().getRoleAddress().toString());
+            fields.add(innerfield);
             resultform.addItemFields(fields);
 			atLeastoneResult = true;
 		}
 		if (atLeastoneResult)
 		{
-			resultform.addReportedField("name", "Name", FormField.Type.text_single);
-			resultform.addReportedField("subject", "Subject", FormField.Type.text_single);
-			resultform.addReportedField("num_users", "Number of users", FormField.Type.text_single);
-			resultform.addReportedField("num_max_users", "Max number allowed of users", FormField.Type.text_single);
-			resultform.addReportedField("is_password_protected", "Is a password protected room.", FormField.Type.boolean_type);
-			resultform.addReportedField("is_member_only", "Is a member only room.", FormField.Type.boolean_type);
-			resultform.addReportedField("jid", "JID", FormField.Type.jid_single);
+			final FormField rffName = new XFormFieldImpl("name");
+			rffName.setLabel("Name");
+			resultform.addReportedField(rffName);
+
+			final FormField rffSubject = new XFormFieldImpl("subject");
+			rffSubject.setLabel("Subject");
+			resultform.addReportedField(rffSubject);
+
+			final FormField rffNumUsers = new XFormFieldImpl("num_users");
+			rffNumUsers.setLabel("Number of users");
+			resultform.addReportedField(rffNumUsers);
+
+			final FormField rffNumMaxUsers = new XFormFieldImpl("num_max_users");
+			rffNumMaxUsers.setLabel("Max number allowed of users");
+			resultform.addReportedField(rffNumMaxUsers);
+
+			final FormField rffPasswordProtected = new XFormFieldImpl(
+				"is_password_protected");
+			rffPasswordProtected.setLabel("Is a password protected room.");
+			resultform.addReportedField(rffPasswordProtected);
+
+            final FormField rffJID = new XFormFieldImpl("jid");
+            rffJID.setLabel("JID");
+            resultform.addReportedField(rffJID);
+
+            FormField innerfield = new XFormFieldImpl("is_member_only");
+			innerfield.setType(FormField.TYPE_TEXT_SINGLE);
+			innerfield.setLabel("Is a member only room.");
+			resultform.addReportedField(innerfield);
+			res.add(resultform.asXMLElement());
 		}
 
 		if (applyRSM)
@@ -397,9 +441,7 @@ public class IQMUCSearchHandler
 	 * @param formField
 	 *            The field from which to return the first value.
 	 * @return String based value, or 'null' if the FormField has no values.
-	 * @deprecated replaced by {@link FormField#getFirstValue()}
 	 */
-	@Deprecated
 	public static String getFirstValue(FormField formField)
 	{
 		if (formField == null)
@@ -408,13 +450,13 @@ public class IQMUCSearchHandler
 				"The argument 'formField' cannot be null.");
 		}
 
-		List<String> it = formField.getValues();
+		Iterator<String> it = formField.getValues();
 
-		if (it.isEmpty())
+		if (!it.hasNext())
 		{
 			return null;
 		}
 
-		return it.get(0);
+		return it.next();
 	}
 }

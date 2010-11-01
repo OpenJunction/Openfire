@@ -1,17 +1,5 @@
 package org.jivesoftware.openfire.plugin;
 
-import gnu.inet.encoding.Stringprep;
-import gnu.inet.encoding.StringprepException;
-
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.apache.commons.fileupload.FileItem;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
@@ -31,9 +19,19 @@ import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.openfire.user.UserProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.stringprep.Stringprep;
+import org.jivesoftware.stringprep.StringprepException;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.JID;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * The user import/export plugin provides a way to import and export Openfire
@@ -45,9 +43,6 @@ import org.xmpp.packet.JID;
  * @author <a href="mailto:ryan@version2software.com">Ryan Graham</a>
  */
 public class ImportExportPlugin implements Plugin {
-	
-	private static final Logger Log = LoggerFactory.getLogger(ImportExportPlugin.class);
-	
     private UserManager userManager;
     private UserProvider provider;
     private String serverName;
@@ -106,7 +101,7 @@ public class ImportExportPlugin implements Plugin {
            writer = new XMLWriter(stringWriter, OutputFormat.createPrettyPrint());
            writer.write(exportUsers());
         } catch (IOException ioe) {
-            Log.error(ioe.getMessage(), ioe);
+            Log.error(ioe);
             throw ioe;
         } finally {
             if (writer != null) {
@@ -148,7 +143,7 @@ public class ImportExportPlugin implements Plugin {
             return new UserSchemaValidator(file, "wildfire-user-schema.xsd.xml").validate();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
             return false;
         }
     }
@@ -197,9 +192,7 @@ public class ImportExportPlugin implements Plugin {
                 Element groupElement = itemElement.addElement("Group");
                 List<String> groups = ri.getGroups();
                 for (String group : groups) {
-                    if (group != null && group.trim().length() > 0) {
-                        groupElement.addText(group);
-                    }
+                    groupElement.addText(group);
                 }
             }
         }
@@ -215,9 +208,9 @@ public class ImportExportPlugin implements Plugin {
         
         Element users = document.getRootElement();
         
-        Iterator<Element> usersIter = users.elementIterator("User");
+        Iterator usersIter = users.elementIterator("User");
         while (usersIter.hasNext()) {
-            Element user = usersIter.next();
+            Element user = (Element) usersIter.next();
             
             String userName = null;
             String password = null;
@@ -225,9 +218,9 @@ public class ImportExportPlugin implements Plugin {
             String name = null;
             List<RosterItem> rosterItems = new ArrayList<RosterItem>();
             
-            Iterator<Element> userElements = user.elementIterator();
+            Iterator userElements = user.elementIterator();
             while (userElements.hasNext()) {
-                Element userElement = userElements.next();
+                Element userElement = (Element) userElements.next();
                 
                 String nameElement = userElement.getName();
                 if ("Username".equals(nameElement)) {
@@ -243,10 +236,10 @@ public class ImportExportPlugin implements Plugin {
                     email = userElement.getText();
                 }
                 else if ("Roster".equals(nameElement)) {
-                    Iterator<Element> rosterIter = userElement.elementIterator("Item");
+                    Iterator rosterIter = userElement.elementIterator("Item");
                     
                     while (rosterIter.hasNext()) {
-                        Element rosterElement = rosterIter.next();
+                        Element rosterElement = (Element) rosterIter.next();
                         
                         String jid = rosterElement.attributeValue("jid");
                         String askstatus = rosterElement.attributeValue("askstatus");
@@ -255,13 +248,10 @@ public class ImportExportPlugin implements Plugin {
                         String nickname = rosterElement.attributeValue("name");
                         
                         List<String> groups = new ArrayList<String>();
-                        Iterator<Element> groupIter = rosterElement.elementIterator("Group");
+                        Iterator groupIter = rosterElement.elementIterator("Group");
                         while (groupIter.hasNext()) {
-                            Element group = groupIter.next();
-                            String groupName = group.getText();
-                            if (groupName != null && groupName.trim().length() > 0) {
-                                groups.add(groupName);
-                            }
+                            Element group = (Element) groupIter.next();
+                            groups.add(group.getText());
                         }
                         
                         //used for migration

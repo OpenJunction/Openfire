@@ -5,27 +5,11 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.util.cache;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
 
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.XMPPServerListener;
@@ -38,8 +22,11 @@ import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.util.InitializationException;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Creates Cache objects. The returned caches will either be local or clustered
@@ -51,8 +38,6 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class CacheFactory {
-
-	private static final Logger Log = LoggerFactory.getLogger(CacheFactory.class);
 
     public static String LOCAL_CACHE_PROPERTY_NAME = "cache.clustering.local.class";
     public static String CLUSTERED_CACHE_PROPERTY_NAME = "cache.clustering.clustered.class";
@@ -126,8 +111,8 @@ public class CacheFactory {
         cacheNames.put("Remote Server Configurations", "serversConfigurations");
         cacheNames.put("Entity Capabilities", "entityCapabilities");
         cacheNames.put("Entity Capabilities Users", "entityCapabilitiesUsers");
+        cacheNames.put("Entity Capabilities Pending Hashes", "entityCapabilitiesPendingHashes");
         cacheNames.put("Clearspace SSO Nonce", "clearspaceSSONonce");
-        cacheNames.put("PEPServiceManager", "pepServiceManager");
 
         cacheProps.put("cache.fileTransfer.size", 128 * 1024l);
         cacheProps.put("cache.fileTransfer.maxLifetime", 1000 * 60 * 10l);
@@ -193,12 +178,12 @@ public class CacheFactory {
         cacheProps.put("cache.entityCapabilities.maxLifetime", JiveConstants.DAY * 2);
         cacheProps.put("cache.entityCapabilitiesUsers.size", -1l);
         cacheProps.put("cache.entityCapabilitiesUsers.maxLifetime", JiveConstants.DAY * 2);
+        cacheProps.put("cache.entityCapabilitiesPendingHashes.size", -1l);
+        cacheProps.put("cache.entityCapabilitiesPendingHashes.maxLifetime", JiveConstants.DAY * 2);
         cacheProps.put("cache.pluginCacheInfo.size", -1l);
         cacheProps.put("cache.pluginCacheInfo.maxLifetime", -1l);
         cacheProps.put("cache.clearspaceSSONonce.size", -1l);
         cacheProps.put("cache.clearspaceSSONonce.maxLifetime", JiveConstants.MINUTE * 2);
-        cacheProps.put("cache.pepServiceManager.size", 1024l * 1024 * 10);
-        cacheProps.put("cache.pepServiceManager.maxLifetime", JiveConstants.MINUTE * 30);
     }
 
     private CacheFactory() {
@@ -596,8 +581,7 @@ public class CacheFactory {
                 statsThread = new Thread("Cache Stats") {
                     private volatile boolean destroyed = false;
 
-                    @Override
-					public void run() {
+                    public void run() {
                         XMPPServer.getInstance().addServerListener(new XMPPServerListener() {
                             public void serverStarted() {}
 
@@ -628,7 +612,7 @@ public class CacheFactory {
                                 cacheFactoryStrategy.updateCacheStats(caches);
                             }
                             catch (Exception e) {
-                                Log.error(e.getMessage(), e);
+                                Log.error(e);
                             }
                             try {
                                 // Sleep 10 seconds.

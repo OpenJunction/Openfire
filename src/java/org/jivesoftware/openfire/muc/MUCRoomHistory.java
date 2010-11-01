@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc;
@@ -41,8 +33,6 @@ import java.util.TimeZone;
 public final class MUCRoomHistory {
 
     private static final FastDateFormat UTC_FORMAT = FastDateFormat
-            .getInstance(JiveConstants.XMPP_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
-    private static final FastDateFormat UTC_FORMAT_OLD = FastDateFormat
             .getInstance(JiveConstants.XMPP_DELAY_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
 
     private MUCRoom room;
@@ -109,17 +99,14 @@ public final class MUCRoomHistory {
         }
 
         // Add the delay information to the message
-        Element delayInformation = packetToAdd.addChildElement("delay", "urn:xmpp:delay");
-        Element delayInformationOld = packetToAdd.addChildElement("x", "jabber:x:delay");
+        Element delayInformation = packetToAdd.addChildElement("x", "jabber:x:delay");
         Date current = new Date();
         delayInformation.addAttribute("stamp", UTC_FORMAT.format(current));
-        delayInformationOld.addAttribute("stamp", UTC_FORMAT_OLD.format(current));
         if (room.canAnyoneDiscoverJID()) {
             // Set the Full JID as the "from" attribute
             try {
                 MUCRole role = room.getOccupant(packet.getFrom().getResource());
                 delayInformation.addAttribute("from", role.getUserAddress().toString());
-                delayInformationOld.addAttribute("from", role.getUserAddress().toString());
             }
             catch (UserNotFoundException e) {
                 // Ignore.
@@ -128,7 +115,6 @@ public final class MUCRoomHistory {
         else {
             // Set the Room JID as the "from" attribute
             delayInformation.addAttribute("from", packet.getFrom().toString());
-            delayInformationOld.addAttribute("from", packet.getFrom().toString());
         }
         historyStrategy.addMessage(packetToAdd);
     }
@@ -178,19 +164,15 @@ public final class MUCRoomHistory {
         }
 
         // Add the delay information to the message
-        Element delayInformation = message.addChildElement("delay", "urn:xmpp:delay");
-        Element delayInformationOld = message.addChildElement("x", "jabber:x:delay");
+        Element delayInformation = message.addChildElement("x", "jabber:x:delay");
         delayInformation.addAttribute("stamp", UTC_FORMAT.format(sentDate));
-        delayInformationOld.addAttribute("stamp", UTC_FORMAT_OLD.format(sentDate));
         if (room.canAnyoneDiscoverJID()) {
             // Set the Full JID as the "from" attribute
             delayInformation.addAttribute("from", senderJID);
-            delayInformationOld.addAttribute("from", senderJID);
         }
         else {
             // Set the Room JID as the "from" attribute
             delayInformation.addAttribute("from", room.getRole().getRoleAddress().toString());
-            delayInformationOld.addAttribute("from", room.getRole().getRoleAddress().toString());
         }
         historyStrategy.addMessage(message);
     }
@@ -204,15 +186,5 @@ public final class MUCRoomHistory {
      */
     public boolean hasChangedSubject() {
         return historyStrategy.hasChangedSubject();
-    }
-
-    /**
-     * Returns the message within the history of the room that has changed the
-     * room's subject.
-     * 
-     * @return the latest room subject change or null if none exists yet.
-     */
-    public Message getChangedSubject() {
-        return historyStrategy.getChangedSubject();
     }
 }

@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin;
@@ -25,7 +17,6 @@ import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.group.Group;
 import org.jivesoftware.openfire.group.GroupManager;
 import org.jivesoftware.openfire.group.GroupNotFoundException;
-import org.jivesoftware.openfire.lockout.LockOutManager;
 import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
@@ -104,40 +95,14 @@ public class UserServicePlugin implements Plugin, PropertyEventListener {
         User user = getUser(username);
         userManager.deleteUser(user);
     }
-
-    /**
-     * Lock Out on a given username
-     *
-     * @param username the username of the local user to disable.
-     * @throws UserNotFoundException if the requested user
-     *         does not exist in the local server.
-     */
-    public void disableUser(String username) throws UserNotFoundException
-    {
-        User user = getUser(username);
-        LockOutManager.getInstance().disableAccount(username, null, null);
-    }
-
-    /**
-     * Remove the lockout on a given username
-     *
-     * @param username the username of the local user to enable.
-     * @throws UserNotFoundException if the requested user
-     *         does not exist in the local server.
-     */
-    public void enableUser(String username) throws UserNotFoundException
-    {
-        User user = getUser(username);
-        LockOutManager.getInstance().enableAccount(username);
-    }
     
     public void updateUser(String username, String password, String name, String email, String groupNames)
             throws UserNotFoundException
     {
         User user = getUser(username);
-        if (password != null) user.setPassword(password);
-        if (name != null) user.setName(name);
-        if (email != null) user.setEmail(email);
+        user.setPassword(password);
+        user.setName(name);
+        user.setEmail(email);
 
         if (groupNames != null) {
             Collection<Group> newGroups = new ArrayList<Group>();

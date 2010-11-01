@@ -1,21 +1,12 @@
 <%--
-  -	$Revision: 11592 $
-  -	$Date: 2010-02-01 07:46:59 -0800 (Mon, 01 Feb 2010) $
+  -	$Revision: 10936 $
+  -	$Date: 2008-12-06 22:37:58 -0800 (Sat, 06 Dec 2008) $
   -
   - Copyright (C) 2004-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
-
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="java.io.*,
@@ -143,6 +134,7 @@
     if (log != null) {
         log = StringUtils.escapeHTMLTags(log);
     }
+
     debugEnabled = Log.isDebugEnabled();
     User pageUser = admin.getUser();
 
@@ -294,7 +286,6 @@ IFRAME {
     </tr>
 </tbody>
 </table>
-</div>
 
 <%  ByteFormat byteFormatter = new ByteFormat();
     Date lastMod = new Date(logFile.lastModified());
@@ -333,11 +324,11 @@ IFRAME {
                         <% for (String aLINES : LINES) {
                             String selected = (aLINES.equals(numLinesParam)) ? " selected" : "";
                         %>
-                        <option value="<%= aLINES %>"<%= selected %>><%= aLINES %></option>
+                        <option value="<%= aLINES %>"<%= selected %>><%= aLINES %>
 
                         <%  } %>
                             <option value="All"<%= (("All".equals(numLinesParam))?" selected":"") %>
-                             ><fmt:message key="logviewer.all" /></option>
+                             ><fmt:message key="logviewer.all" />
                     </select>
                 </td>
             </tr>

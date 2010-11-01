@@ -5,36 +5,23 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
 
+import java.util.*;
 import java.text.DateFormatSymbols;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.StringTokenizer;
-import java.util.TreeSet;
 
 public class Schedule {
 
     private long id;
     private boolean[] week = new boolean[7];
     private final String[] dayNames = new DateFormatSymbols().getShortWeekdays();
-    private final List<String> dayNamesList = Arrays.asList(dayNames);
-    private TreeSet<Schedule.Event> events = new TreeSet<Schedule.Event>();
+    private final List dayNamesList = Arrays.asList(dayNames);
+    private TreeSet events = new TreeSet();
     private final String[] weekdays = new DateFormatSymbols().getShortWeekdays();
 
     public Schedule(long id) {
@@ -48,7 +35,7 @@ public class Schedule {
     }
 
     public void clear() {
-        events = new TreeSet<Schedule.Event>();
+        events = new TreeSet();
         Arrays.fill(week, false);
     }
 
@@ -60,7 +47,7 @@ public class Schedule {
         return week;
     }
 
-    public SortedSet<Schedule.Event> getEvents() {
+    public SortedSet getEvents() {
         return events;
     }
 
@@ -113,8 +100,7 @@ public class Schedule {
         }
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         StringBuilder schedule = new StringBuilder();
         boolean needsComma = false;
         for (int i = 0; i < week.length; i++) {
@@ -128,7 +114,9 @@ public class Schedule {
         }
         schedule.append('#');
         needsComma = false;
-        for(Schedule.Event event : events) {
+        Iterator eventIter = events.iterator();
+        while (eventIter.hasNext()) {
+            Event event = (Schedule.Event)eventIter.next();
             if (needsComma) {
                 schedule.append(',');
             }
@@ -160,7 +148,7 @@ public class Schedule {
         * <li>minute - any minute between 0 and 59.</li>
         * </ul>
         */
-      public static class Event implements Comparable<Event>{
+      public static class Event implements Comparable{
            private int hour;
            private int minute;
            private boolean on;
@@ -238,7 +226,8 @@ public class Schedule {
             * @param o The object to compare with this one
             * @return negative, zero, or positive int if the object is less than, equal to, or greater than the specified object
             */
-           public int compareTo(Event event) {
+           public int compareTo(Object o) {
+               Event event = (Event)o;
                int val = hour - event.hour;
                if (val == 0){
                    val = minute - event.minute;
@@ -251,8 +240,7 @@ public class Schedule {
             *
             * @return The event as a standard schedule string
             */
-           @Override
-		public String toString(){
+           public String toString(){
                StringBuilder event = new StringBuilder(Integer.toString(hour));
                event.append('-');
                event.append(Integer.toString(minute));
@@ -261,8 +249,7 @@ public class Schedule {
                return event.toString();
            }
 
-           @Override
-		public boolean equals(Object o){
+           public boolean equals(Object o){
                boolean eq = false;
                if (o instanceof Event){
                    Event event = (Event)o;

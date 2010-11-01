@@ -8,14 +8,12 @@ Source1: jre-dist.tar.gz
 Group: Applications/Communications
 Vendor: Jive Software
 Packager: Jive Software
-License: Apache license v2.0
+License: GPL
 AutoReqProv: no
 URL: http://www.igniterealtime.org/
 
 %define prefix /opt
 %define homedir %{prefix}/openfire
-# couldn't find another way to disable the brp-java-repack-jars which was called in __os_install_post
-%define __os_install_post %{nil}
 
 %description
 Openfire is a leading Open Source, cross-platform IM server based on the
@@ -111,7 +109,6 @@ exit 0
 %config(noreplace) %{homedir}/conf/openfire.xml
 %dir %{homedir}/lib
 %{homedir}/lib/*.jar
-%{homedir}/lib/log4j.xml
 %dir %{homedir}/logs
 %dir %{homedir}/plugins
 %{homedir}/plugins/search.jar

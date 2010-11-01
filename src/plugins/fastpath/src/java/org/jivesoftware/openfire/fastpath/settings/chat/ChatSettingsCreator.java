@@ -5,20 +5,25 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.settings.chat;
+
+import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
+import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
+import com.thoughtworks.xstream.XStream;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.openfire.container.Plugin;
+import org.jivesoftware.openfire.container.PluginManager;
+import org.jivesoftware.util.StringUtils;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.JID;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -28,28 +33,11 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.container.Plugin;
-import org.jivesoftware.openfire.container.PluginManager;
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
-import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
-
-import com.thoughtworks.xstream.XStream;
-
 /**
  * Creates the default settings for the Web Chat UI. This includes the Web Chat UI
  * images and text settings.
  */
 public class ChatSettingsCreator {
-
-	private static final Logger Log = LoggerFactory.getLogger(ChatSettingsCreator.class);
 
     private static final ChatSettingsCreator instance = new ChatSettingsCreator();
 
@@ -244,7 +232,7 @@ public class ChatSettingsCreator {
                 stream = new FileInputStream(image);
             }
             catch (FileNotFoundException e) {
-                Log.error(e.getMessage(), e);
+                ComponentManagerFactory.getComponentManager().getLog().error(e);
             }
 
             if (stream != null) {
@@ -262,7 +250,7 @@ public class ChatSettingsCreator {
                             ChatSettings.SettingType.image_settings, encodedFile);
                 }
                 catch (IOException e) {
-                    Log.error(e.getMessage(), e);
+                    ComponentManagerFactory.getComponentManager().getLog().error(e);
                 }
             }
         }
@@ -296,10 +284,10 @@ public class ChatSettingsCreator {
             }
         }
         catch (UserNotFoundException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
         catch (UnauthorizedException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 
@@ -406,7 +394,7 @@ public class ChatSettingsCreator {
                             encodedFile);
                 }
                 catch (IOException e) {
-                    Log.error(e.getMessage(), e);
+                    ComponentManagerFactory.getComponentManager().getLog().error(e);
                 }
             }
         }

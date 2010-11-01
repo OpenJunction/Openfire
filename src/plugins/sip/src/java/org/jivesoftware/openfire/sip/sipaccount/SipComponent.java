@@ -5,29 +5,17 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.sip.sipaccount;
-
-import java.sql.SQLException;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.event.SessionEventDispatcher;
 import org.jivesoftware.openfire.event.SessionEventListener;
 import org.jivesoftware.openfire.session.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.component.Component;
 import org.xmpp.component.ComponentManager;
 import org.xmpp.component.ComponentManagerFactory;
@@ -35,6 +23,8 @@ import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
+
+import java.sql.SQLException;
 
 /**
  * Implements an openfire Component and SessionEventListener. Controls every
@@ -44,8 +34,6 @@ import org.xmpp.packet.PacketError;
  */
 public class SipComponent implements Component, SessionEventListener {
 
-	private static final Logger Log = LoggerFactory.getLogger(SipComponent.class);
-	
     ComponentManager componentManager = null;
 
     /**
@@ -75,7 +63,7 @@ public class SipComponent implements Component, SessionEventListener {
     // Component Interface
 
     public void processPacket(Packet packet) {
-        Log.debug(packet.toXML());
+        componentManager.getLog().debug(packet.toXML());
         if (packet instanceof IQ) {
             // Handle disco packets
             IQ iq = (IQ)packet;
@@ -143,7 +131,7 @@ public class SipComponent implements Component, SessionEventListener {
                                 SipAccountDAO.update(sipAccount);
                             }
                             catch (SQLException e) {
-                                Log.error(e.getMessage(), e);
+                                componentManager.getLog().error(e);
                             }
                         }
                     }
@@ -159,9 +147,9 @@ public class SipComponent implements Component, SessionEventListener {
             componentManager.sendPacket(this, reply);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
-        Log.debug("PACKET SENT: " + reply.toXML());
+        componentManager.getLog().debug("PACKET SENT: " + reply.toXML());
     } // Other Methods
 
     public String getDescription() {
@@ -203,7 +191,7 @@ public class SipComponent implements Component, SessionEventListener {
                 SipAccountDAO.update(sipAccount);
             }
             catch (SQLException e) {
-                Log.error(e.getMessage(), e);
+                componentManager.getLog().error(e);
             }
         }
 

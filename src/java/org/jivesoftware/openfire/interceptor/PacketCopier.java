@@ -4,31 +4,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.interceptor;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.RoutingTable;
@@ -39,13 +20,13 @@ import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.util.FastDateFormat;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.Presence;
+import org.jivesoftware.util.Log;
+import org.xmpp.packet.*;
+
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Packet interceptor that notifies of packets activity to components that previously
@@ -57,8 +38,6 @@ import org.xmpp.packet.Presence;
  * @author Gaston Dombiak
  */
 public class PacketCopier implements PacketInterceptor, ComponentEventListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(PacketCopier.class);
 
     private final static PacketCopier instance = new PacketCopier();
     private final static FastDateFormat dateFormat = FastDateFormat
@@ -77,7 +56,7 @@ public class PacketCopier implements PacketInterceptor, ComponentEventListener {
     /**
      * Queue that holds the audited packets that will be later saved to an XML file.
      */
-    private BlockingQueue<InterceptedPacket> packetQueue = new LinkedBlockingQueue<InterceptedPacket>(10000);
+    private BlockingQueue<InterceptedPacket> packetQueue = new LinkedBlockingQueue<InterceptedPacket>();
 
     /**
      * Returns unique instance of this class.
@@ -213,8 +192,7 @@ public class PacketCopier implements PacketInterceptor, ComponentEventListener {
     }
 
     private class ProcessPacketsTask extends TimerTask {
-        @Override
-		public void run() {
+        public void run() {
             try {
                 // Notify components of intercepted packets
                 processPackets();

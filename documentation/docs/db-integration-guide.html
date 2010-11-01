@@ -105,12 +105,10 @@
     <li>jdbcAuthProvider.passwordSQL -- the SQL String to select a user's password. The SQL
         statement should contain a single "?" character, which will be dynamically replaced with
         a username when being executed.</li>
-    <li>jdbcAuthProvider.passwordType -- the type of the password. Valid values are <ul><li>"plain" (the password is stored as plain text)</li>
-	 <li>"md5" (the password is stored as a hex-encoded MD5 hash)</li>
-    <li>"sha1" (the password is stored as a hex-encoded SHA-1 hash)</li>
-    <li>"sha256" (the password is stored as a hex-encoded SHA-256 hash)</li>
-    <li>"sha512" (the password is stored as a hex-encoded SHA-512 hash)</li></ul>
-	 If this value is not set, the password type is assumed to be plain.</li>
+    <li>jdbcAuthProvider.passwordType -- the type of the password. Valid values are "plain" (the
+        password is stored as plain text), "md5" (the password is stored as a hex-encoded MD5 hash)
+        and "sha1" (the password is stored as a hex-encoded SHA-1 hash). If this value is not set,
+        the password type is assumed to be plain.</li>
 </ul>
 
 <p>
@@ -263,10 +261,10 @@ integration (see above). Use the following settings to enable group integration.
   &lt;jdbcGroupProvider&gt;
        &lt;groupCountSQL&gt;SELECT count(*) FROM myGroups&lt;/groupCountSQL&gt;
        &lt;allGroupsSQL&gt;SELECT groupName FROM myGroups&lt;/allGroupsSQL&gt;
-       &lt;userGroupsSQL&gt;SELECT groupName FROM myGroupUsers WHERE username=?&lt;/userGroupsSQL&gt;
+       &lt;userGroupsSQL&gt;SELECT groupName FORM myGroupUsers WHERE username=?&lt;/userGroupsSQL&gt;
        &lt;descriptionSQL&gt;SELECT groupDescription FROM myGroups WHERE groupName=?&lt;/descriptionSQL&gt;
-       &lt;loadMembersSQL&gt;SELECT username FROM myGroupUsers WHERE groupName=? AND isAdmin='N'&lt;/loadMembersSQL&gt;
-       &lt;loadAdminsSQL&gt;SELECT username FROM myGroupUsers WHERE groupName=? AND isAdmin='Y'&lt;/loadAdminsSQL&gt;
+       &lt;loadMembersSQL&gt;SELECT username FORM myGroupUsers WHERE groupName=? AND isAdmin='N'&lt;/loadMembersSQL&gt;
+       &lt;loadAdminsSQL&gt;SELECT username FORM myGroupUsers WHERE groupName=? AND isAdmin='Y'&lt;/loadAdminsSQL&gt;
   &lt;/jdbcGroupProvider&gt;
   ...
 &lt;/jive&gt;

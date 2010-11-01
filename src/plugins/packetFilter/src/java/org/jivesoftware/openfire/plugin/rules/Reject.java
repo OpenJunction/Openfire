@@ -4,26 +4,19 @@ import org.jivesoftware.openfire.SessionManager;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.jivesoftware.util.Log;
+import org.xmpp.packet.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Reject extends AbstractRule implements Rule {
 
-	private static final Logger Log = LoggerFactory.getLogger(Reject.class);
-	
-    @Override
-	public String getDisplayName() {
+    public String getDisplayName() {
         return "Reject";
     }
 
-    @Override
-	public Packet doAction(Packet packet) throws PacketRejectedException {
+    public Packet doAction(Packet packet) throws PacketRejectedException {
         SessionManager sessionManager = SessionManager.getInstance();
         ClientSession clientSession = sessionManager.getSession(packet.getFrom());
         Packet rejectPacket;

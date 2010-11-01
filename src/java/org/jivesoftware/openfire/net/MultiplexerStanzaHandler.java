@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
@@ -50,8 +42,7 @@ public class MultiplexerStanzaHandler extends StanzaHandler {
         super(router, serverName, connection);
     }
 
-    @Override
-	protected void processIQ(final IQ packet) {
+    protected void processIQ(final IQ packet) {
         if (session.getStatus() != Session.STATUS_AUTHENTICATED) {
             // Session is not authenticated so return error
             IQ reply = new IQ();
@@ -67,14 +58,12 @@ public class MultiplexerStanzaHandler extends StanzaHandler {
         packetHandler.handle(packet);
     }
 
-    @Override
-	protected void processMessage(final Message packet) throws UnauthorizedException {
+    protected void processMessage(final Message packet) throws UnauthorizedException {
         throw new UnauthorizedException("Message packets are not supported. Original packets " +
                 "should be wrapped by route packets.");
     }
 
-    @Override
-	protected void processPresence(final Presence packet) throws UnauthorizedException {
+    protected void processPresence(final Presence packet) throws UnauthorizedException {
         throw new UnauthorizedException("Message packets are not supported. Original packets " +
                 "should be wrapped by route packets.");
     }
@@ -101,8 +90,7 @@ public class MultiplexerStanzaHandler extends StanzaHandler {
         packetHandler.route(packet);
     }
 
-    @Override
-	boolean processUnknowPacket(Element doc) {
+    boolean processUnknowPacket(Element doc) {
         String tag = doc.getName();
         if ("route".equals(tag)) {
             // Process stanza wrapped by the route packet
@@ -120,23 +108,19 @@ public class MultiplexerStanzaHandler extends StanzaHandler {
         return false;
     }
 
-    @Override
-	String getNamespace() {
+    String getNamespace() {
         return "jabber:connectionmanager";
     }
 
-    @Override
-	boolean validateHost() {
+    boolean validateHost() {
         return false;
     }
 
-    @Override
-	boolean validateJIDs() {
+    boolean validateJIDs() {
         return false;
     }
 
-    @Override
-	boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
+    boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
             throws XmlPullParserException {
         if (getNamespace().equals(namespace)) {
             // The connected client is a connection manager so create a ConnectionMultiplexerSession
@@ -149,8 +133,7 @@ public class MultiplexerStanzaHandler extends StanzaHandler {
         return false;
     }
 
-    @Override
-	void startTLS() throws Exception {
+    void startTLS() throws Exception {
         // TODO Finish implementation. We need to get the name of the CM if we want to validate certificates of the CM that requested TLS
         connection.startTLS(false, "IMPLEMENT_ME", Connection.ClientAuth.disabled);
     }

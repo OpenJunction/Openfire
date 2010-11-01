@@ -5,29 +5,20 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.database;
 
+import org.jivesoftware.util.Log;
+
+import java.util.List;
+import java.util.ArrayList;
+import java.sql.Types;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Allows PreparedStatement information to be cached. A prepared statement consists of
@@ -40,8 +31,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class CachedPreparedStatement  {
-
-	private static final Logger Log = LoggerFactory.getLogger(CachedPreparedStatement.class);
 
     private String sql;
     private List<Object> params;
@@ -156,8 +145,7 @@ public class CachedPreparedStatement  {
         }
     }
 
-    @Override
-	public boolean equals(Object object) {
+    public boolean equals(Object object) {
         if (object == null) {
             return false;
         }
@@ -172,8 +160,7 @@ public class CachedPreparedStatement  {
                 && types.equals(otherStmt.types) && params.equals(otherStmt.params);
     }
 
-    @Override
-	public int hashCode() {
+    public int hashCode() {
         int hashCode = 1;
         if (sql != null) {
             hashCode += sql.hashCode();
@@ -183,8 +170,7 @@ public class CachedPreparedStatement  {
         return hashCode;
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         String toStringSql = sql;
         try {
             int index = toStringSql.indexOf('?');
@@ -217,7 +203,7 @@ public class CachedPreparedStatement  {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         return "CachedPreparedStatement{ sql=" + toStringSql + '}';

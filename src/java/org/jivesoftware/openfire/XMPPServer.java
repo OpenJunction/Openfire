@@ -5,45 +5,16 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Method;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.security.KeyStore;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import org.dom4j.Document;
 import org.dom4j.io.SAXReader;
 import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.admin.AdminManager;
 import org.jivesoftware.openfire.audit.AuditManager;
 import org.jivesoftware.openfire.audit.spi.AuditManagerImpl;
 import org.jivesoftware.openfire.clearspace.ClearspaceManager;
@@ -53,33 +24,11 @@ import org.jivesoftware.openfire.component.InternalComponentManager;
 import org.jivesoftware.openfire.container.AdminConsolePlugin;
 import org.jivesoftware.openfire.container.Module;
 import org.jivesoftware.openfire.container.PluginManager;
-import org.jivesoftware.openfire.disco.IQDiscoInfoHandler;
-import org.jivesoftware.openfire.disco.IQDiscoItemsHandler;
-import org.jivesoftware.openfire.disco.ServerFeaturesProvider;
-import org.jivesoftware.openfire.disco.ServerIdentitiesProvider;
-import org.jivesoftware.openfire.disco.ServerItemsProvider;
-import org.jivesoftware.openfire.disco.UserIdentitiesProvider;
-import org.jivesoftware.openfire.disco.UserItemsProvider;
+import org.jivesoftware.openfire.disco.*;
 import org.jivesoftware.openfire.filetransfer.DefaultFileTransferManager;
 import org.jivesoftware.openfire.filetransfer.FileTransferManager;
 import org.jivesoftware.openfire.filetransfer.proxy.FileTransferProxy;
-import org.jivesoftware.openfire.handler.IQAuthHandler;
-import org.jivesoftware.openfire.handler.IQBindHandler;
-import org.jivesoftware.openfire.handler.IQHandler;
-import org.jivesoftware.openfire.handler.IQLastActivityHandler;
-import org.jivesoftware.openfire.handler.IQOfflineMessagesHandler;
-import org.jivesoftware.openfire.handler.IQPingHandler;
-import org.jivesoftware.openfire.handler.IQPrivacyHandler;
-import org.jivesoftware.openfire.handler.IQPrivateHandler;
-import org.jivesoftware.openfire.handler.IQRegisterHandler;
-import org.jivesoftware.openfire.handler.IQRosterHandler;
-import org.jivesoftware.openfire.handler.IQSessionEstablishmentHandler;
-import org.jivesoftware.openfire.handler.IQSharedGroupHandler;
-import org.jivesoftware.openfire.handler.IQTimeHandler;
-import org.jivesoftware.openfire.handler.IQVersionHandler;
-import org.jivesoftware.openfire.handler.IQvCardHandler;
-import org.jivesoftware.openfire.handler.PresenceSubscribeHandler;
-import org.jivesoftware.openfire.handler.PresenceUpdateHandler;
+import org.jivesoftware.openfire.handler.*;
 import org.jivesoftware.openfire.lockout.LockOutManager;
 import org.jivesoftware.openfire.mediaproxy.MediaProxyService;
 import org.jivesoftware.openfire.muc.MultiUserChatManager;
@@ -91,28 +40,30 @@ import org.jivesoftware.openfire.pep.IQPEPOwnerHandler;
 import org.jivesoftware.openfire.pubsub.PubSubModule;
 import org.jivesoftware.openfire.roster.RosterManager;
 import org.jivesoftware.openfire.session.RemoteSessionLocator;
-import org.jivesoftware.openfire.spi.ConnectionManagerImpl;
-import org.jivesoftware.openfire.spi.PacketDelivererImpl;
-import org.jivesoftware.openfire.spi.PacketRouterImpl;
-import org.jivesoftware.openfire.spi.PacketTransporterImpl;
-import org.jivesoftware.openfire.spi.PresenceManagerImpl;
-import org.jivesoftware.openfire.spi.RoutingTableImpl;
-import org.jivesoftware.openfire.spi.XMPPServerInfoImpl;
+import org.jivesoftware.openfire.spi.*;
 import org.jivesoftware.openfire.stun.STUNService;
 import org.jivesoftware.openfire.transport.TransportHandler;
 import org.jivesoftware.openfire.update.UpdateManager;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.vcard.VCardManager;
-import org.jivesoftware.util.CertificateManager;
-import org.jivesoftware.util.InitializationException;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.TaskEngine;
-import org.jivesoftware.util.Version;
+import org.jivesoftware.openfire.admin.AdminManager;
+import org.jivesoftware.util.*;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.security.KeyStore;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * The main XMPP server that will load, initialize and start all the server's
@@ -144,8 +95,6 @@ import org.xmpp.packet.JID;
  * @author Gaston Dombiak
  */
 public class XMPPServer {
-
-	private static final Logger Log = LoggerFactory.getLogger(XMPPServer.class);
 
     private static XMPPServer instance;
 
@@ -355,7 +304,7 @@ public class XMPPServer {
             Log.warn("Unable to determine local hostname.", ex);
         }
 
-        version = new Version(3, 7, 0, Version.ReleaseStatus.Beta, -1);
+        version = new Version(3, 6, 4, Version.ReleaseStatus.Release, -1);
         if ("true".equals(JiveGlobals.getXMLProperty("setup"))) {
             setupMode = false;
         }
@@ -370,7 +319,7 @@ public class XMPPServer {
             CacheFactory.initialize();
         } catch (InitializationException e) {
             e.printStackTrace();
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         initialized = true;
@@ -389,7 +338,6 @@ public class XMPPServer {
         if ("true".equals(JiveGlobals.getXMLProperty("setup"))) {
             // Set the new server domain assigned during the setup process
             name = JiveGlobals.getProperty("xmpp.domain").toLowerCase();
-            xmppServerInfo.setXMPPDomain(name);
 
             // Update certificates (if required)
             try {
@@ -420,8 +368,7 @@ public class XMPPServer {
             AdminManager.getInstance().getAdminAccounts();
 
             Thread finishSetup = new Thread() {
-                @Override
-				public void run() {
+                public void run() {
                     try {
                         if (isStandAlone()) {
                             // Always restart the HTTP server manager. This covers the case
@@ -447,7 +394,7 @@ public class XMPPServer {
                     }
                     catch (Exception e) {
                         e.printStackTrace();
-                        Log.error(e.getMessage(), e);
+                        Log.error(e);
                         shutdownServer();
                     }
                 }
@@ -507,7 +454,7 @@ public class XMPPServer {
         }
         catch (Exception e) {
             e.printStackTrace();
-            Log.error(e.getMessage(), e);
+            Log.error(e);
             System.out.println(LocaleUtils.getLocalizedString("startup.error"));
             shutdownServer();
         }
@@ -656,8 +603,7 @@ public class XMPPServer {
      */
     public void restartHTTPServer() {
         Thread restartThread = new Thread() {
-            @Override
-			public void run() {
+            public void run() {
                 if (isStandAlone()) {
                     // Restart the HTTP server manager. This covers the case
                     // of changing the ports, as well as generating self-signed certificates.
@@ -747,14 +693,14 @@ public class XMPPServer {
      * Verify that the database is accessible.
      */
     private void verifyDataSource() {
-        Connection con = null;
-        PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        java.sql.Connection conn = null;
         try {
-            con = DbConnectionManager.getConnection();
-            pstmt = con.prepareStatement("SELECT count(*) FROM ofID");
-            rs = pstmt.executeQuery();
+            conn = DbConnectionManager.getConnection();
+            PreparedStatement stmt = conn.prepareStatement("SELECT count(*) FROM ofID");
+            ResultSet rs = stmt.executeQuery();
             rs.next();
+            rs.close();
+            stmt.close();
         }
         catch (Exception e) {
             System.err.println("Database setup or configuration error: " +
@@ -764,7 +710,14 @@ public class XMPPServer {
             throw new IllegalArgumentException(e);
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            if (conn != null) {
+                try {
+                    conn.close();
+                }
+                catch (SQLException e) {
+                    Log.error(e);
+                }
+            }
         }
     }
 
@@ -893,8 +846,7 @@ public class XMPPServer {
         /**
          * <p>Logs the server shutdown.</p>
          */
-        @Override
-		public void run() {
+        public void run() {
             shutdownServer();
             Log.info("Server halted");
             System.err.println("Server halted");
@@ -913,8 +865,7 @@ public class XMPPServer {
         /**
          * <p>Shuts down the JVM after a 5 second delay.</p>
          */
-        @Override
-		public void run() {
+        public void run() {
             try {
                 Thread.sleep(5000);
                 // No matter what, we make sure it's dead

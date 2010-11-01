@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.entitycaps;
@@ -38,7 +30,6 @@ import java.util.Set;
  * @author Armando Jagucki
  *
  */
-// TODO: Instances of this class should not be cached in distributed caches. The overhead of distributing data is a lot higher than recalculating the hash on every cluster node. We should remove the Externalizable interface, and turn this class into an immutable class.
 public class EntityCapabilities implements Cacheable, Externalizable {
 
     /**
@@ -58,11 +49,6 @@ public class EntityCapabilities implements Cacheable, Externalizable {
      */
     private String verAttribute;
 
-    /**
-     * The hash algorithm that was used to create the hash string.
-     */
-    private String hashAttribute;
-    
     /**
      * Adds an identity to the entity capabilities.
      * 
@@ -108,22 +94,13 @@ public class EntityCapabilities implements Cacheable, Externalizable {
         return features.contains(feature);
     }
 
+    /**
+     * @param verAttribute the verAttribute to set
+     */
     void setVerAttribute(String verAttribute) {
         this.verAttribute = verAttribute;
     }
-    
-    String getVerAttribute() {
-    	return this.verAttribute;
-    }
 
-    void setHashAttribute(String hashAttribute) {
-    	this.hashAttribute = hashAttribute;
-    }
-
-    String getHashAttribute() {
-    	return this.hashAttribute;
-    }
-    
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         ExternalizableUtil.getInstance().readStrings(in, identities);
         ExternalizableUtil.getInstance().readStrings(in, features);

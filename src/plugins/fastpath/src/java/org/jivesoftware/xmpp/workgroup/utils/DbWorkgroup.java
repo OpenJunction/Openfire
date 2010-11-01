@@ -5,37 +5,26 @@
  *
  * Copyright (C) 2004-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.utils;
 
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.StringUtils;
+import org.xmpp.component.ComponentManagerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Date;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Handles basic DB Operations.
  */
 public class DbWorkgroup {
 
-	private static final Logger Log = LoggerFactory.getLogger(DbWorkgroup.class);
-	
     private static final String UPDATE_TRANSCRIPT =
             "UPDATE fpSession SET transcript=?, endTime=? WHERE sessionID=?";
     private static final String INSERT_AGENT_SESSION =
@@ -67,7 +56,7 @@ public class DbWorkgroup {
             pstmt.executeUpdate();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -104,7 +93,7 @@ public class DbWorkgroup {
             pstmt.executeUpdate();
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
            DbConnectionManager.closeConnection(pstmt, con);

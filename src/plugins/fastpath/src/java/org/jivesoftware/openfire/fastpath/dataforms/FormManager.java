@@ -5,42 +5,30 @@
  *
  * Copyright (C) 1999-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.dataforms;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jivesoftware.xmpp.workgroup.DbProperties;
 import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.thoughtworks.xstream.XStream;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.forms.DataForm;
 import org.xmpp.forms.FormField;
 
-import com.thoughtworks.xstream.XStream;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 public class FormManager {
-	
-	private static final Logger Log = LoggerFactory.getLogger(FormManager.class);
-	
     private static FormManager singleton = new FormManager();
 
     private Map<Workgroup, WorkgroupForm> forms = new ConcurrentHashMap<Workgroup, WorkgroupForm>();
@@ -88,7 +76,7 @@ public class FormManager {
                 props.setProperty(context, xmlToSave);
             }
             catch (UnauthorizedException e) {
-                Log.error(e.getMessage(), e);
+                ComponentManagerFactory.getComponentManager().getLog().error(e);
             }
         }
 
@@ -156,13 +144,17 @@ public class FormManager {
             }
 
             if (elem.getAnswers().size() > 0 && elem.getAnswerType() != WorkgroupForm.FormEnum.hidden) {
-                for(String item : elem.getAnswers()) {
+                Iterator iter = elem.getAnswers().iterator();
+                while (iter.hasNext()) {
+                    String item = (String)iter.next();
                     field.addOption(item, item);
                 }
             }
             else if (elem.getAnswers().size() > 0) {
                 // Add hidden element values.
-                for(String item : elem.getAnswers()) {
+                Iterator iter = elem.getAnswers().iterator();
+                while (iter.hasNext()) {
+                    String item = (String)iter.next();
                     field.addValue(item);
                 }
             }
@@ -179,7 +171,7 @@ public class FormManager {
             props.setProperty(context, xmlToSave);
         }
         catch (UnauthorizedException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
 
     }
@@ -197,7 +189,7 @@ public class FormManager {
                 return (DataForm) xstream.fromXML(form);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                ComponentManagerFactory.getComponentManager().getLog().error(e);
             }
         }
         return null;
@@ -222,7 +214,7 @@ public class FormManager {
                     }
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    ComponentManagerFactory.getComponentManager().getLog().error(e);
                 }
             }
             else {

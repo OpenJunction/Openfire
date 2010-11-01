@@ -4,31 +4,22 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.container;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import org.apache.jasper.JasperException;
+import org.apache.jasper.JspC;
+import org.dom4j.Document;
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.StringUtils;
+import org.xml.sax.SAXException;
 
 import javax.servlet.GenericServlet;
 import javax.servlet.ServletConfig;
@@ -37,17 +28,12 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.jasper.JasperException;
-import org.apache.jasper.JspC;
-import org.dom4j.Document;
-import org.dom4j.Element;
-import org.dom4j.io.SAXReader;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
+import java.io.*;
+import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The plugin servlet acts as a proxy for web requests (in the admin console)
@@ -72,8 +58,6 @@ import org.xml.sax.SAXException;
  */
 public class PluginServlet extends HttpServlet {
 
-	private static final Logger Log = LoggerFactory.getLogger(PluginServlet.class);
-
     private static Map<String, GenericServlet> servlets;
     private static PluginManager pluginManager;
     private static ServletConfig servletConfig;
@@ -82,14 +66,12 @@ public class PluginServlet extends HttpServlet {
         servlets = new ConcurrentHashMap<String, GenericServlet>();
     }
 
-    @Override
-	public void init(ServletConfig config) throws ServletException {
+    public void init(ServletConfig config) throws ServletException {
         super.init(config);
         servletConfig = config;
     }
 
-    @Override
-	public void service(HttpServletRequest request, HttpServletResponse response)
+    public void service(HttpServletRequest request, HttpServletResponse response)
         throws ServletException, IOException {
         String pathInfo = request.getPathInfo();
         if (pathInfo == null) {
@@ -114,7 +96,7 @@ public class PluginServlet extends HttpServlet {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
                 response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
         }
@@ -183,7 +165,7 @@ public class PluginServlet extends HttpServlet {
             }
         }
         catch (Throwable e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -222,7 +204,7 @@ public class PluginServlet extends HttpServlet {
             }
         }
         catch (Throwable e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -452,7 +434,7 @@ public class PluginServlet extends HttpServlet {
                 jspc.setJspFiles(jspFile.getCanonicalPath());
             }
             catch (IOException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
             jspc.setOutputDir(compilationDir.getAbsolutePath());
             jspc.setClassName(filename);
@@ -471,12 +453,12 @@ public class PluginServlet extends HttpServlet {
                     return true;
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
 
             }
             catch (JasperException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         return false;

@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.commands.admin.user;
 
@@ -43,23 +35,19 @@ import java.util.Map;
  * @author Alexander Wenckus
  */
 public class AddUser extends AdHocCommand {
-    @Override
-	public String getCode() {
+    public String getCode() {
         return "http://jabber.org/protocol/admin#add-user";
     }
 
-    @Override
-	public String getDefaultLabel() {
+    public String getDefaultLabel() {
         return "Add a User";
     }
 
-    @Override
-	public int getMaxStages(SessionData data) {
+    public int getMaxStages(SessionData data) {
         return 1;
     }
 
-    @Override
-	public void execute(SessionData sessionData, Element command) {
+    public void execute(SessionData sessionData, Element command) {
         Element note = command.addElement("note");
         // Check if groups cannot be modified (backend is read-only)
         if (UserManager.getUserProvider().isReadOnly()) {
@@ -120,8 +108,7 @@ public class AddUser extends AdHocCommand {
         note.setText("Operation finished successfully");
     }
 
-    @Override
-	protected void addStageInformation(SessionData data, Element command) {
+    protected void addStageInformation(SessionData data, Element command) {
         DataForm form = new DataForm(DataForm.Type.form);
         form.setTitle("Adding a user");
         form.addInstruction("Fill out this form to add a user.");
@@ -166,18 +153,15 @@ public class AddUser extends AdHocCommand {
         command.add(form.getElement());
     }
 
-    @Override
-	protected List<Action> getActions(SessionData data) {
+    protected List<Action> getActions(SessionData data) {
         return Arrays.asList(AdHocCommand.Action.complete);
     }
 
-    @Override
-	protected AdHocCommand.Action getExecuteAction(SessionData data) {
+    protected AdHocCommand.Action getExecuteAction(SessionData data) {
         return AdHocCommand.Action.complete;
     }
 
-    @Override
-	public boolean hasPermission(JID requester) {
+    public boolean hasPermission(JID requester) {
         return (super.hasPermission(requester) || InternalComponentManager.getInstance().hasComponent(requester))
                 && !UserManager.getUserProvider().isReadOnly();
     }

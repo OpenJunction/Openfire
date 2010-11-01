@@ -4,34 +4,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.nio;
-
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
-import java.security.KeyStore;
-import java.security.cert.Certificate;
-
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.TrustManager;
 
 import org.apache.mina.common.ByteBuffer;
 import org.apache.mina.common.IoFilterChain;
@@ -43,18 +21,21 @@ import org.jivesoftware.openfire.Connection;
 import org.jivesoftware.openfire.ConnectionCloseListener;
 import org.jivesoftware.openfire.PacketDeliverer;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
-import org.jivesoftware.openfire.net.ClientTrustManager;
-import org.jivesoftware.openfire.net.SSLConfig;
-import org.jivesoftware.openfire.net.SSLJiveKeyManagerFactory;
-import org.jivesoftware.openfire.net.SSLJiveTrustManagerFactory;
-import org.jivesoftware.openfire.net.ServerTrustManager;
+import org.jivesoftware.openfire.net.*;
 import org.jivesoftware.openfire.session.LocalSession;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.XMLWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.Packet;
+
+import javax.net.ssl.*;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 
 /**
  * Implementation of {@link Connection} inteface specific for NIO connections when using
@@ -65,8 +46,6 @@ import org.xmpp.packet.Packet;
  * @author Gaston Dombiak
  */
 public class NIOConnection implements Connection {
-
-	private static final Logger Log = LoggerFactory.getLogger(NIOConnection.class);
 
     /**
      * The utf-8 charset for decoding and encoding XMPP packet streams.
@@ -99,7 +78,7 @@ public class NIOConnection implements Connection {
      * Compression policy currently in use for this connection.
      */
     private CompressionPolicy compressionPolicy = CompressionPolicy.disabled;
-    private static ThreadLocal<CharsetEncoder> encoder = new ThreadLocalEncoder();
+    private static ThreadLocal encoder = new ThreadLocalEncoder();
     /**
      * Flag that specifies if the connection should be considered closed. Closing a NIO connection
      * is an asynch operation so instead of waiting for the connection to be actually closed just
@@ -253,7 +232,7 @@ public class NIOConnection implements Connection {
             boolean errorDelivering = false;
             try {
                 XMLWriter xmlSerializer =
-                        new XMLWriter(new ByteBufferWriter(buffer, encoder.get()), new OutputFormat());
+                        new XMLWriter(new ByteBufferWriter(buffer, (CharsetEncoder) encoder.get()), new OutputFormat());
                 xmlSerializer.write(packet.getElement());
                 xmlSerializer.flush();
                 if (flashClient) {
@@ -435,18 +414,14 @@ public class NIOConnection implements Connection {
         this.tlsPolicy = tlsPolicy;
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return super.toString() + " MINA Session: " + ioSession;
     }
 
-    private static class ThreadLocalEncoder extends ThreadLocal<CharsetEncoder> {
+    private static class ThreadLocalEncoder extends ThreadLocal {
 
-        @Override
-		protected CharsetEncoder initialValue() {
-            return Charset.forName(CHARSET).newEncoder()
-				.onMalformedInput(CodingErrorAction.REPORT)
-				.onUnmappableCharacter(CodingErrorAction.REPORT);
+        protected Object initialValue() {
+            return Charset.forName(CHARSET).newEncoder();
         }
     }
 }

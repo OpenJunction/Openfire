@@ -5,35 +5,19 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.util.cache;
+
+import org.jivesoftware.util.LinkedListNode;
+import org.jivesoftware.util.Log;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-
-import org.jivesoftware.util.LinkedListNode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 /**
  * Default, non-distributed implementation of the Cache interface.
@@ -61,8 +45,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class DefaultCache<K, V> implements Cache<K, V> {
-
-	private static final Logger Log = LoggerFactory.getLogger(DefaultCache.class);
 
     /**
      * The map the keys and values are stored in.
@@ -584,7 +566,7 @@ public class DefaultCache<K, V> implements Cache<K, V> {
                 size = out.size();
             }
             catch (IOException ioe) {
-                Log.error(ioe.getMessage(), ioe);
+                Log.error(ioe);
             }
             return size;
         }
@@ -642,19 +624,13 @@ public class DefaultCache<K, V> implements Cache<K, V> {
 
         // See if the cache size is within 3% of being too big. If so, clean out
         // cache until it's 10% free.
-        int desiredSize = (int)(maxCacheSize * .97);
-        if (cacheSize >= desiredSize) {
+        if (cacheSize >= maxCacheSize * .97) {
             // First, delete any old entries to see how much memory that frees.
             deleteExpiredEntries();
-            desiredSize = (int)(maxCacheSize * .90);
-            if (cacheSize > desiredSize) {
-                long t = System.currentTimeMillis();
-                do {
-                    // Get the key and invoke the remove method on it.
-                    remove(lastAccessedList.getLast().object);
-                } while (cacheSize > desiredSize);
-                t = System.currentTimeMillis() - t;
-                Log.warn("Cache " + name + " was full, shrinked to 90% in " + t + "ms.");
+            int desiredSize = (int)(maxCacheSize * .90);
+            while (cacheSize > desiredSize) {
+                // Get the key and invoke the remove method on it.
+                remove(lastAccessedList.getLast().object);
             }
         }
     }
@@ -721,18 +697,15 @@ public class DefaultCache<K, V> implements Cache<K, V> {
 
         int size = 0;
 
-        @Override
-		public void write(int b) throws IOException {
+        public void write(int b) throws IOException {
             size++;
         }
 
-        @Override
-		public void write(byte[] b) throws IOException {
+        public void write(byte[] b) throws IOException {
             size += b.length;
         }
 
-        @Override
-		public void write(byte[] b, int off, int len) {
+        public void write(byte[] b, int off, int len) {
             size += len;
         }
 

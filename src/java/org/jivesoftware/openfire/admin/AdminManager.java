@@ -4,32 +4,19 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.admin;
+
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.util.*;
+import org.xmpp.packet.JID;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.util.ClassUtils;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
 
 /**
  * The AdminManager manages the AdminProvider configured for this server, caches knowledge of
@@ -45,8 +32,6 @@ import org.xmpp.packet.JID;
  * @author Daniel Henninger
  */
 public class AdminManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(AdminManager.class);
 
     // Wrap this guy up so we can mock out the AdminManager class.
     private static class AdminManagerContainer {

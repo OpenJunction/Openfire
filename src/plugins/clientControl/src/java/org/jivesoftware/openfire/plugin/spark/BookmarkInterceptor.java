@@ -1,25 +1,15 @@
 /**
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin.spark;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import org.dom4j.Element;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.openfire.group.Group;
 import org.jivesoftware.openfire.group.GroupManager;
 import org.jivesoftware.openfire.group.GroupNotFoundException;
@@ -29,11 +19,12 @@ import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
+
+import java.util.Collection;
+import java.util.Iterator;
 
 /**
  * Intercepts Bookmark Storage requests and appends all server based Bookmarks to
@@ -42,8 +33,6 @@ import org.xmpp.packet.Packet;
  * @author Derek DeMoro
  */
 public class BookmarkInterceptor implements PacketInterceptor {
-
-	private static final Logger Log = LoggerFactory.getLogger(BookmarkInterceptor.class);
 
     /**
      * Initializes the BookmarkInterceptor and needed Server instances.
@@ -141,7 +130,7 @@ public class BookmarkInterceptor implements PacketInterceptor {
                     }
                 }
                 catch (GroupNotFoundException e) {
-                    Log.debug(e.getMessage(), e);
+                    Log.debug(e);
                 }
             }
         }
@@ -203,7 +192,7 @@ public class BookmarkInterceptor implements PacketInterceptor {
 
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }
@@ -227,9 +216,9 @@ public class BookmarkInterceptor implements PacketInterceptor {
     private static Element urlExists(Element element, String url) {
         // Iterate through current elements to see if this url already exists.
         // If one does not exist, then add the bookmark.
-        final Iterator<Element> urlBookmarks = element.elementIterator("url");
+        final Iterator urlBookmarks = element.elementIterator("url");
         while (urlBookmarks.hasNext()) {
-            Element urlElement = urlBookmarks.next();
+            Element urlElement = (Element)urlBookmarks.next();
             String urlValue = urlElement.attributeValue("url");
             if (urlValue.equalsIgnoreCase(url)) {
                 return urlElement;
@@ -249,9 +238,9 @@ public class BookmarkInterceptor implements PacketInterceptor {
     private Element conferenceExists(Element element, String roomJID) {
         // Iterate through current elements to see if the conference bookmark
         // already exists.
-        final Iterator<Element> conferences = element.elementIterator("conference");
+        final Iterator conferences = element.elementIterator("conference");
         while (conferences.hasNext()) {
-            final Element conferenceElement = conferences.next();
+            final Element conferenceElement = (Element)conferences.next();
             String jidValue = conferenceElement.attributeValue("jid");
 
             if (jidValue != null && roomJID != null && jidValue.equalsIgnoreCase(roomJID)) {

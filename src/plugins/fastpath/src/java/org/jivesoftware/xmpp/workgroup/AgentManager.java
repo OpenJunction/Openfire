@@ -4,43 +4,27 @@
  *
  * Copyright (C) 2004-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
+
+import org.jivesoftware.xmpp.workgroup.utils.FastpathConstants;
+import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.database.SequenceManager;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.group.Group;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.JID;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.database.SequenceManager;
-import org.jivesoftware.openfire.group.Group;
-import org.jivesoftware.xmpp.workgroup.utils.FastpathConstants;
-import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.packet.JID;
+import java.util.*;
 
 /**
  * <p>Simple agent manager implementation without caching or intelligent/lazy loading of data.</p>
@@ -51,8 +35,6 @@ import org.xmpp.packet.JID;
  * @author Derek DeMoro
  */
 public class AgentManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(AgentManager.class);
 
     private static final String LOAD_AGENTS =
             "SELECT agentID FROM fpAgent";
@@ -131,7 +113,7 @@ public class AgentManager {
         return Collections.unmodifiableList(new ArrayList<Agent>(agents.values()));
     }
 
-    public Iterator<Agent> getAgents(WorkgroupResultFilter filter) {
+    public Iterator getAgents(WorkgroupResultFilter filter) {
         return filter.filter(agents.values().iterator());
     }
 
@@ -197,7 +179,7 @@ public class AgentManager {
                 pstmt.executeUpdate();
             }
             catch (SQLException sqle) {
-                Log.error(sqle.getMessage(), sqle);
+                Log.error(sqle);
             }
             finally {
                 DbConnectionManager.closeConnection(pstmt, con);
@@ -279,7 +261,7 @@ public class AgentManager {
             deleteAgent(agent.getAgentJID());
         }
         catch (IllegalArgumentException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -311,7 +293,7 @@ public class AgentManager {
             return true;
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -333,7 +315,7 @@ public class AgentManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

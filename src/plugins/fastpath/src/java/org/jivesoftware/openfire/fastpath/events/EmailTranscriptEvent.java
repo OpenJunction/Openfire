@@ -5,20 +5,28 @@
  *
  * Copyright (C) 1999-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.events;
+
+import org.jivesoftware.openfire.fastpath.history.AgentChatSession;
+import org.jivesoftware.openfire.fastpath.history.ChatSession;
+import org.jivesoftware.openfire.fastpath.history.ChatTranscriptManager;
+import org.jivesoftware.xmpp.workgroup.AgentSession;
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventDispatcher;
+import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventListener;
+import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
+import org.jivesoftware.openfire.user.User;
+import org.jivesoftware.openfire.user.UserManager;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.util.EmailService;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.xmpp.packet.JID;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -27,31 +35,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.jivesoftware.openfire.fastpath.history.AgentChatSession;
-import org.jivesoftware.openfire.fastpath.history.ChatSession;
-import org.jivesoftware.openfire.fastpath.history.ChatTranscriptManager;
-import org.jivesoftware.openfire.user.User;
-import org.jivesoftware.openfire.user.UserManager;
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.EmailService;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.xmpp.workgroup.AgentSession;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventDispatcher;
-import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventListener;
-import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
-
 /**
  * EmailTranscriptEvent sends emails to specified users on end of chat events.
  *
  * @author Derek DeMoro
  */
 public class EmailTranscriptEvent implements WorkgroupEventListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(EmailTranscriptEvent.class);
 
     public EmailTranscriptEvent() {
         WorkgroupEventDispatcher.addListener(this);
@@ -159,8 +148,8 @@ public class EmailTranscriptEvent implements WorkgroupEventListener {
 
         // Send to Agents
         UserManager um = UserManager.getInstance();
-        for (Iterator<AgentChatSession> iterator = chatSession.getAgents(); iterator.hasNext();) {
-            AgentChatSession agentSession = iterator.next();
+        for (Iterator iterator = chatSession.getAgents(); iterator.hasNext();) {
+            AgentChatSession agentSession = (AgentChatSession)iterator.next();
             try {
                 User user = um.getUser(new JID(agentSession.getAgentJID()).getNode());
                 emailService.sendMessage("Chat Transcript", user.getEmail(), "Chat Transcript", from, subject, builder.toString(), null);
@@ -203,8 +192,9 @@ public class EmailTranscriptEvent implements WorkgroupEventListener {
     private int getChatDuration(Date start, ChatSession session) {
         long startTime = start.getTime();
         long end = startTime;
-        List<AgentChatSession> agents = session.getAgentList();
-        for (AgentChatSession chatSession : agents) {
+        List agents = session.getAgentList();
+        for (Iterator iterator = agents.iterator(); iterator.hasNext();) {
+            AgentChatSession chatSession = (AgentChatSession)iterator.next();
             if (end < chatSession.getEndTime()) {
                 end = chatSession.getEndTime();
             }

@@ -1,41 +1,28 @@
 /**
- * Copyright (C) 2004-2009 Jive Software. All rights reserved.
+ * $Revision$
+ * $Date$
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution.
  */
-
 package org.jivesoftware.openfire.webdav;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Base64;
+import org.jivesoftware.openfire.auth.AuthFactory;
+import org.jivesoftware.openfire.XMPPServer;
+import org.xmpp.packet.JID;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.auth.AuthFactory;
-import org.jivesoftware.util.Base64;
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
+import javax.servlet.ServletException;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletInputStream;
+import java.io.*;
 
 /**
  * This is a work in progress and is checked in for future use.
@@ -56,8 +43,6 @@ import org.xmpp.packet.JID;
  * @author Daniel Henninger
  */
 public class WebDAVLiteServlet extends HttpServlet {
-
-	private static final Logger Log = LoggerFactory.getLogger(WebDAVLiteServlet.class);
 
     // Storage directory under the Openfire install root
     private static String WEBDAV_SUBDIR = "mucFiles";
@@ -244,7 +229,7 @@ public class WebDAVLiteServlet extends HttpServlet {
             // File listing
             response.setStatus(HttpServletResponse.SC_OK);
             response.setContentType("text/plain");
-            response.setCharacterEncoding("UTF-8");
+            response.setCharacterEncoding("utf-8");
             String content = "Files available for "+room+"@"+service+":\n";
             File fileDir = getFileReference(service, room, null);
             Log.debug("WebDAVListServlet: File path = "+fileDir.getAbsolutePath());

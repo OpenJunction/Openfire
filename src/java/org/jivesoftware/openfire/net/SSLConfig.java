@@ -5,21 +5,22 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
 
+import org.jivesoftware.util.CertificateEventListener;
+import org.jivesoftware.util.CertificateManager;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -30,25 +31,12 @@ import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.TrustManagerFactory;
-
-import org.jivesoftware.util.CertificateEventListener;
-import org.jivesoftware.util.CertificateManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Configuration of Openfire's SSL settings.
  *
  * @author Iain Shigeoka
  */
 public class SSLConfig {
-
-	private static final Logger Log = LoggerFactory.getLogger(SSLConfig.class);
 
     private static SSLServerSocketFactory s2sFactory;
     private static SSLServerSocketFactory c2sFactory;
@@ -74,6 +62,7 @@ public class SSLConfig {
     }
 
     static {
+        String algorithm = JiveGlobals.getProperty("xmpp.socket.ssl.algorithm", "TLS");
         storeType = JiveGlobals.getProperty("xmpp.socket.ssl.storeType", "jks");
 
         // Get the keystore location. The default location is security/keystore
@@ -102,29 +91,24 @@ public class SSLConfig {
         s2sTrustpass = JiveGlobals.getProperty("xmpp.socket.ssl.trustpass", "changeit");
         s2sTrustpass = s2sTrustpass.trim();
 
-        // Load s2s keystore
+	    // Load s2s keystore and trusstore
         try {
             keyStore = KeyStore.getInstance(storeType);
             keyStore.load(new FileInputStream(keyStoreLocation), keypass.toCharArray());
+
+            s2sTrustStore = KeyStore.getInstance(storeType);
+            s2sTrustStore.load(new FileInputStream(s2sTrustStoreLocation), s2sTrustpass.toCharArray());
+
+
         }
         catch (Exception e) {
             Log.error("SSLConfig startup problem.\n" +
                     "  storeType: [" + storeType + "]\n" +
                     "  keyStoreLocation: [" + keyStoreLocation + "]\n" +
-                    "  keypass: [" + keypass + "]\n", e);
-            keyStore = null;
-            s2sFactory = null;
-        }
-        // Load s2s trusstore
-        try {
-            s2sTrustStore = KeyStore.getInstance(storeType);
-            s2sTrustStore.load(new FileInputStream(s2sTrustStoreLocation), s2sTrustpass.toCharArray());
-        }
-        catch (Exception e) {
-            Log.error("SSLConfig startup problem.\n" +
-                    "  storeType: [" + storeType + "]\n" +
+                    "  keypass: [" + keypass + "]\n" +
                     "  s2sTrustStoreLocation: [" + s2sTrustStoreLocation + "]\n" +
                     "  s2sTrustpass: [" + s2sTrustpass + "]\n", e); 
+            keyStore = null;
             s2sTrustStore = null;
             s2sFactory = null;
         }
@@ -331,22 +315,9 @@ public class SSLConfig {
      */
     public static void saveStores() throws IOException {
         try {
-            File keyStoreDirectory = new File(keyStoreLocation).getParentFile();
-            if (!keyStoreDirectory.exists())
-                keyStoreDirectory.mkdirs();
             keyStore.store(new FileOutputStream(keyStoreLocation), keypass.toCharArray());
-
-            if (s2sTrustStore != null) {
-                File s2sTrustStoreDirectory = new File(s2sTrustStoreLocation).getParentFile();
-                if (!s2sTrustStoreDirectory.exists())
-                    s2sTrustStoreDirectory.mkdirs();
-                s2sTrustStore.store(new FileOutputStream(s2sTrustStoreLocation), s2sTrustpass.toCharArray());
-            }
-
-            if (c2sTrustStore != null && c2sTrustStore != s2sTrustStore) {
-                File c2sTrustStoreDirectory = new File(c2sTrustStoreLocation).getParentFile();
-                if (!c2sTrustStoreDirectory.exists())
-                    c2sTrustStoreDirectory.mkdirs();
+            s2sTrustStore.store(new FileOutputStream(s2sTrustStoreLocation), s2sTrustpass.toCharArray());
+            if (c2sTrustStore != s2sTrustStore) {
                 c2sTrustStore.store(new FileOutputStream(c2sTrustStoreLocation), c2sTrustpass.toCharArray());
             }
         }

@@ -5,39 +5,27 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.routing;
+
+import org.jivesoftware.xmpp.workgroup.RequestQueue;
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.xmpp.workgroup.request.UserRequest;
+import org.jivesoftware.xmpp.workgroup.spi.routers.WordMatchRouter;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.NotFoundException;
+import org.xmpp.component.ComponentManagerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.util.NotFoundException;
-import org.jivesoftware.xmpp.workgroup.RequestQueue;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.request.UserRequest;
-import org.jivesoftware.xmpp.workgroup.spi.routers.WordMatchRouter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 /**
  * Provides a registration and event processing for all <code>RequestRouter</code>s.
@@ -46,8 +34,6 @@ import org.slf4j.LoggerFactory;
  */
 public final class RoutingManager {
 
-	private static final Logger Log = LoggerFactory.getLogger(RoutingManager.class);
-	
     private static final String ADD_ROUTING_RULE =
             "INSERT INTO fpRouteRule (workgroupID, queueID, rulePosition, query) VALUES (?,?,?,?)";
     private static final String DELETE_ROUTING_RULE =
@@ -98,7 +84,7 @@ public final class RoutingManager {
                     return workgroup.getRequestQueue(rule.getQueueID());
                 }
                 catch (NotFoundException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }
@@ -149,7 +135,7 @@ public final class RoutingManager {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -177,7 +163,7 @@ public final class RoutingManager {
             pstmt.execute();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -203,7 +189,7 @@ public final class RoutingManager {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -237,7 +223,7 @@ public final class RoutingManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

@@ -5,33 +5,24 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc.cluster;
-
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.muc.MultiUserChatService;
 import org.jivesoftware.openfire.muc.spi.LocalMUCRoom;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.ClusterTask;
 import org.jivesoftware.util.cache.ExternalizableUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 
 /**
  * Task related to a room to be executed in a cluster node. This is a base
@@ -41,9 +32,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 public abstract class MUCRoomTask implements ClusterTask {
-	
-	private static final Logger Log = LoggerFactory.getLogger(MUCRoomTask.class);
-
     private boolean originator;
     private String roomName;
     private String subdomain;
@@ -92,7 +80,7 @@ public abstract class MUCRoomTask implements ClusterTask {
             }
             else {
                 // Task failed since room was not found
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }

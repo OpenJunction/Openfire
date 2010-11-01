@@ -4,31 +4,11 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.muc;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.database.SequenceManager;
@@ -38,12 +18,7 @@ import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.container.BasicModule;
 import org.jivesoftware.openfire.event.UserEventDispatcher;
 import org.jivesoftware.openfire.event.UserEventListener;
-import org.jivesoftware.openfire.muc.cluster.GetNewMemberRoomsRequest;
-import org.jivesoftware.openfire.muc.cluster.OccupantAddedEvent;
-import org.jivesoftware.openfire.muc.cluster.RoomInfo;
-import org.jivesoftware.openfire.muc.cluster.SeniorMemberServicesRequest;
-import org.jivesoftware.openfire.muc.cluster.ServiceInfo;
-import org.jivesoftware.openfire.muc.cluster.ServiceUpdatedEvent;
+import org.jivesoftware.openfire.muc.cluster.*;
 import org.jivesoftware.openfire.muc.spi.LocalMUCRoom;
 import org.jivesoftware.openfire.muc.spi.MUCPersistenceManager;
 import org.jivesoftware.openfire.muc.spi.MUCServicePropertyEventListener;
@@ -51,16 +26,15 @@ import org.jivesoftware.openfire.muc.spi.MultiUserChatServiceImpl;
 import org.jivesoftware.openfire.stats.Statistic;
 import org.jivesoftware.openfire.stats.StatisticsManager;
 import org.jivesoftware.openfire.user.User;
-import org.jivesoftware.util.AlreadyExistsException;
-import org.jivesoftware.util.JiveConstants;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.NotFoundException;
+import org.jivesoftware.util.*;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.component.ComponentException;
 import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
+
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Provides centralized management of all configured Multi User Chat (MUC) services.
@@ -69,8 +43,6 @@ import org.xmpp.packet.JID;
  */
 public class MultiUserChatManager extends BasicModule implements ClusterEventListener, MUCServicePropertyEventListener,
         UserEventListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(MultiUserChatManager.class);
 
     private static final String LOAD_SERVICES = "SELECT subdomain,description,isHidden FROM ofMucService";
     private static final String CREATE_SERVICE = "INSERT INTO ofMucService(serviceID,subdomain,description,isHidden) VALUES(?,?,?,?)";
@@ -101,8 +73,7 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
     /**
      * Called when manager starts up, to initialize things.
      */
-    @Override
-	public void start() {
+    public void start() {
         super.start();
 
         loadServices();
@@ -125,8 +96,7 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
     /**
      * Called when manager is stopped, to clean things up.
      */
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
 
         ClusterManager.removeListener(this);
@@ -156,9 +126,9 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
      */
     public void registerMultiUserChatService(MultiUserChatService service) {
         Log.debug("MultiUserChatManager: Registering MUC service "+service.getServiceName());
+        mucServices.put(service.getServiceName(), service);
         try {
             ComponentManagerFactory.getComponentManager().addComponent(service.getServiceName(), service);
-            mucServices.put(service.getServiceName(), service);
         }
         catch (ComponentException e) {
             Log.error("MultiUserChatManager: Unable to add "+service.getServiceName()+" as component.", e);
@@ -216,8 +186,8 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
      */
     public MultiUserChatServiceImpl createMultiUserChatService(String subdomain, String description, Boolean isHidden) throws AlreadyExistsException {
         if (getMultiUserChatServiceID(subdomain) != null) throw new AlreadyExistsException();
-        MultiUserChatServiceImpl muc = new MultiUserChatServiceImpl(subdomain, description, isHidden);
         insertService(subdomain, description, isHidden);
+        MultiUserChatServiceImpl muc = new MultiUserChatServiceImpl(subdomain, description, isHidden);
         registerMultiUserChatService(muc);
         return muc;
     }
@@ -409,11 +379,10 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
     private void loadServices() {
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         try {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(LOAD_SERVICES);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 String subdomain = rs.getString(1);
                 String description = rs.getString(2);
@@ -421,12 +390,16 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
                 MultiUserChatServiceImpl muc = new MultiUserChatServiceImpl(subdomain, description, isHidden);
                 mucServices.put(subdomain, muc);
             }
+            rs.close();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            try { if (pstmt != null) { pstmt.close(); } }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -438,25 +411,28 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
     private long loadServiceID(String subdomain) {
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         Long id = (long)-1;
         try {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(LOAD_SERVICE_ID);
             pstmt.setString(1, subdomain);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 id = rs.getLong(1);
             }
             else {
                 throw new Exception("Unable to locate Service ID for subdomain "+subdomain);
             }
+            rs.close();
         }
         catch (Exception e) {
             // No problem, considering this as a "not found".
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            try { if (pstmt != null) { pstmt.close(); } }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
         return id;
     }
@@ -469,25 +445,28 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
     private String loadServiceSubdomain(Long serviceID) {
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         String subdomain = null;
         try {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(LOAD_SUBDOMAIN);
             pstmt.setLong(1, serviceID);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 subdomain = rs.getString(1);
             }
             else {
                 throw new Exception("Unable to locate subdomain for service ID "+serviceID);
             }
+            rs.close();
         }
         catch (Exception e) {
             // No problem, considering this as a "not found".
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            try { if (pstmt != null) { pstmt.close(); } }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
         return subdomain;
     }
@@ -517,10 +496,13 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) { pstmt.close(); } }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -547,10 +529,13 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) { pstmt.close(); } }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -568,10 +553,13 @@ public class MultiUserChatManager extends BasicModule implements ClusterEventLis
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) { pstmt.close(); } }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
     }
 

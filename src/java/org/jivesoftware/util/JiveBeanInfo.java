@@ -1,37 +1,21 @@
 /**
  * $RCSfile$
- * $Revision: 11388 $
- * $Date: 2009-11-08 16:26:55 -0800 (Sun, 08 Nov 2009) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
-import java.beans.BeanDescriptor;
-import java.beans.BeanInfo;
-import java.beans.EventSetDescriptor;
-import java.beans.IntrospectionException;
-import java.beans.MethodDescriptor;
-import java.beans.PropertyDescriptor;
+import java.beans.*;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * An abstract BeanInfo implementation that automatically constructs
@@ -41,8 +25,6 @@ import org.slf4j.LoggerFactory;
  * @see java.beans.BeanInfo
  */
 public abstract class JiveBeanInfo implements BeanInfo {
-
-	private static final Logger Log = LoggerFactory.getLogger(JiveBeanInfo.class);
 
     private ResourceBundle bundle;
 
@@ -133,7 +115,7 @@ public abstract class JiveBeanInfo implements BeanInfo {
             return descriptors;
         }
         catch (IntrospectionException ie) {
-            Log.error(ie.getMessage(), ie);
+            Log.error(ie);
             throw new Error(ie.toString());
         }
     }

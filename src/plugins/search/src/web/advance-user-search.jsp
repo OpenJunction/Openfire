@@ -105,7 +105,6 @@
         <th nowrap><fmt:message key="advance.user.search.username" /></th>
         <th nowrap><fmt:message key="advance.user.search.name" /></th>
         <th nowrap><fmt:message key="advance.user.search.created" /></th>
-        <th nowrap><fmt:message key="advance.user.search.last-logout" /></th>
         <%  // Don't allow editing or deleting if users are read-only.
             if (!UserManager.getUserProvider().isReadOnly()) { %>
         <th nowrap><fmt:message key="advance.user.search.edit" /></th>
@@ -117,7 +116,7 @@
 
     <% if (users.isEmpty()) { %>
     <tr>
-        <td align="center" colspan="8"><fmt:message key="advance.user.search.no_users" /></td>
+        <td align="center" colspan="7"><fmt:message key="advance.user.search.no_users" /></td>
     </tr>
     
     <%
@@ -160,24 +159,15 @@
            }
         %>
        </td>
-       <td width="23%">
+       <td width="30%">
            <a href="../../user-properties.jsp?username=<%= URLEncoder.encode(user.getUsername(), "UTF-8") %>"><%= JID.unescapeNode(user.getUsername()) %></a>
        </td>
-       <td width="33">
+       <td width="35">
            <%= user.getName() %> &nbsp;
        </td>
-       <td width="15%">
+       <td width="35%">
            <%= JiveGlobals.formatDate(user.getCreationDate()) %> &nbsp;
        </td>
-        <td width="25%">
-            <% long logoutTime = presenceManager.getLastActivity(user);
-                if (logoutTime > -1) {
-                    out.println(StringUtils.getElapsedTime(logoutTime));
-                }
-                else {
-                    out.println("&nbsp;");
-                } %>
-        </td>
         <%  // Don't allow editing or deleting if users are read-only.
             if (!UserManager.getUserProvider().isReadOnly()) { %>
        <td width="1%" align="center">

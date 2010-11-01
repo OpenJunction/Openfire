@@ -5,22 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
-
-import gnu.inet.encoding.StringprepException;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.IQHandlerInfo;
@@ -32,8 +22,8 @@ import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.event.SessionEventDispatcher;
 import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.openfire.session.LocalClientSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.stringprep.StringprepException;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
@@ -53,8 +43,6 @@ import org.xmpp.packet.StreamError;
  */
 public class IQBindHandler extends IQHandler {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQBindHandler.class);
-
     private IQHandlerInfo info;
     private String serverName;
     private RoutingTable routingTable;
@@ -64,8 +52,7 @@ public class IQBindHandler extends IQHandler {
         info = new IQHandlerInfo("bind", "urn:ietf:params:xml:ns:xmpp-bind");
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException {
         LocalClientSession session = (LocalClientSession) sessionManager.getSession(packet.getFrom());
         // If no session was found then answer an error (if possible)
         if (session == null) {
@@ -162,15 +149,13 @@ public class IQBindHandler extends IQHandler {
         return null;
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         routingTable = server.getRoutingTable();
         serverName = server.getServerInfo().getXMPPDomain();
      }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 }

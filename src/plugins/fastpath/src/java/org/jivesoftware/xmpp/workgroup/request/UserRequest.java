@@ -5,50 +5,36 @@
  *
  * Copyright (C) 2004-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.request;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.QName;
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.util.NotFoundException;
-import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.xmpp.workgroup.AgentSession;
 import org.jivesoftware.xmpp.workgroup.RequestQueue;
 import org.jivesoftware.xmpp.workgroup.UserCommunicationMethod;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.chatbot.ChatbotSession;
 import org.jivesoftware.xmpp.workgroup.spi.WorkgroupCompatibleClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.dom4j.QName;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.NotFoundException;
+import org.jivesoftware.util.StringUtils;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.forms.DataForm;
 import org.xmpp.forms.FormField;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Requests made by users to get support by some agent.
@@ -57,8 +43,6 @@ import org.xmpp.packet.JID;
  */
 public class UserRequest extends Request {
 
-	private static final Logger Log = LoggerFactory.getLogger(UserRequest.class);
-	
     private static final String INSERT_SESSION =
             "INSERT INTO fpSession(sessionID, userID, workgroupID, state, queueWaitTime, " +
             "startTime, endTime) values(?,?,?,?,?,?,?)";
@@ -117,7 +101,7 @@ public class UserRequest extends Request {
             }
         }
         if (request == null) {
-            Log.debug("Request not found for " +
+            ComponentManagerFactory.getComponentManager().getLog().debug("Request not found for " +
                     address.toString());
             throw new NotFoundException();
         }
@@ -134,9 +118,9 @@ public class UserRequest extends Request {
         // compatible client
         this.communicationMethod = WorkgroupCompatibleClient.getInstance();
 
-        Iterator<Element> elementIter = packet.getChildElement().elementIterator();
+        Iterator elementIter = packet.getChildElement().elementIterator();
         while (elementIter.hasNext()) {
-            Element element = elementIter.next();
+            Element element = (Element)elementIter.next();
             if ("queue-notifications".equals(element.getName())) {
                 setNotify(true);
             }
@@ -148,8 +132,8 @@ public class UserRequest extends Request {
                 }
             }
             else if ("metadata".equals(element.getName())) {
-                for (Iterator<Element> i = element.elementIterator(); i.hasNext();) {
-                    Element item = i.next();
+                for (Iterator i = element.elementIterator(); i.hasNext();) {
+                    Element item = (Element)i.next();
                     if ("value".equals(item.getName())) {
                         String name = item.attributeValue("name");
                         if (name != null) {
@@ -210,12 +194,11 @@ public class UserRequest extends Request {
             communicationMethod.notifyQueueStatus(workgroup.getJID(), userJID, this, isPolling);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 
-    @Override
-	public void checkRequest(String roomID) {
+    public void checkRequest(String roomID) {
         if (getInvitationSentTime() != null && !hasJoinedRoom()) {
             checkInvitation(roomID);
         }
@@ -277,8 +260,7 @@ public class UserRequest extends Request {
         return timeStatus;
     }
 
-    @Override
-	public JID getUserJID() {
+    public JID getUserJID() {
         return userJID;
     }
 
@@ -350,8 +332,7 @@ public class UserRequest extends Request {
         communicationMethod.supportEnded(this);
     }
 
-    @Override
-	public void userJoinedRoom(JID roomJID, JID user) {
+    public void userJoinedRoom(JID roomJID, JID user) {
         // Notify related requests that new a occupant has joined the room
         for (Request request : relatedRequests) {
             request.userJoinedRoom(roomJID, user);
@@ -380,8 +361,7 @@ public class UserRequest extends Request {
         relatedRequests.remove(request);
     }
 
-    @Override
-	public void cancel(Request.CancelType type) {
+    public void cancel(Request.CancelType type) {
         super.cancel(type);
 
         JID sender = workgroup.getJID();
@@ -394,12 +374,11 @@ public class UserRequest extends Request {
             communicationMethod.notifyQueueDepartued(sender, userJID, this, type);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 
-    @Override
-	void addOfferContent(Element offerElement) {
+    void addOfferContent(Element offerElement) {
         // Flag the offer as a user request
         offerElement.addElement("user-request");
         // Add custom extension that includes the userID if the session belongs to an
@@ -410,8 +389,7 @@ public class UserRequest extends Request {
         }
     }
 
-    @Override
-	void addRevokeContent(Element revoke) {
+    void addRevokeContent(Element revoke) {
         // Add custom extension that includes the userID if the session belongs to an
         // anonymous user
         if (isAnonymousUser()) {
@@ -420,8 +398,7 @@ public class UserRequest extends Request {
         }
     }
 
-    @Override
-	public Element getSessionElement() {
+    public Element getSessionElement() {
         QName qName = DocumentHelper.createQName("session", DocumentHelper.createNamespace("", "http://jivesoftware.com/protocol/workgroup"));
         Element sessionElement = DocumentHelper.createElement(qName);
         sessionElement.addAttribute("id", requestID);
@@ -435,8 +412,7 @@ public class UserRequest extends Request {
      *
      * @param agentSession the agent that previously accepted the offer.
      */
-    @Override
-	public void offerAccepted(AgentSession agentSession) {
+    public void offerAccepted(AgentSession agentSession) {
         super.offerAccepted(agentSession);
         // Ask the workgroup to send invitations to the agent and to the user that made the
         // request. The Workgroup will create a MUC room and send invitations to the agent and
@@ -444,8 +420,7 @@ public class UserRequest extends Request {
         getWorkgroup().sendInvitation(agentSession, this);
     }
 
-    @Override
-	public void updateSession(int state, long offerTime) {
+    public void updateSession(int state, long offerTime) {
         boolean inserted = false;
         long queueWaitTime = new Date().getTime() - offerTime;
         String tempDate = StringUtils.dateToMillis(new Date());
@@ -480,7 +455,7 @@ public class UserRequest extends Request {
             }
         }
         catch (Exception ex) {
-            Log.error(
+            ComponentManagerFactory.getComponentManager().getLog().error(
                     "There was an issue handling offer update using sessionID " + requestID, ex);
         }
         finally {
@@ -509,7 +484,7 @@ public class UserRequest extends Request {
             pstmt.close();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
         finally {
             DbConnectionManager.closeConnection(con);

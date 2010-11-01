@@ -1,20 +1,12 @@
 <%--
-  -	$Revision: 11592 $
-  -	$Date: 2010-02-01 07:46:59 -0800 (Mon, 01 Feb 2010) $
+  -	$Revision: 10510 $
+  -	$Date: 2008-06-11 11:42:20 -0700 (Wed, 11 Jun 2008) $
   -
   - Copyright (C) 2004-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="org.jivesoftware.openfire.XMPPServer,
@@ -215,7 +207,7 @@
              <%= ((anonLogin) ? "checked" : "") %>>
             </td>
             <td width="99%">
-                <label for="rb05"><b><fmt:message key="reg.settings.enable" /></b> - <fmt:message key="reg.settings.anyone_login" /></label>
+                <label for="rb03"><b><fmt:message key="reg.settings.enable" /></b> - <fmt:message key="reg.settings.anyone_login" /></label>
             </td>
         </tr>
         <tr>
@@ -224,7 +216,7 @@
              <%= ((!anonLogin) ? "checked" : "") %>>
             </td>
             <td width="99%">
-                <label for="rb06"><b><fmt:message key="reg.settings.disable" /></b> - <fmt:message key="reg.settings.only_registered_login" /></label>
+                <label for="rb04"><b><fmt:message key="reg.settings.disable" /></b> - <fmt:message key="reg.settings.only_registered_login" /></label>
             </td>
         </tr>
     </tbody>

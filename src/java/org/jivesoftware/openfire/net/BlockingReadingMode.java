@@ -5,20 +5,20 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
+
+import com.jcraft.jzlib.JZlib;
+import com.jcraft.jzlib.ZInputStream;
+import org.dom4j.Element;
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -26,16 +26,6 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.AsynchronousCloseException;
-
-import org.dom4j.Element;
-import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserException;
-
-import com.jcraft.jzlib.JZlib;
-import com.jcraft.jzlib.ZInputStream;
 
 /**
  * Process incoming packets using a blocking model. Once a session has been created
@@ -46,8 +36,6 @@ import com.jcraft.jzlib.ZInputStream;
  */
 class BlockingReadingMode extends SocketReadingMode {
 
-	private static final Logger Log = LoggerFactory.getLogger(BlockingReadingMode.class);
-
     public BlockingReadingMode(Socket socket, SocketReader socketReader) {
         super(socket, socketReader);
     }
@@ -56,8 +44,7 @@ class BlockingReadingMode extends SocketReadingMode {
      * A dedicated thread loop for reading the stream and sending incoming
      * packets to the appropriate router.
      */
-    @Override
-	public void run() {
+    public void run() {
         try {
             socketReader.reader.getXPPParser().setInput(new InputStreamReader(
                     ServerTrafficCounter.wrapInputStream(socket.getInputStream()), CHARSET));
@@ -172,8 +159,7 @@ class BlockingReadingMode extends SocketReadingMode {
         }
     }
 
-    @Override
-	protected void tlsNegotiated() throws XmlPullParserException, IOException {
+    protected void tlsNegotiated() throws XmlPullParserException, IOException {
         XmlPullParser xpp = socketReader.reader.getXPPParser();
         // Reset the parser to use the new reader
         xpp.setInput(new InputStreamReader(
@@ -185,8 +171,7 @@ class BlockingReadingMode extends SocketReadingMode {
         super.tlsNegotiated();
     }
 
-    @Override
-	protected void saslSuccessful() throws XmlPullParserException, IOException {
+    protected void saslSuccessful() throws XmlPullParserException, IOException {
         MXParser xpp = socketReader.reader.getXPPParser();
         // Reset the parser since a new stream header has been sent from the client
         xpp.resetInput();
@@ -198,8 +183,7 @@ class BlockingReadingMode extends SocketReadingMode {
         super.saslSuccessful();
     }
 
-    @Override
-	protected boolean compressClient(Element doc) throws XmlPullParserException, IOException {
+    protected boolean compressClient(Element doc) throws XmlPullParserException, IOException {
         boolean answer = super.compressClient(doc);
         if (answer) {
             XmlPullParser xpp = socketReader.reader.getXPPParser();
@@ -220,8 +204,7 @@ class BlockingReadingMode extends SocketReadingMode {
         return answer;
     }
 
-    @Override
-	protected void compressionSuccessful() throws XmlPullParserException, IOException {
+    protected void compressionSuccessful() throws XmlPullParserException, IOException {
         XmlPullParser xpp = socketReader.reader.getXPPParser();
         // Skip the opening stream sent by the client
         for (int eventType = xpp.getEventType(); eventType != XmlPullParser.START_TAG;) {

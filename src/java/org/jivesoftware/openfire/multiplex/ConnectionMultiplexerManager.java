@@ -5,28 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.multiplex;
-
-import java.net.UnknownHostException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jivesoftware.openfire.Connection;
 import org.jivesoftware.openfire.SessionManager;
@@ -39,9 +23,12 @@ import org.jivesoftware.openfire.session.LocalClientSession;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.TaskEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A ConnectionMultiplexerManager is responsible for keeping track of the connected
@@ -52,8 +39,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 public class ConnectionMultiplexerManager implements SessionEventListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(ConnectionMultiplexerManager.class);
 
     private static final ConnectionMultiplexerManager instance = new ConnectionMultiplexerManager();
 
@@ -118,15 +103,14 @@ public class ConnectionMultiplexerManager implements SessionEventListener {
         // Start thread that will send heartbeats to Connection Managers every 30 seconds
         // to keep connections open.
         TimerTask heartbeatTask = new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 try {
                     for (ConnectionMultiplexerSession session : sessionManager.getConnectionMultiplexerSessions()) {
                         session.deliverRawText(" ");
                     }
                 }
                 catch(Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         };
@@ -253,15 +237,13 @@ public class ConnectionMultiplexerManager implements SessionEventListener {
 
     /**
      * Returns a {@link ConnectionMultiplexerSession} for the specified connection manager
-     * domain or <tt>null</tt> if none was found. If a StreamID is passed in, the same connection
-     * will always be used for that StreamID. Otherwise, if the connection manager has many
+     * domain or <tt>null</tt> if none was found. In case the connection manager has many
      * connections established with the server then one of them will be selected randomly.
      *
      * @param connectionManagerDomain the domain of the connection manager to get a session.
-     * @param streamID if provided, the same connection will always be used for a given streamID
      * @return a session to the specified connection manager domain or null if none was found.
      */
-    public ConnectionMultiplexerSession getMultiplexerSession(String connectionManagerDomain,String streamID) {
+    public ConnectionMultiplexerSession getMultiplexerSession(String connectionManagerDomain) {
         List<ConnectionMultiplexerSession> sessions =
                 sessionManager.getConnectionMultiplexerSessions(connectionManagerDomain);
         if (sessions.isEmpty()) {
@@ -270,28 +252,11 @@ public class ConnectionMultiplexerManager implements SessionEventListener {
         else if (sessions.size() == 1) {
             return sessions.get(0);
         }
-        else if (streamID != null) {
-            // Always use the same connection for a given streamID
-            int connectionIndex = Math.abs(streamID.hashCode()) % sessions.size();
-            return sessions.get(connectionIndex);
-        } else {
+        else {
             // Pick a random session so we can distribute traffic evenly
             return sessions.get(randGen.nextInt(sessions.size()));
         }
     }
-
-    /**
-     * Returns a {@link ConnectionMultiplexerSession} for the specified connection manager
-     * domain or <tt>null</tt> if none was found. In case the connection manager has many
-     * connections established with the server then one of them will be selected randomly.
-     *
-     * @param connectionManagerDomain the domain of the connection manager to get a session.
-     * @return a session to the specified connection manager domain or null if none was found.
-     */
-    public ConnectionMultiplexerSession getMultiplexerSession(String connectionManagerDomain) {
-        return getMultiplexerSession(connectionManagerDomain,null);
-    }
-
 
     /**
      * Returns the names of the connected connection managers to this server.
@@ -366,13 +331,11 @@ public class ConnectionMultiplexerManager implements SessionEventListener {
             return id;
         }
 
-        @Override
-		public String toString() {
+        public String toString() {
             return id;
         }
 
-        @Override
-		public int hashCode() {
+        public int hashCode() {
             return id.hashCode();
         }
     }

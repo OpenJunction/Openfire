@@ -1,48 +1,34 @@
 /**
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin.spark;
+
+import org.jivesoftware.openfire.plugin.spark.manager.SparkVersionManager;
+import org.dom4j.Element;
+import org.jivesoftware.openfire.SessionManager;
+import org.jivesoftware.openfire.event.SessionEventDispatcher;
+import org.jivesoftware.openfire.event.SessionEventListener;
+import org.jivesoftware.openfire.session.ClientSession;
+import org.jivesoftware.openfire.session.Session;
+import org.jivesoftware.openfire.stats.StatisticsManager;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.xmpp.component.Component;
+import org.xmpp.component.ComponentException;
+import org.xmpp.component.ComponentManager;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 import java.util.TimerTask;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import org.dom4j.Element;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.event.SessionEventDispatcher;
-import org.jivesoftware.openfire.event.SessionEventListener;
-import org.jivesoftware.openfire.plugin.spark.manager.SparkVersionManager;
-import org.jivesoftware.openfire.session.ClientSession;
-import org.jivesoftware.openfire.session.Session;
-import org.jivesoftware.openfire.stats.StatisticsManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.component.Component;
-import org.xmpp.component.ComponentException;
-import org.xmpp.component.ComponentManager;
-import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.StreamError;
 
 /**
  * Handles querying and notifications of enabled client features within the server, as well
@@ -52,8 +38,6 @@ import org.xmpp.packet.StreamError;
  */
 public class SparkManager implements Component {
 
-	private static final Logger Log = LoggerFactory.getLogger(SparkManager.class);
-	
     private static final String INVALID_DISCONNECTS_KEY = "disconnects";
     private static final String SPARK_CLIENTS_KEY = "spark";
 
@@ -97,7 +81,7 @@ public class SparkManager implements Component {
             componentManager.addComponent(serviceName, this);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
 
         // Add VersionManager. This component is cluster-safe.
@@ -105,7 +89,7 @@ public class SparkManager implements Component {
             componentManager.addComponent(SparkVersionManager.SERVICE_NAME, new SparkVersionManager());
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
 
         // Add SessionListener
@@ -261,7 +245,7 @@ public class SparkManager implements Component {
             componentManager.removeComponent(serviceName);
         }
         catch (ComponentException e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
 
         taskEngine = null;
@@ -323,7 +307,7 @@ public class SparkManager implements Component {
             componentManager.sendPacket(this, packet);
         }
         catch (ComponentException e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
     }
 
@@ -387,8 +371,7 @@ public class SparkManager implements Component {
                 // TODO: A future version may want to close sessions of users that never
                 // TODO: responded the IQ version request.
                 taskEngine.schedule(new TimerTask() {
-                    @Override
-					public void run() {
+                    public void run() {
                         requestSoftwareVersion(session);
                     }
                 }, 5000);
@@ -460,8 +443,7 @@ public class SparkManager implements Component {
 
         // Disconnect user after 5 seconds.
         taskEngine.schedule(new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 // Include the not-authorized error in the response
                 StreamError error = new StreamError(StreamError.Condition.policy_violation);
                 session.deliverRawText(error.toXML());

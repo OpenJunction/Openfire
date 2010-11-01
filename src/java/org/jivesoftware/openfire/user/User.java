@@ -5,20 +5,24 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.user;
+
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.auth.AuthFactory;
+import org.jivesoftware.openfire.event.UserEventDispatcher;
+import org.jivesoftware.openfire.resultsetmanager.Result;
+import org.jivesoftware.openfire.roster.Roster;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.StringUtils;
+import org.jivesoftware.util.cache.CacheSizes;
+import org.jivesoftware.util.cache.Cacheable;
+import org.jivesoftware.util.cache.ExternalizableUtil;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -28,27 +32,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.auth.AuthFactory;
-import org.jivesoftware.openfire.event.UserEventDispatcher;
-import org.jivesoftware.openfire.roster.Roster;
-import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.util.cache.CacheSizes;
-import org.jivesoftware.util.cache.Cacheable;
-import org.jivesoftware.util.cache.ExternalizableUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.resultsetmanagement.Result;
 
 /**
  * Encapsulates information about a user. New users are created using
@@ -61,8 +46,6 @@ import org.xmpp.resultsetmanagement.Result;
  * @author Matt Tucker
  */
 public class User implements Cacheable, Externalizable, Result {
-
-	private static final Logger Log = LoggerFactory.getLogger(User.class);
 
     private static final String LOAD_PROPERTIES =
         "SELECT name, propValue FROM ofUserProp WHERE username=?";
@@ -100,22 +83,25 @@ public class User implements Cacheable, Externalizable, Result {
         String propertyValue = null;
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         try {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(LOAD_PROPERTY);
             pstmt.setString(1, username);
             pstmt.setString(2, propertyName);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 propertyValue = rs.getString(1);
             }
+            rs.close();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
         return propertyValue;
     }
@@ -189,7 +175,7 @@ public class User implements Cacheable, Externalizable, Result {
                     params);
         }
         catch (UserNotFoundException unfe) {
-            Log.error(unfe.getMessage(), unfe);
+            Log.error(unfe);
         }
     }
 
@@ -223,7 +209,7 @@ public class User implements Cacheable, Externalizable, Result {
                     params);
         }
         catch (UserNotFoundException unfe) {
-            Log.error(unfe.getMessage(), unfe);
+            Log.error(unfe);
         }
     }
 
@@ -279,7 +265,7 @@ public class User implements Cacheable, Externalizable, Result {
                     params);
         }
         catch (UserNotFoundException unfe) {
-            Log.error(unfe.getMessage(), unfe);
+            Log.error(unfe);
         }
     }
 
@@ -323,7 +309,7 @@ public class User implements Cacheable, Externalizable, Result {
                     params);
         }
         catch (UserNotFoundException unfe) {
-            Log.error(unfe.getMessage(), unfe);
+            Log.error(unfe);
         }
     }
 
@@ -349,7 +335,7 @@ public class User implements Cacheable, Externalizable, Result {
                     params);
         }
         catch (UserNotFoundException unfe) {
-            Log.error(unfe.getMessage(), unfe);
+            Log.error(unfe);
         }
     }
 
@@ -382,7 +368,7 @@ public class User implements Cacheable, Externalizable, Result {
             return XMPPServer.getInstance().getRosterManager().getRoster(username);
         }
         catch (UserNotFoundException unfe) {
-            Log.error(unfe.getMessage(), unfe);
+            Log.error(unfe);
             return null;
         }
     }
@@ -401,18 +387,15 @@ public class User implements Cacheable, Externalizable, Result {
         return size;
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return username;
     }
 
-    @Override
-	public int hashCode() {
+    public int hashCode() {
         return username.hashCode();
     }
 
-    @Override
-	public boolean equals(Object object) {
+    public boolean equals(Object object) {
         if (this == object) {
             return true;
         }
@@ -429,8 +412,7 @@ public class User implements Cacheable, Externalizable, Result {
      */
     private class PropertiesMap extends AbstractMap {
 
-        @Override
-		public Object put(Object key, Object value) {
+        public Object put(Object key, Object value) {
             Map<String,Object> eventParams = new HashMap<String,Object>();
             Object answer;
             String keyString = (String) key;
@@ -458,8 +440,7 @@ public class User implements Cacheable, Externalizable, Result {
             return answer;
         }
 
-        @Override
-		public Set<Entry> entrySet() {
+        public Set<Entry> entrySet() {
             return new PropertiesEntrySet();
         }
     }
@@ -469,13 +450,11 @@ public class User implements Cacheable, Externalizable, Result {
      */
     private class PropertiesEntrySet extends AbstractSet {
 
-        @Override
-		public int size() {
+        public int size() {
             return properties.entrySet().size();
         }
 
-        @Override
-		public Iterator iterator() {
+        public Iterator iterator() {
             return new Iterator() {
 
                 Iterator iter = properties.entrySet().iterator();
@@ -511,21 +490,24 @@ public class User implements Cacheable, Externalizable, Result {
     private void loadProperties() {
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         try {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(LOAD_PROPERTIES);
             pstmt.setString(1, username);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 properties.put(rs.getString(1), rs.getString(2));
             }
+            rs.close();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -541,10 +523,13 @@ public class User implements Cacheable, Externalizable, Result {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -560,10 +545,13 @@ public class User implements Cacheable, Externalizable, Result {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -578,10 +566,13 @@ public class User implements Cacheable, Externalizable, Result {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -613,5 +604,5 @@ public class User implements Cacheable, Externalizable, Result {
 	public String getUID()
 	{
 		return username;
-	}
+	}    
 }

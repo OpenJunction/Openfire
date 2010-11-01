@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
@@ -27,8 +19,7 @@ import org.jivesoftware.openfire.component.InternalComponentManager;
 import org.jivesoftware.openfire.session.ComponentSession;
 import org.jivesoftware.openfire.session.LocalComponentSession;
 import org.jivesoftware.openfire.session.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmpp.component.ComponentException;
@@ -49,14 +40,11 @@ import org.xmpp.packet.Presence;
  */
 public class ComponentStanzaHandler extends StanzaHandler {
 
-	private static final Logger Log = LoggerFactory.getLogger(ComponentStanzaHandler.class);
-
     public ComponentStanzaHandler(PacketRouter router, String serverName, Connection connection) {
         super(router, serverName, connection);
     }
 
-    @Override
-	boolean processUnknowPacket(Element doc) throws UnauthorizedException {
+    boolean processUnknowPacket(Element doc) throws UnauthorizedException {
         String tag = doc.getName();
         if ("handshake".equals(tag)) {
             // External component is trying to authenticate
@@ -129,8 +117,7 @@ public class ComponentStanzaHandler extends StanzaHandler {
         return false;
     }
 
-    @Override
-	protected void processIQ(IQ packet) throws UnauthorizedException {
+    protected void processIQ(IQ packet) throws UnauthorizedException {
         if (session.getStatus() != Session.STATUS_AUTHENTICATED) {
             // Session is not authenticated so return error
             IQ reply = new IQ();
@@ -154,8 +141,7 @@ public class ComponentStanzaHandler extends StanzaHandler {
         super.processIQ(packet);
     }
 
-    @Override
-	protected void processPresence(Presence packet) throws UnauthorizedException {
+    protected void processPresence(Presence packet) throws UnauthorizedException {
         if (session.getStatus() != Session.STATUS_AUTHENTICATED) {
             // Session is not authenticated so return error
             Presence reply = new Presence();
@@ -169,8 +155,7 @@ public class ComponentStanzaHandler extends StanzaHandler {
         super.processPresence(packet);
     }
 
-    @Override
-	protected void processMessage(Message packet) throws UnauthorizedException {
+    protected void processMessage(Message packet) throws UnauthorizedException {
         if (session.getStatus() != Session.STATUS_AUTHENTICATED) {
             // Session is not authenticated so return error
             Message reply = new Message();
@@ -184,29 +169,24 @@ public class ComponentStanzaHandler extends StanzaHandler {
         super.processMessage(packet);
     }
 
-    @Override
-	void startTLS() throws Exception {
+    void startTLS() throws Exception {
         // TODO Finish implementation. We need to get the name of the CM if we want to validate certificates of the CM that requested TLS
         connection.startTLS(false, "IMPLEMENT_ME", Connection.ClientAuth.disabled);
     }
 
-    @Override
-	String getNamespace() {
+    String getNamespace() {
         return "jabber:component:accept";
     }
 
-    @Override
-	boolean validateHost() {
+    boolean validateHost() {
         return false;
     }
 
-    @Override
-	boolean validateJIDs() {
+    boolean validateJIDs() {
         return false;
     }
 
-    @Override
-	boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
+    boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
             throws XmlPullParserException {
         if (getNamespace().equals(namespace)) {
             // The connected client is a connection manager so create a ConnectionMultiplexerSession

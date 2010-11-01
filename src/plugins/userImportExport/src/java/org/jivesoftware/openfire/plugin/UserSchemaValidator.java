@@ -1,31 +1,27 @@
 package org.jivesoftware.openfire.plugin;
 
-import java.io.IOException;
-import java.net.URL;
-
-import javax.xml.parsers.SAXParserFactory;
+import com.sun.msv.reader.util.GrammarLoader;
+import com.sun.msv.reader.util.IgnoreController;
+import com.sun.msv.verifier.DocumentDeclaration;
+import com.sun.msv.verifier.Verifier;
 
 import org.apache.commons.fileupload.FileItem;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.SAXWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXParseException;
 
-import com.sun.msv.reader.util.GrammarLoader;
-import com.sun.msv.reader.util.IgnoreController;
-import com.sun.msv.verifier.DocumentDeclaration;
-import com.sun.msv.verifier.Verifier;
+import java.io.IOException;
+import java.net.URL;
+
+import javax.xml.parsers.SAXParserFactory;
 
 public class UserSchemaValidator {
-	
-	private static final Logger Log = LoggerFactory.getLogger(UserSchemaValidator.class);
-	
     private Document doc;
     private String schema;
     
@@ -42,8 +38,7 @@ public class UserSchemaValidator {
             SAXParserFactory saxFactory = SAXParserFactory.newInstance();
             saxFactory.setNamespaceAware(true);
             DocumentDeclaration docDeclaration = GrammarLoader.loadVGM(schema, new IgnoreController() {
-                @Override
-				public void error(Locator[] locations,
+                public void error(Locator[] locations,
                                   String message,
                                   Exception exception) {
                     Log.error("ERROR: " + message);
@@ -68,7 +63,7 @@ public class UserSchemaValidator {
                 return false;
             }
         } catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
             return false;
         }
     }

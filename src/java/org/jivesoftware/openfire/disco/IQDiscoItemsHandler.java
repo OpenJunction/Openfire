@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.disco;
@@ -31,6 +23,8 @@ import org.jivesoftware.openfire.cluster.ClusterEventListener;
 import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.cluster.NodeID;
 import org.jivesoftware.openfire.handler.IQHandler;
+import org.jivesoftware.openfire.resultsetmanager.ResultSet;
+import org.jivesoftware.openfire.resultsetmanager.ResultSetImpl;
 import org.jivesoftware.openfire.roster.RosterItem;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.openfire.user.User;
@@ -42,8 +36,6 @@ import org.jivesoftware.util.cache.ExternalizableUtil;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
-import org.xmpp.resultsetmanagement.ResultSet;
-import org.xmpp.resultsetmanagement.ResultSetImpl;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -91,13 +83,11 @@ public class IQDiscoItemsHandler extends IQHandler implements ServerFeaturesProv
         info = new IQHandlerInfo("query", NAMESPACE_DISCO_ITEMS);
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) {
+    public IQ handleIQ(IQ packet) {
         // Create a copy of the sent pack that will be used as the reply
         // we only need to add the requested items to the reply if any otherwise add 
         // a not found error
@@ -391,8 +381,7 @@ public class IQDiscoItemsHandler extends IQHandler implements ServerFeaturesProv
         localServerItems.remove(jid);
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         serverItems = CacheFactory.createCache("Disco Server Items");
         // Track the implementors of ServerItemsProvider so that we can collect the items
@@ -403,8 +392,7 @@ public class IQDiscoItemsHandler extends IQHandler implements ServerFeaturesProv
         ClusterManager.addListener(this);
     }
 
-    @Override
-	public void start() throws IllegalStateException {
+    public void start() throws IllegalStateException {
         super.start();
         for (ServerItemsProvider provider : XMPPServer.getInstance().getServerItemsProviders()) {
             addServerItemsProvider(provider);

@@ -5,30 +5,15 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.entitycaps;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.dom4j.Element;
-import org.dom4j.QName;
+import org.jivesoftware.openfire.IQResultListener;
 import org.jivesoftware.openfire.IQRouter;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.event.UserEventListener;
@@ -36,10 +21,11 @@ import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.xmpp.component.IQResultListener;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Presence;
+
+import java.util.*;
 
 /**
  * Implements server side mechanics for XEP-0115: "Entity Capabilities"
@@ -103,15 +89,19 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
      * correct 'ver' hash in the map, that was previously encountered in the
      * caps packet.
      * 
+     * We use a cache for this map so it is cluster safe for remote users
+     * whose disco#info replies are handled by new nodes in the cluster (after
+     * an s2s disconnection for example).
+     * 
      * Key:   Packet ID of our disco#info request.
      * Value: The 'ver' hash string from the original caps packet.
      */
-    private Map<String, EntityCapabilities> verAttributes;
+    private Cache<String, String> verAttributes;
 
     private EntityCapabilitiesManager() {
         entityCapabilitiesMap = CacheFactory.createCache("Entity Capabilities");
         entityCapabilitiesUserMap = CacheFactory.createCache("Entity Capabilities Users");
-        verAttributes = new HashMap<String, EntityCapabilities>();
+        verAttributes = CacheFactory.createCache("Entity Capabilities Pending Hashes");
     }
 
     /**
@@ -141,15 +131,15 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
 		// TODO: if this packet is in legacy format, we SHOULD check the 'node',
 		// 'ver', and 'ext' combinations as specified in the archived version
 		// 1.3 of the specification, and cache the results. See JM-1447
-        final String hashAttribute = capsElement.attributeValue("hash");
-        if (hashAttribute == null || hashAttribute.trim().length() == 0) {
+        String hashAttribute = capsElement.attributeValue("hash");
+        if (hashAttribute == null) {
             return;
         }
         
         // Examine the packet and check if it has and a 'ver' hash
         // if not -- do nothing by returning.
-        final String newVerAttribute = capsElement.attributeValue("ver");
-        if (newVerAttribute == null || newVerAttribute.trim().length() == 0) {
+        String newVerAttribute = capsElement.attributeValue("ver");
+        if (newVerAttribute == null) {
             return;
         }
 
@@ -172,13 +162,9 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
             iq.setChildElement("query", "http://jabber.org/protocol/disco#info");
 
             String packetId = iq.getID();
-            
-            final EntityCapabilities caps = new EntityCapabilities();
-            caps.setHashAttribute(hashAttribute);
-            caps.setVerAttribute(newVerAttribute);
-            verAttributes.put(packetId, caps);
+            verAttributes.put(packetId, newVerAttribute);
 
-            final IQRouter iqRouter = XMPPServer.getInstance().getIQRouter();
+            IQRouter iqRouter = XMPPServer.getInstance().getIQRouter();
             iqRouter.addIQResultListener(packetId, this);
             iqRouter.route(iq);
         }
@@ -206,13 +192,10 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
      *         hash of the original caps packet.
      */
     private boolean isValid(IQ packet) {
-        final EntityCapabilities original = verAttributes.get(packet.getID());
-        if (original == null) {
-        	return false;
-        }
-        final String newVerHash = generateVerHash(packet, original.getHashAttribute());
+        String newVerHash = generateVerHash(packet);
 
-        return newVerHash.equals(original.getVerAttribute());
+        String originalVerAttribute = verAttributes.get(packet.getID());
+        return originalVerAttribute.equals(newVerHash);
     }
 
     /**
@@ -225,53 +208,43 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
      * outlined in XEP-0115.
      * 
      * @param packet IQ reply to the entity cap request.
-     * @param algorithm The hashing algorithm to use (e.g. SHA-1)
      * @return the generated 'ver' hash
      */
-    public static String generateVerHash(IQ packet, String algorithm) {
+    private String generateVerHash(IQ packet) {
         // Initialize an empty string S.
-        final StringBuilder s = new StringBuilder();
+        String S = "";
 
         // Sort the service discovery identities by category and then by type
-        // (if it exists), formatted as 'category' '/' 'type' / 'lang' / 'name'
-        final List<String> discoIdentities = getIdentitiesFrom(packet);
+        // (if it exists), formatted as 'category' '/' 'type'.
+        List<String> discoIdentities = getIdentitiesFrom(packet);
         Collections.sort(discoIdentities);
 
-        // For each identity, append the 'category/type/lang/name' to S, 
-        // followed by the '<' character.
+        // For each identity, append the 'category/type' to S, followed by the
+        // '<' character.
         for (String discoIdentity : discoIdentities) {
-            s.append(discoIdentity);
-            s.append('<');
+            S += discoIdentity;
+            S += '<';
         }
 
-        // Sort the supported service discovery features.
-        final List<String> discoFeatures = getFeaturesFrom(packet);
+        // Sort the supported features.
+        List<String> discoFeatures = getFeaturesFrom(packet);
         Collections.sort(discoFeatures);
 
         // For each feature, append the feature to S, followed by the '<'
         // character.
         for (String discoFeature : discoFeatures) {
-            s.append(discoFeature);
-            s.append('<');
+            S += discoFeature;
+            S += '<';
         }
-        
-        // If the service discovery information response includes XEP-0128 
-        // data forms, sort the forms by the FORM_TYPE (i.e., by the XML
-        // character data of the <value/> element).
-        final List<String> extendedDataForms = getExtendedDataForms(packet);
-        Collections.sort(extendedDataForms);
-        
-        for (String extendedDataForm : extendedDataForms) {
-        	s.append(extendedDataForm);
-        	// no need to add '<', this is done in #getExtendedDataForms()
-        }
-        
+
         // Compute ver by hashing S using the SHA-1 algorithm as specified in
         // RFC 3174 (with binary output) and encoding the hash using Base64 as
         // specified in Section 4 of RFC 4648 (note: the Base64 output
         // MUST NOT include whitespace and MUST set padding bits to zero).
-        final String hashed = StringUtils.hash(s.toString(), "SHA-1");
-        return StringUtils.encodeBase64(StringUtils.decodeHex(hashed));
+        S = StringUtils.hash(S, "SHA-1");
+        S = StringUtils.encodeBase64(StringUtils.decodeHex(S));
+
+        return S;
     }
 
     public void answerTimeout(String packetId) {
@@ -287,25 +260,26 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
             // The packet was validated, so it can be added to the Entity
             // Capabilities cache map.
 
-            // Add the resolved identities and features to the entity 
-        	// EntityCapabilitiesManager.capabilities object and add it 
-        	// to the cache map...
-            EntityCapabilities caps = verAttributes.get(packetId);
+            // Create the entity capabilities object and add it to the cache map...
+            EntityCapabilities entityCapabilities = new EntityCapabilities();
 
             // Store identities.
             List<String> identities = getIdentitiesFrom(packet);
             for (String identity : identities) {
-            	caps.addIdentity(identity);
+                entityCapabilities.addIdentity(identity);
             }
 
             // Store features.
             List<String> features = getFeaturesFrom(packet);
             for (String feature : features) {
-            	caps.addFeature(feature);
+                entityCapabilities.addFeature(feature);
             }
 
-            entityCapabilitiesMap.put(caps.getVerAttribute(), caps);
-            entityCapabilitiesUserMap.put(packet.getFrom(), caps.getVerAttribute());
+            String originalVerAttribute = verAttributes.get(packetId);
+            entityCapabilities.setVerAttribute(originalVerAttribute);
+
+            entityCapabilitiesMap.put(originalVerAttribute, entityCapabilities);
+            entityCapabilitiesUserMap.put(packet.getFrom(), originalVerAttribute);
         }
 
         // Remove cached 'ver' attribute.
@@ -330,41 +304,19 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
      * @param packet the packet
      * @return a list of identities
      */
-    private static List<String> getIdentitiesFrom(IQ packet) {
+    private List<String> getIdentitiesFrom(IQ packet) {
         List<String> discoIdentities = new ArrayList<String>();
         Element query = packet.getChildElement();
-        Iterator<Element> identitiesIterator = query.elementIterator("identity");
+        Iterator identitiesIterator = query.elementIterator("identity");
         if (identitiesIterator != null) {
             while (identitiesIterator.hasNext()) {
-                Element identityElement = identitiesIterator.next();
+                Element identityElement = (Element) identitiesIterator.next();
 
-                StringBuilder discoIdentity = new StringBuilder();
-                
-                String cat = identityElement.attributeValue("category");
-                String type = identityElement.attributeValue("type");
-                String lang = identityElement.attributeValue("xml:lang");
-                String name = identityElement.attributeValue("name");
-                
-                if (cat != null) {
-                	discoIdentity.append(cat);
-                }
-                discoIdentity.append('/');
+                String discoIdentity = identityElement.attributeValue("category");
+                discoIdentity += '/';
+                discoIdentity += identityElement.attributeValue("type");
 
-                if (type != null) {
-                	discoIdentity.append(type);
-                }
-                discoIdentity.append('/');
-
-                if (lang != null) {
-                	discoIdentity.append(lang);
-                }
-                discoIdentity.append('/');
-
-                if (name != null) {
-                	discoIdentity.append(name);
-                }
-
-                discoIdentities.add(discoIdentity.toString());
+                discoIdentities.add(discoIdentity);
             }
         }
         return discoIdentities;
@@ -376,13 +328,13 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
      * @param packet the packet
      * @return a list of features
      */
-    private static List<String> getFeaturesFrom(IQ packet) {
+    private List<String> getFeaturesFrom(IQ packet) {
         List<String> discoFeatures = new ArrayList<String>();
         Element query = packet.getChildElement();
-        Iterator<Element> featuresIterator = query.elementIterator("feature");
+        Iterator featuresIterator = query.elementIterator("feature");
         if (featuresIterator != null) {
             while (featuresIterator.hasNext()) {
-                Element featureElement = featuresIterator.next();
+                Element featureElement = (Element) featuresIterator.next();
                 String discoFeature = featureElement.attributeValue("var");
 
                 discoFeatures.add(discoFeature);
@@ -391,63 +343,6 @@ public class EntityCapabilitiesManager implements IQResultListener, UserEventLis
         return discoFeatures;
     }
 
-    /**
-	 * Extracts a list of extended service discovery information from an IQ
-	 * packet.
-	 * 
-	 * @param packet
-	 *            the packet
-	 * @return a list of extended service discoverin information features.
-	 */
-	private static List<String> getExtendedDataForms(IQ packet) {
-		List<String> results = new ArrayList<String>();
-		Element query = packet.getChildElement();
-		Iterator<Element> extensionIterator = query.elementIterator(QName.get(
-				"x", "jabber:x:data"));
-		if (extensionIterator != null) {
-			while (extensionIterator.hasNext()) {
-				Element extensionElement = extensionIterator.next();
-				final StringBuilder formType = new StringBuilder();
-
-				Iterator<Element> fieldIterator = extensionElement
-						.elementIterator("field");
-				List<String> vars = new ArrayList<String>();
-				while (fieldIterator != null && fieldIterator.hasNext()) {
-					final Element fieldElement = fieldIterator.next();
-					if (fieldElement.attributeValue("var").equals("FORM_TYPE")) {
-						formType
-								.append(fieldElement.element("value").getText());
-						formType.append('<');
-					} else {
-						final StringBuilder var = new StringBuilder();
-						var.append(fieldElement.attributeValue("var"));
-						var.append('<');
-						Iterator<Element> valIter = fieldElement
-								.elementIterator("value");
-						List<String> values = new ArrayList<String>();
-						while (valIter != null && valIter.hasNext()) {
-							Element value = valIter.next();
-							values.add(value.getText());
-						}
-						Collections.sort(values);
-						for (String v : values) {
-							var.append(v);
-							var.append('<');
-						}
-						vars.add(var.toString());
-					}
-				}
-				Collections.sort(vars);
-				for (String v : vars) {
-					formType.append(v);
-				}
-
-				results.add(formType.toString());
-			}
-		}
-		return results;
-	}
-    
     public void userDeleting(User user, Map<String, Object> params) {
         // Delete this user's association in entityCapabilitiesUserMap.
         JID jid = XMPPServer.getInstance().createJID(user.getUsername(), null, true);

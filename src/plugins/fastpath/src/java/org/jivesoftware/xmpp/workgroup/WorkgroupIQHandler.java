@@ -5,26 +5,15 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
 
-import org.dom4j.Element;
 import org.jivesoftware.openfire.fastpath.WorkgroupSettings;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.NotFoundException;
 import org.jivesoftware.xmpp.workgroup.interceptor.InterceptorManager;
 import org.jivesoftware.xmpp.workgroup.interceptor.OfferInterceptorManager;
 import org.jivesoftware.xmpp.workgroup.interceptor.PacketRejectedException;
@@ -34,8 +23,10 @@ import org.jivesoftware.xmpp.workgroup.request.Request;
 import org.jivesoftware.xmpp.workgroup.request.TransferRequest;
 import org.jivesoftware.xmpp.workgroup.request.UserRequest;
 import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dom4j.Element;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.NotFoundException;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
@@ -65,8 +56,6 @@ import org.xmpp.packet.PacketError;
  */
 public class WorkgroupIQHandler {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupIQHandler.class);
-	
     private Workgroup workgroup;
     private WorkgroupSettings workgroupSettings = null;
 
@@ -108,7 +97,7 @@ public class WorkgroupIQHandler {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
             IQ reply = IQ.createResultIQ(packet);
             if (packet.getChildElement() != null) {
                 reply.setChildElement(packet.getChildElement().createCopy());
@@ -172,7 +161,7 @@ public class WorkgroupIQHandler {
             catch (NotFoundException e) {
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                Log.debug("Request not found" +
+                ComponentManagerFactory.getComponentManager().getLog().debug("Request not found" +
                         " while departing queue:", e);
             }
         }
@@ -199,7 +188,7 @@ public class WorkgroupIQHandler {
                         if (agentSession == null) {
                             reply.setChildElement(packet.getChildElement().createCopy());
                             reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                            Log
+                            ComponentManagerFactory.getComponentManager().getLog()
                                     .debug("Agent not found while accepting offer");
                         }
                         else {
@@ -225,13 +214,13 @@ public class WorkgroupIQHandler {
             catch (NotFoundException e) {
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                Log.debug("Request not found " +
+                ComponentManagerFactory.getComponentManager().getLog().debug("Request not found " +
                         "while accepting offer: ", e);
             }
             catch (AgentNotFoundException e) {
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                Log.debug("Agent not found " +
+                ComponentManagerFactory.getComponentManager().getLog().debug("Agent not found " +
                         "while accepting offer: ", e);
             }
         }
@@ -258,7 +247,7 @@ public class WorkgroupIQHandler {
                         if (agentSession == null) {
                             reply.setChildElement(packet.getChildElement().createCopy());
                             reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                            Log
+                            ComponentManagerFactory.getComponentManager().getLog()
                                     .debug("Agent not found while accepting offer");
                         }
                         else {
@@ -280,13 +269,13 @@ public class WorkgroupIQHandler {
             catch (NotFoundException e) {
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                Log.debug("Request not found " +
+                ComponentManagerFactory.getComponentManager().getLog().debug("Request not found " +
                         "while rejecting offer: ", e);
             }
             catch (AgentNotFoundException e) {
                 reply.setChildElement(packet.getChildElement().createCopy());
                 reply.setError(new PacketError(PacketError.Condition.item_not_found));
-                Log.debug("Agent not found " +
+                ComponentManagerFactory.getComponentManager().getLog().debug("Agent not found " +
                         "while accepting offer: ", e);
             }
         }
@@ -587,7 +576,7 @@ public class WorkgroupIQHandler {
     }
 
     private void dropPacket(Packet packet) {
-        Log.info("Dropped packet: " +
+        ComponentManagerFactory.getComponentManager().getLog().info("Dropped packet: " +
                 packet.toString());
     }
 }

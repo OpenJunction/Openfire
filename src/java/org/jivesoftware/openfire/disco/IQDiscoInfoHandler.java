@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.disco;
@@ -29,17 +21,17 @@ import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.cluster.ClusterEventListener;
 import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.cluster.NodeID;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
 import org.jivesoftware.openfire.handler.IQHandler;
+import org.jivesoftware.openfire.resultsetmanager.ResultSet;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.xmpp.forms.DataForm;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
-import org.xmpp.resultsetmanagement.ResultSet;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -96,13 +88,11 @@ public class IQDiscoInfoHandler extends IQHandler implements ClusterEventListene
         userFeatures.add(NAMESPACE_DISCO_INFO);
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) {
+    public IQ handleIQ(IQ packet) {
         // Create a copy of the sent pack that will be used as the reply
         // we only need to add the requested info to the reply if any otherwise add 
         // a not found error
@@ -171,9 +161,9 @@ public class IQDiscoInfoHandler extends IQHandler implements ClusterEventListene
 				}
                 
                 // Add to the reply the extended info (XDataForm) provided by the DiscoInfoProvider
-                DataForm dataForm = infoProvider.getExtendedInfo(name, node, packet.getFrom());
+                XDataFormImpl dataForm = infoProvider.getExtendedInfo(name, node, packet.getFrom());
                 if (dataForm != null) {
-                    queryElement.add(dataForm.getElement());
+                    queryElement.add(dataForm.asXMLElement());
                 }
             }
             else {
@@ -314,8 +304,7 @@ public class IQDiscoInfoHandler extends IQHandler implements ClusterEventListene
         }
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         serverFeatures = CacheFactory.createCache("Disco Server Features");
         addServerFeature(NAMESPACE_DISCO_INFO);
@@ -490,7 +479,7 @@ public class IQDiscoInfoHandler extends IQHandler implements ClusterEventListene
                 }
             }
 
-            public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+            public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
                 if (node != null && serverNodeProviders.get(node) != null) {
                     // Redirect the request to the disco info provider of the specified node
                     return serverNodeProviders.get(node).getExtendedInfo(name, node, senderJID);

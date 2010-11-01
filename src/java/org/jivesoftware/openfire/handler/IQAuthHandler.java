@@ -5,55 +5,37 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
 
-import gnu.inet.encoding.Stringprep;
-import gnu.inet.encoding.StringprepException;
-
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.QName;
-import org.jivesoftware.openfire.IQHandlerInfo;
-import org.jivesoftware.openfire.PacketException;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.auth.AuthFactory;
-import org.jivesoftware.openfire.auth.AuthToken;
-import org.jivesoftware.openfire.auth.ConnectionException;
-import org.jivesoftware.openfire.auth.InternalUnauthenticatedException;
-import org.jivesoftware.openfire.auth.UnauthorizedException;
+import org.jivesoftware.openfire.*;
+import org.jivesoftware.openfire.auth.*;
 import org.jivesoftware.openfire.event.SessionEventDispatcher;
 import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.openfire.session.LocalClientSession;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.stringprep.Stringprep;
+import org.jivesoftware.stringprep.StringprepException;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.StreamError;
+
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implements the TYPE_IQ jabber:iq:auth protocol (plain only). Clients
@@ -76,8 +58,6 @@ import org.xmpp.packet.StreamError;
  */
 public class IQAuthHandler extends IQHandler implements IQAuthInfo {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQAuthHandler.class);
-
     private boolean anonymousAllowed;
 
     private Element probeResponse;
@@ -86,7 +66,6 @@ public class IQAuthHandler extends IQHandler implements IQAuthInfo {
     private String serverName;
     private UserManager userManager;
     private RoutingTable routingTable;
-    private IQRegisterHandler registerHandler;
 
     /**
      * Clients are not authenticated when accessing this handler.
@@ -107,8 +86,7 @@ public class IQAuthHandler extends IQHandler implements IQAuthInfo {
         anonymousAllowed = JiveGlobals.getBooleanProperty("xmpp.auth.anonymous");
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException, PacketException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException, PacketException {
         JID from = packet.getFrom();
         LocalClientSession session = (LocalClientSession) sessionManager.getSession(from);
         // If no session was found then answer an error (if possible)
@@ -315,8 +293,7 @@ public class IQAuthHandler extends IQHandler implements IQAuthInfo {
             throws UnauthorizedException
     {
         IQ response;
-        // Check if users can change their passwords and a password was specified
-        if (!registerHandler.canChangePassword() || password == null || password.length() == 0) {
+        if (password == null || password.length() == 0) {
             throw new UnauthorizedException();
         }
         else {
@@ -389,17 +366,14 @@ public class IQAuthHandler extends IQHandler implements IQAuthInfo {
         JiveGlobals.setProperty("xmpp.auth.anonymous", Boolean.toString(anonymousAllowed));
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         userManager = server.getUserManager();
         routingTable = server.getRoutingTable();
-        registerHandler = server.getIQRegisterHandler();
         serverName = server.getServerInfo().getXMPPDomain();
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 }

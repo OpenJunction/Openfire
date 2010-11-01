@@ -5,27 +5,13 @@
  *
  * Copyright (C) 2004-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.request;
 
-import java.util.Arrays;
-
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.QName;
-import org.jivesoftware.util.NotFoundException;
 import org.jivesoftware.xmpp.workgroup.AgentNotFoundException;
 import org.jivesoftware.xmpp.workgroup.AgentSession;
 import org.jivesoftware.xmpp.workgroup.RequestQueue;
@@ -33,13 +19,18 @@ import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
 import org.jivesoftware.xmpp.workgroup.interceptor.RoomInterceptorManager;
 import org.jivesoftware.xmpp.workgroup.routing.RoutingManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.dom4j.QName;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.NotFoundException;
 import org.xmpp.muc.Invitation;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.PacketError;
+
+import java.util.Arrays;
 
 /**
  * Request sent by an agent to transfer a session support to another agent.
@@ -47,9 +38,6 @@ import org.xmpp.packet.PacketError;
  * @author Gaston Dombiak
  */
 public class TransferRequest extends Request {
-	
-	private static final Logger Log = LoggerFactory.getLogger(TransferRequest.class);
-	
     /**
      * Time limit to wait for the invitee to join the support room. The limit is verified once the agent
      * accepted the offer or a MUC invitation was sent to the user.
@@ -181,27 +169,23 @@ public class TransferRequest extends Request {
     }
 
 
-    @Override
-	public void updateSession(int state, long offerTime) {
+    public void updateSession(int state, long offerTime) {
         // Ignore
     }
 
-    @Override
-	public void offerAccepted(AgentSession agentSession) {
+    public void offerAccepted(AgentSession agentSession) {
         super.offerAccepted(agentSession);
         // Keep track when the offer was accepted by the agent
         offerAccepted = System.currentTimeMillis();
     }
 
-    @Override
-	public boolean sendOffer(AgentSession session, RequestQueue queue) {
+    public boolean sendOffer(AgentSession session, RequestQueue queue) {
         // Keep track of the actual entity that received the transfer offer
         actualInvitee = session.getJID();
         return super.sendOffer(session, queue);
     }
 
-    @Override
-	void addOfferContent(Element offerElement) {
+    void addOfferContent(Element offerElement) {
         Element inviteElement = offerElement.addElement("transfer", "http://jabber.org/protocol/workgroup");
 
         inviteElement.addAttribute("type", type.toString());
@@ -216,12 +200,10 @@ public class TransferRequest extends Request {
         inviteElement.addElement("reason").setText(reason);
     }
 
-    @Override
-	void addRevokeContent(Element revoke) {
+    void addRevokeContent(Element revoke) {
     }
 
-    @Override
-	public Element getSessionElement() {
+    public Element getSessionElement() {
         // Add the workgroup of the original user request
         QName qName = DocumentHelper.createQName("session", DocumentHelper.createNamespace("", "http://jivesoftware.com/protocol/workgroup"));
         Element sessionElement = DocumentHelper.createElement(qName);
@@ -230,13 +212,11 @@ public class TransferRequest extends Request {
         return sessionElement;
     }
 
-    @Override
-	JID getUserJID() {
+    JID getUserJID() {
         return userRequest.getUserJID();
     }
 
-    @Override
-	public void userJoinedRoom(JID roomJID, JID user) {
+    public void userJoinedRoom(JID roomJID, JID user) {
         Log.debug("User "+user+" has joined "+roomJID+". User should be kicked.");
         if (actualInvitee != null && actualInvitee.toBareJID().equals(user.toBareJID())) {
             joinedRoom = System.currentTimeMillis();
@@ -257,8 +237,7 @@ public class TransferRequest extends Request {
         }
     }
 
-    @Override
-	public void checkRequest(String roomID) {
+    public void checkRequest(String roomID) {
         // Monitor that the agent/user joined the room and if not send back an error to the inviter
         if (offerAccepted > 0 && !hasJoinedRoom() && System.currentTimeMillis() - offerAccepted > JOIN_TIMEOUT) {
             Log.debug("Agent or user failed to join room "+roomID);

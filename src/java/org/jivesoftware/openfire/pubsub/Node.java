@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
@@ -734,11 +726,12 @@ public abstract class Node {
         // Build packet to broadcast to subscribers
         Message message = new Message();
         Element event = message.addChildElement("event", "http://jabber.org/protocol/pubsub#event");
-        Element config = event.addElement("configuration");
-        config.addAttribute("node", nodeID);
-
+        Element items = event.addElement("items");
+        items.addAttribute("node", nodeID);
+        Element item = items.addElement("item");
+        item.addAttribute("id", "configuration");
         if (deliverPayloads) {
-            config.add(getConfigurationChangeForm().getElement());
+            item.add(getConfigurationChangeForm().getElement());
         }
         // Send notification that the node configuration has changed
         broadcastNodeEvent(message, false);
@@ -774,7 +767,7 @@ public abstract class Node {
         formField.addValue(getNodeID());
 
         formField = form.addField();
-        formField.setVariable("pubsub#subscriber_jid");
+        formField.setVariable("pusub#subscriber_jid");
         formField.setType(FormField.Type.jid_single);
         formField.setLabel(LocaleUtils.getLocalizedString("pubsub.form.authorization.subscriber"));
         formField.addValue(subscription.getJID().toString());
@@ -1745,7 +1738,7 @@ public abstract class Node {
      */
     public NodeSubscription getSubscription(JID subscriberJID) {
         // Check that node does not support multiple subscriptions
-        if (isMultipleSubscriptionsEnabled() && (getSubscriptions(subscriberJID).size() > 1)) {
+        if (isMultipleSubscriptionsEnabled()) {
             throw new IllegalStateException("Multiple subscriptions is enabled so subscriptions " +
                     "should be retrieved using subID.");
         }
@@ -2140,8 +2133,7 @@ public abstract class Node {
         return Collections.emptyList();
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return super.toString() + " - ID: " + getNodeID();
     }
 

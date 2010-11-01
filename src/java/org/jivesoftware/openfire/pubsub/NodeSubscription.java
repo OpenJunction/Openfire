@@ -5,42 +5,27 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.TimeZone;
-
 import org.dom4j.Element;
 import org.jivesoftware.util.FastDateFormat;
-import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.forms.DataForm;
 import org.xmpp.forms.FormField;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.Presence;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * A subscription to a node. Entities may subscribe to a node to be notified when new events
@@ -64,8 +49,6 @@ import org.xmpp.packet.Presence;
  * @author Matt Tucker
  */
 public class NodeSubscription {
-
-	private static final Logger Log = LoggerFactory.getLogger(NodeSubscription.class);
 
     private static final SimpleDateFormat dateFormat;
     private static final FastDateFormat fastDateFormat;
@@ -147,7 +130,7 @@ public class NodeSubscription {
         dateFormat = new SimpleDateFormat("yyyy-MM-DD'T'HH:mm:ss.SSS'Z'");
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         fastDateFormat = FastDateFormat
-                .getInstance(JiveConstants.XMPP_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
+                .getInstance("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", TimeZone.getTimeZone("UTC"));
     }
 
     /**
@@ -831,7 +814,7 @@ public class NodeSubscription {
             notification.setBody(LocaleUtils.getLocalizedString("pubsub.notification.message.body"));
         }
         // Include date when published item was created
-        notification.getElement().addElement("delay", "urn:xmpp:delay")
+        notification.getElement().addElement("x", "jabber:x:delay")
                 .addAttribute("stamp", fastDateFormat.format(publishedItem.getCreationDate()));
         // Send the event notification to the subscriber
         service.sendNotification(node, notification, jid);
@@ -860,8 +843,7 @@ public class NodeSubscription {
         return node.getAffiliate(getOwner());
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return super.toString() + " - JID: " + getJID() + " - State: " + getState().name();
     }
 

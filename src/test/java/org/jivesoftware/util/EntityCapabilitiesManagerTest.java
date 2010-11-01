@@ -1,171 +1,150 @@
 /**
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.dom4j.Element;
-import org.dom4j.QName;
-import org.jivesoftware.openfire.entitycaps.EntityCapabilitiesManager;
-import org.jivesoftware.util.cache.CacheFactory;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.xmpp.packet.IQ;
 
 /**
- * Test cases for the {@link EntityCapabilitiesManager} class.
- * 
- * @see <a
- *      href="http://xmpp.org/extensions/xep-0115.html">XEP-0115:&nbsp;Entity&nbsp;Capabilities</a>
- * @author Guus der Kinderen, guus.der.kinderen@gmail.com
+ * Test cases for the EntityCapabilitiesManager class.
+ *
+ * @author Armando Jagucki
  */
 public class EntityCapabilitiesManagerTest {
 
-	@BeforeClass
-	public static void setUp() throws Exception {
-		CacheFactory.initialize();
-	}
+    @Test
+    public void testGenerateVerHash() {
 
-	/**
-	 * Tests the CAPS verification string generation based on the
-	 * "Simple Generation Example" provided in section 5.2 of XEP-0115 (version
-	 * 1.4 and later).
-	 */
-	@Test
-	public void testSimpleGenerationExample() throws Exception {
-		// formulate the result stanza
-		final IQ iq = new IQ(IQ.Type.result);
-		iq.setFrom("nurse@capulet.lit/chamber");
-		iq.setTo("juliet@capulet.lit");
-		iq.setID("simpleexample1");
+        IQ iq = new IQ(IQ.Type.result);
+        iq.setFrom("nurse@capulet.lit/chamber");
+        iq.setTo("juliet@capulet.lit");
+        iq.setID("disco123");
 
-		final Element query = iq.setChildElement("query",
-				"http://jabber.org/protocol/disco#info");
+        Element query = iq.setChildElement("query", "http://jabber.org/protocol/disco#info");
 
-		// Consider an entity whose category is "client", whose service
-		// discovery type is "pc", service discovery name is "Exodus 0.9.1"
-		// (...)
-		final Element identity = query.addElement("identity");
-		identity.addAttribute("category", "client");
-		identity.addAttribute("type", "pc");
-		identity.addAttribute("name", "Exodus 0.9.1");
+        Element identity = query.addElement("identity");
+        identity.addAttribute("category", "client");
+        identity.addAttribute("type", "pc");
 
-		// (...) and whose supported features are
-		// "http://jabber.org/protocol/disco#info",
-		// "http://jabber.org/protocol/disco#items",
-		// "http://jabber.org/protocol/muc" and
-		// "http://jabber.org/protocol/caps"
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/disco#info");
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/disco#items");
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/muc");
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/caps");
+        Element feature = query.addElement("feature");
+        feature.addAttribute("var", "http://jabber.org/protocol/disco#info");
+        feature = query.addElement("feature");
+        feature.addAttribute("var", "http://jabber.org/protocol/disco#items");
+        feature = query.addElement("feature");
+        feature.addAttribute("var", "http://jabber.org/protocol/muc");
 
-		// Using the SHA-1 algorithm (...)
-		final String verification = EntityCapabilitiesManager.generateVerHash(
-				iq, "sha-1");
+        assertEquals("Generating ver Hash #1", "8RovUdtOmiAjzj+xI7SK5BCw3A8=", generateVerHash(iq));
 
-		// the verification string result must be QgayPKawpkPSDYmwT/WM94uAlu0=
-		assertEquals("QgayPKawpkPSDYmwT/WM94uAlu0=", verification);
-	}
+    }
 
-	/**
-	 * Tests the CAPS verification string generation based on the
-	 * "Complex Generation Example" provided in section 5.3 of XEP-0115 (version
-	 * 1.4 and later).
-	 */
-	@Test
-	public void testComplexGenerationExample() throws Exception {
-		// formulate the result stanza
-		final IQ iq = new IQ(IQ.Type.result);
-		iq.setFrom("nurse@capulet.lit/chamber");
-		iq.setTo("juliet@capulet.lit");
-		iq.setID("simpleexample1");
+    @Test
+    public void testGenerateVerHash2() {
+        String S = "client/pc<http://jabber.org/protocol/disco#info<http://jabber.org/protocol/disco#items<http://jabber.org/protocol/muc<";
+        assertEquals("Generating ver Hash #2", "8RovUdtOmiAjzj+xI7SK5BCw3A8=", StringUtils.encodeBase64(StringUtils.decodeHex(StringUtils.hash(S, "SHA-1"))));
 
-		final Element query = iq.setChildElement("query",
-				"http://jabber.org/protocol/disco#info");
-		query.addAttribute("node",
-				"http://psi-im.org#q07IKJEyjvHSyhy//CH0CxmKi8w=");
+    }
+    
+    @Test
+    public void testGenerateVerHash3() {
+        String S = "client/pda<http://jabber.org/protocol/geoloc<http://jabber.org/protocol/geoloc+notify<http://jabber.org/protocol/tune<http://jabber.org/protocol/tune+notify<";
+        assertEquals("Generating ver Hash #3", "DqGwXvV/QC6X9QrPOFAwJoDwHkk=", StringUtils.encodeBase64(StringUtils.decodeHex(StringUtils.hash(S, "SHA-1"))));
 
-		// Two identities: "client/pc/Psi" and "client/pc/"
-		final Element identityA = query.addElement("identity");
-		identityA.addAttribute("category", "client");
-		identityA.addAttribute("type", "pc");
-		identityA.addAttribute("name", "Psi 0.11");
-		identityA.addAttribute("xml:lang", "en");
+    }
+    
+    @Test
+    public void testGenerateVerHash4() {
+        String S = "client/pc<http://jabber.org/protocol/activity<http://jabber.org/protocol/activity+notify<http://jabber.org/protocol/geoloc<http://jabber.org/protocol/geoloc+notify<http://jabber.org/protocol/muc<http://jabber.org/protocol/tune<http://jabber.org/protocol/tune+notify<";
+        assertEquals("Generating ver Hash #4", "Hm1UHUVZowSehEBlWo8lO8mPy/M=", StringUtils.encodeBase64(StringUtils.decodeHex(StringUtils.hash(S, "SHA-1"))));
 
-		final Element identityB = query.addElement("identity");
-		identityB.addAttribute("category", "client");
-		identityB.addAttribute("type", "pc");
-		identityB.addAttribute("name", "\u03a8 0.11");
-		identityB.addAttribute("xml:lang", "el");
+    }
 
-		// the features: "http://jabber.org/protocol/caps",
-		// http://jabber.org/protocol/disco#info",
-		// "http://jabber.org/protocol/disco#items",
-		// "http://jabber.org/protocol/muc".
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/disco#info");
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/disco#items");
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/muc");
-		query.addElement("feature").addAttribute("var",
-				"http://jabber.org/protocol/caps");
+    /**
+     * Generates a 'ver' hash attribute.
+     * 
+     * In order to help prevent poisoning of entity capabilities information,
+     * the value of the 'ver' attribute is generated according to the method
+     * outlined in XEP-0115.
+     * 
+     * @param packet
+     * @return the generated 'ver' hash
+     */
+    public String generateVerHash(IQ packet) {
+        // Initialize an empty string S.
+        String S = "";
 
-		// extended service discovery forms
-		final Element ext = query.addElement(QName.get("x", "jabber:x:data"));
-		ext.addAttribute("type", "result");
+        /*
+         * Sort the service discovery identities by category and then by type
+         * (if it exists), formatted as 'category' '/' 'type'.
+         */
+        List<String> discoIdentities = new ArrayList<String>();
+        Element query = packet.getChildElement();
+        Iterator identitiesIterator = query.elementIterator("identity");
+        if (identitiesIterator != null) {
+            while (identitiesIterator.hasNext()) {
+                Element identityElement = (Element) identitiesIterator.next();
 
-		final Element formField = ext.addElement("field");
-		formField.addAttribute("var", "FORM_TYPE");
-		formField.addAttribute("type", "hidden");
-		formField.addElement("value")
-				.setText("urn:xmpp:dataforms:softwareinfo");
+                String discoIdentity = identityElement.attributeValue("category");
+                discoIdentity += '/';
+                discoIdentity += identityElement.attributeValue("type");
 
-		final Element ipField = ext.addElement("field");
-		ipField.addAttribute("var", "ip_version");
-		ipField.addElement("value").setText("ipv4");
-		ipField.addElement("value").setText("ipv6");
+                discoIdentities.add(discoIdentity);
+            }
+            Collections.sort(discoIdentities);
+        }
 
-		final Element osField = ext.addElement("field");
-		osField.addAttribute("var", "os");
-		osField.addElement("value").setText("Mac");
+        /*
+         * For each identity, append the 'category/type' to S, followed by the
+         * '<' character.
+         */
+        for (String discoIdentity : discoIdentities) {
+            S += discoIdentity;
+            S += '<';
+        }
 
-		final Element osvField = ext.addElement("field");
-		osvField.addAttribute("var", "os_version");
-		osvField.addElement("value").setText("10.5.1");
+        // Sort the supported features.
+        List<String> discoFeatures = new ArrayList<String>();
+        Iterator featuresIterator = query.elementIterator("feature");
+        if (featuresIterator != null) {
+            while (featuresIterator.hasNext()) {
+                Element featureElement = (Element) featuresIterator.next();
+                String discoFeature = featureElement.attributeValue("var");
+                discoFeatures.add(discoFeature);
+            }
+            Collections.sort(discoFeatures);
+        }
 
-		final Element softwareField = ext.addElement("field");
-		softwareField.addAttribute("var", "software");
-		softwareField.addElement("value").setText("Psi");
+        /*
+         * For each feature, append the feature to S, followed by the '<'
+         * character.
+         */
+        for (String discoFeature : discoFeatures) {
+            S += discoFeature;
+            S += '<';
+        }
 
-		final Element softwarevField = ext.addElement("field");
-		softwarevField.addAttribute("var", "software_version");
-		softwarevField.addElement("value").setText("0.11");
+        /*
+         * Compute ver by hashing S using the SHA-1 algorithm as specified in
+         * RFC 3174 (with binary output) and encoding the hash using Base64 as
+         * specified in Section 4 of RFC 4648 (note: the Base64 output
+         * MUST NOT include whitespace and MUST set padding bits to zero).
+         */
+        S = StringUtils.hash(S, "SHA-1");
+        S = StringUtils.encodeBase64(StringUtils.decodeHex(S));
 
-		// Using the SHA-1 algorithm (...)
-		final String verification = EntityCapabilitiesManager.generateVerHash(
-				iq, "SHA-1");
-
-		// the verification string result must be q07IKJEyjvHSyhy//CH0CxmKi8w=
-		assertEquals("q07IKJEyjvHSyhy//CH0CxmKi8w=", verification);
-	}
+        return S;
+    }
 }

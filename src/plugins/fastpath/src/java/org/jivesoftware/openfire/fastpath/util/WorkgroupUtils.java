@@ -5,51 +5,30 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.util;
 
-import gnu.inet.encoding.Stringprep;
-import gnu.inet.encoding.StringprepException;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-
 import org.jivesoftware.openfire.fastpath.dataforms.FormManager;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsCreator;
-import org.jivesoftware.openfire.user.UserManager;
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.ClassUtils;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.xmpp.workgroup.Agent;
-import org.jivesoftware.xmpp.workgroup.AgentManager;
-import org.jivesoftware.xmpp.workgroup.RequestQueue;
-import org.jivesoftware.xmpp.workgroup.UserAlreadyExistsException;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
+import org.jivesoftware.xmpp.workgroup.*;
 import org.jivesoftware.xmpp.workgroup.dispatcher.AgentSelector;
 import org.jivesoftware.xmpp.workgroup.spi.dispatcher.BasicAgentSelector;
 import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.stringprep.Stringprep;
+import org.jivesoftware.stringprep.StringprepException;
+import org.jivesoftware.util.ClassUtils;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.user.UserManager;
+import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
+
+import java.util.*;
 
 /**
  * A Utility class to allow for creation and modification of workgroups and queues.
@@ -58,8 +37,6 @@ import org.xmpp.packet.JID;
  */
 public class WorkgroupUtils {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupUtils.class);
-	
     public static String updateWorkgroup(String workgroupName, String displayName,
             String description, int maxSize, int minSize, long requestTimeout, long offerTimeout) 
     {
@@ -138,7 +115,7 @@ public class WorkgroupUtils {
                 answer.add(algorithm);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                ComponentManagerFactory.getComponentManager().getLog().error(e);
             }
         }
 
@@ -148,7 +125,7 @@ public class WorkgroupUtils {
             install_algorithm:
             try {
                 Class algorithmClass = loadClass(className);
-                // Make sure that the intercepter isn't already installed.
+                // Make sure that the interceptor isn't already installed.
                 for (AgentSelector agentSelector : answer) {
                     if (algorithmClass.equals(agentSelector.getClass())) {
                         break install_algorithm;
@@ -158,7 +135,7 @@ public class WorkgroupUtils {
                 answer.add(algorithm);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                ComponentManagerFactory.getComponentManager().getLog().error(e);
             }
         }
         return answer;
@@ -216,7 +193,7 @@ public class WorkgroupUtils {
      * @param agents the agents, in a comma delimited string.
      * @return a map of errors (if any)
      */
-    public static Map<String, String> createWorkgroup(String workgroupName, String description, String agents) {
+    public static Map createWorkgroup(String workgroupName, String description, String agents) {
         Map<String, String> errors = new HashMap<String, String>();
 
         // Get a workgroup manager
@@ -264,7 +241,7 @@ public class WorkgroupUtils {
                 errors.put("exists", "");
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
                 errors.put("general", "");
             }
         }
@@ -308,7 +285,7 @@ public class WorkgroupUtils {
                 queue.addMember(agent);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }

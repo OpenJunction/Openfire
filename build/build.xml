@@ -2,10 +2,10 @@
 
 <!--
     $RCSfile: build.xml,v $
-    $Revision: 11841 $
-    $Date: 2010-08-21 01:04:03 -0700 (Sat, 21 Aug 2010) $
+    $Revision: 11008 $
+    $Date: 2009-05-01 14:00:53 -0700 (Fri, 01 May 2009) $
 
-    This software is published under the terms of the Apache License, Version 2.0,
+    This software is published under the terms of the GNU Public License (GPL),
     a copy of which is included in this distribution.
 -->
 
@@ -65,9 +65,9 @@
     <!-- ======================================================================================= -->
 
     <property name="version.major" value="3"/>
-    <property name="version.minor" value="7"/>
-    <property name="version.revision" value="0"/>
-    <property name="version.extra" value="beta"/>    <!-- For 'beta' or 'alpha' -->
+    <property name="version.minor" value="6"/>
+    <property name="version.revision" value="4"/>
+    <property name="version.extra" value=""/>    <!-- For 'beta' or 'alpha' -->
     <property name="dist.prefix" value="openfire"/>
 
     <property file="${basedir}/build/build.properties"/>
@@ -137,7 +137,7 @@
     <property name="copy.dbscripts" value="true"/>
     <property name="overwrite" value="true"/>
 
-    <property name="installer.install4j.home" value="/home/j2ee-bamboo/install4j.4.0.5"/>
+    <property name="installer.install4j.home" value="c:\\Program Files\\install4j"/>
     <property name="installer.src" value="${basedir}/build/installer"/>
     <property name="installer.dest.dir" value="${release.dest.dir}"/>
     <property name="installer.install4j.srcfile" value="${installer.src}/openfire.install4j"/>
@@ -147,7 +147,7 @@
     <property name="installer.application_id" value="6886-9911-0474-3571"/>
     <property name="installer.unix_install_dir" value="openfire"/>
     <property name="installer.windows_install_dir" value="Openfire"/>
-    <property name="installer.publisher" value="Ignite Realtime RTC Community"/>
+    <property name="installer.publisher" value="Jive Software"/>
     <property name="installer.publisher_url" value="www.igniterealtime.org"/>
     <property name="installer.file_prefix" value="${installer.app_short_name}"/>
     <property name="installer.release_root_path" value="${release.dest.dir}"/>
@@ -181,7 +181,6 @@
         <path refid="compile.dependencies"/>
         <fileset dir="${jar.dest.dir}" includes="openfire.jar"/>
         <fileset dir="${lib.build.dir}" includes="junit.jar"/>
-        <fileset dir="${lib.dist.dir}" includes="slf4j-log4j12.jar"/>
         <!-- <fileset dir="${ant.home}/lib" includes="clover.jar" /> -->
     </path>
 
@@ -225,7 +224,6 @@
                 <or>
                     <contains string="${ant.version}" substring="1.6"/>
                     <contains string="${ant.version}" substring="1.7"/>
-                    <contains string="${ant.version}" substring="1.8"/>
                 </or>
             </not>
         </condition>
@@ -613,16 +611,14 @@
         <!-- Run jUnit -->
         <mkdir dir="${test.results.dest.dir}"/>
         <junit printsummary="yes" haltonfailure="yes" fork="yes" dir="${test.dest.dir}">
-	    <sysproperty key="openfireHome" value="${target.openfireHome}"/>
 
             <!-- We must add our own classes to the classpath for testing -->
             <classpath>
                 <path refid="test.dependencies"/>
-                <pathelement path="${test.dest.dir}/resources"/>
                 <pathelement path="${test.classes.dest.dir}"/>
             </classpath>
 
-            <formatter type="xml"/>
+            <formatter type="plain"/>
 
             <batchtest todir="${test.results.dest.dir}">
                 <fileset dir="${src.test.java.dir}">
@@ -1117,7 +1113,7 @@
 
         <rpm specFile="openfire.spec"
              topDir="${target.rpm}"
-             command="-ba --target i386 --define 'OPENFIRE_VERSION ${version}' --define 'OPENFIRE_SOURCE ${release.fullname.src}.tar.gz' --define 'OPENFIRE_BUILDDATE ${rpm.builddate}'"
+             command="-ba --define 'OPENFIRE_VERSION ${version}' --define 'OPENFIRE_SOURCE ${release.fullname.src}.tar.gz' --define 'OPENFIRE_BUILDDATE ${rpm.builddate}'"
              failOnError="true"
              />
              
@@ -1234,15 +1230,7 @@
         <!-- For each plugin in the main src dir, call the 'buildplugin' macro -->
         <for list="${dirlist}" param="plugin" trim="true">
             <sequential>
-                <if>
-                    <equals arg1="@{plugin}" arg2="clustering"/>
-                    <then>
-                        <echo message="bypassing clustering plugin, build via single plugin target if needed"/>
-                    </then>
-                    <else>
-                        <buildplugin plugin="@{plugin}" pluginsrc="${plugin.src.dir}"/>
-                    </else>
-                </if>
+                <buildplugin plugin="@{plugin}" pluginsrc="${plugin.src.dir}"/>
             </sequential>
         </for>
 
@@ -1260,15 +1248,7 @@
         <!-- For each list of plugins in the dev dir call the 'buildplugin' macro -->
         <for list="${dirlist2}" param="plugin" trim="true">
             <sequential>
-                <if>
-                    <equals arg1="@{plugin}" arg2="clustering"/>
-                    <then>
-                        <echo message="bypassing clustering plugin, build via single plugin target if needed"/>
-                    </then>
-                    <else>
-                        <buildplugin plugin="@{plugin}" pluginsrc="${plugin.dev.dir}"/>
-                    </else>
-                </if>
+                <buildplugin plugin="@{plugin}" pluginsrc="${plugin.dev.dir}"/>
             </sequential>
         </for>
 
@@ -1291,328 +1271,319 @@
         <attribute name="pluginsrc"/>
         <attribute name="pluginlib" default="${plugin.dev.dest.dir}/@{plugin}/work/lib" />
         <sequential>
-            <trycatch property="message_ref" reference="exception_ref" >
-                <try>
 
-                <!-- For each plugin, copile code, make a jar and copy resources. -->
-                <mkdir dir="${plugin.dev.dest.dir}"/>
-                <mkdir dir="${plugin.dev.dest.dir}/@{plugin}"/>
-                <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target"/>
+            <!-- For each plugin, copile code, make a jar and copy resources. -->
+            <mkdir dir="${plugin.dev.dest.dir}"/>
+            <mkdir dir="${plugin.dev.dest.dir}/@{plugin}"/>
+            <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target"/>
 
-                <!-- Compile plugin source code -->
-                <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/classes"/>
-                <javac
-                        destdir="${plugin.dev.dest.dir}/@{plugin}/target/classes"
+            <!-- Compile plugin source code -->
+            <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/classes"/>
+            <javac
+                    destdir="${plugin.dev.dest.dir}/@{plugin}/target/classes"
+                    includeAntRuntime="no"
+                    debug="on"
+                    source="1.5"
+                    target="1.5"
+                    >
+                <src path="@{pluginsrc}/@{plugin}/src/java"/>
+                <classpath>
+                    <path refid="plugin.dependencies"/>
+                    <!-- Jars used by the plugin to compile with -->
+                    <fileset dir="@{pluginsrc}/@{plugin}" includes="lib/*.jar"/>
+                </classpath>
+            </javac>
+
+            <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/lib" />
+
+            <!-- Searchs source of a plugin and makes a <plugin>-lib.jar that contains compiled versions of all
+                 non-distributable source -->
+            <mkdir dir="@{pluginlib}/source" />
+            <mkdir dir="@{pluginlib}/classes" />
+
+            <!-- copy the source we want to compile -->
+            <copy todir="@{pluginlib}/source">
+                <fileset dir="@{pluginsrc}/@{plugin}/src/java" includes="**/*.java" >
+                    <not>
+                        <srcinc />
+                    </not>
+                </fileset>
+                <filterset>
+                    <filter token="DATE" value="${buildJavaDate}"/>
+                </filterset>
+            </copy>
+
+            <if>
+                <not><uptodate>
+                    <srcfiles dir="@{pluginlib}/source" includes="**/*.java"/>
+                    <mapper type="merge" to="@{pluginlib}/@{plugin}-lib.jar"/>
+                </uptodate></not>
+                <then>
+                    <javac
+                        destdir="@{pluginlib}/classes"
                         includeAntRuntime="no"
                         debug="on"
                         source="1.5"
-                        target="1.5"
-                        >
-                    <src path="@{pluginsrc}/@{plugin}/src/java"/>
-                    <classpath>
-                        <path refid="plugin.dependencies"/>
-                        <!-- Jars used by the plugin to compile with -->
-                        <fileset dir="@{pluginsrc}/@{plugin}" includes="lib/*.jar"/>
-                    </classpath>
-                </javac>
+                        includes="**/*.java"
+                    >
+                        <src path="@{pluginlib}/source"/>
+                        <classpath>
+                            <pathelement location="${plugin.dev.dest.dir}/@{plugin}/target/classes"/>
+                            <path>
+                                <path refid="plugin.dependencies"/>
+                                <!-- Jars used by the plugin to compile with -->
+                                <fileset dir="@{pluginsrc}/@{plugin}" includes="lib/*.jar"/>
+                            </path>
+                        </classpath>
+                    </javac>
 
-                <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/lib" />
+                    
+                    <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/@{plugin}-lib.jar">
+                        <fileset dir="@{pluginlib}/classes" />
+                    </jar>
+                </then>
+            </if>
 
-                <!-- Searchs source of a plugin and makes a <plugin>-lib.jar that contains compiled versions of all
-                     non-distributable source -->
-                <mkdir dir="@{pluginlib}/source" />
-                <mkdir dir="@{pluginlib}/classes" />
+            <!-- Make the jar -->
+            <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}.jar">
+                <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/classes" >
+                    <present present="srconly" targetdir="@{pluginlib}/classes"/>
+                </fileset>
+            </jar>
 
-                <!-- copy the source we want to compile -->
-                <copy todir="@{pluginlib}/source">
-                    <fileset dir="@{pluginsrc}/@{plugin}/src/java" includes="**/*.java" >
-                        <not>
-                            <srcinc />
-                        </not>
-                    </fileset>
-                    <filterset>
-                        <filter token="DATE" value="${buildJavaDate}"/>
-                    </filterset>
-                </copy>
+            <!-- Clean-up our source files for the "srcinc" files -->
+            <delete dir="@{pluginlib}/classes" />
+            <delete dir="@{pluginlib}/source" />
 
-                <if>
-                    <not><uptodate>
-                        <srcfiles dir="@{pluginlib}/source" includes="**/*.java"/>
-                        <mapper type="merge" to="@{pluginlib}/@{plugin}-lib.jar"/>
-                    </uptodate></not>
-                    <then>
-                        <javac
-                            destdir="@{pluginlib}/classes"
+            <available file="@{pluginsrc}/@{plugin}/src/include" type="dir"
+                       property="@{plugin}.include.exists"/>
+            <if>
+                <equals arg1="${@{plugin}.include.exists}" arg2="true"/>
+                <then>
+                    <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}.jar"
+                         update="true">
+                        <fileset dir="@{pluginsrc}/@{plugin}/src/include" includes="**/*.*"/>
+                    </jar>
+                </then>
+            </if>
+
+            <!-- Copy anything in the plugin's lib dir to the target lib dir -->
+            <if>
+                <available file="@{pluginsrc}/@{plugin}/lib" />
+                <then>
+                    <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/lib" failonerror="false"
+                          overwrite="${overwrite}">
+                        <fileset dir="@{pluginsrc}/@{plugin}/lib" includes="**/*.*"/>
+                    </copy>
+                </then>
+            </if>
+
+            <!-- Copy web.xml to web-custom.xml -->
+            <if>
+                <available file="@{pluginsrc}/@{plugin}/src/web/WEB-INF" />
+                <then>
+                    <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF" failonerror="false"
+                          overwrite="${overwrite}">
+                        <fileset dir="@{pluginsrc}/@{plugin}/src/web/WEB-INF" includes="web.xml"/>
+                        <mapper type="glob" from="web.xml" to="web-custom.xml"/>
+                    </copy>
+                </then>
+            </if>
+
+            <!-- Copy the plugin.xml and documentation to the target dir, code below assumes it's there -->
+            <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/jar"/>
+            <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" failonerror="false"
+                  overwrite="${overwrite}">
+                <fileset dir="@{pluginsrc}/@{plugin}" includes="*.xml, *.html, *.gif, *.png, *.ico"/>
+            </copy>
+
+            <!-- Copy the database and i18n file to the target dir, if they exist. -->
+            <!--<copy todir="${plugin.dev.dest.dir}/@{plugin}/target/database" failonerror="false">-->
+            <!--<fileset dir="@{pluginsrc}/@{plugin}/src/database"/>-->
+            <!--</copy>-->
+
+            <!-- JSPC any JSP pages. Do this conditionally as there might not be a web dir. -->
+            <available property="plugin.@{plugin}.webdocs.available"
+                       type="dir" file="@{pluginsrc}/@{plugin}/src/web"/>
+            <if>
+                <equals arg1="${plugin.@{plugin}.webdocs.available}" arg2="true"/>
+                <then>
+
+                    <!-- Continue with JSPC tasks... -->
+
+                    <!-- Create output dir -->
+                    <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/java"/>
+                    <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/classes"/>
+
+                    <!-- Copy jsp's from plugin and web.xml from openfire to a temp dir. We'll
+                         not fail on an error since the web dir might not exist.
+                    -->
+                    <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/web"
+                          overwrite="${overwrite}">
+                        <fileset dir="@{pluginsrc}/@{plugin}/src/web">
+                            <exclude name="WEB-INF/web.xml"/>
+                        </fileset>
+                        <fileset dir="${web.dir}">
+                            <include name="WEB-INF/**/*.*"/>
+                            <exclude name="WEB-INF/web.xml"/>
+                            <exclude name="WEB-INF/classes/openfire_init.xml"/>
+                            <exclude name="WEB-INF/tmp/**/*.*"/>
+                            <exclude name="WEB-INF/work/**/*.*"/>
+                        </fileset>
+                    </copy>
+
+                    <!-- Declare the jspc task with our plugin's classpath -->
+                    <taskdef classname="org.apache.jasper.JspC" name="jasper2" loaderref="jasperB">
+                        <classpath>
+                            <pathelement location="${java.home}/../lib/tools.jar"/>
+                            <pathelement
+                                    location="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}.jar"/>
+                            <path refid="jspc.dependencies"/>
+                            <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target" includes="lib/*.jar"/>
+                            <pathelement path="${compile.dir}"/>
+                        </classpath>
+                    </taskdef>
+
+                    <!-- JSP to Java -->
+                    <jasper2
+                            validateXml="false"
+                            uriroot="${plugin.dev.dest.dir}/@{plugin}/target/web"
+                            outputDir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/java"
+                            package="org.jivesoftware.openfire.plugin.@{plugin}"
+                            webXml="${plugin.dev.dest.dir}/@{plugin}/target/jspc/web.xml"
+                            />
+
+                    <!-- Use xmltask to merge the generated web.xml file and a developer one (if any) -->
+                    <available property="plugin.@{plugin}.webxml.available"
+                               type="file" file="@{pluginsrc}/@{plugin}/src/web/WEB-INF/web.xml"/>
+
+                    <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF"/>
+
+                    <if>
+                        <equals arg1="${plugin.@{plugin}.webxml.available}" arg2="true"/>
+                        <then>
+
+                            <!-- Copy the servlet and servlet-mapping elements from the original web.xml to a temp buffer.
+                                 Note: The original web.xml can only contain one servlet and servlet-mapping -->
+                            <xmltask source="@{pluginsrc}/@{plugin}/src/web/WEB-INF/web.xml">
+                                <copy path="//web-app/servlet[last()]" buffer="foobar"/>
+                                <copy path="//web-app/servlet-mapping[last()]" buffer="foobar2"/>
+                            </xmltask>
+                            <!-- Add the copied servlet and servlet-mapping elements to the generated web.xml -->
+                            <xmltask source="${plugin.dev.dest.dir}/@{plugin}/target/jspc/web.xml"
+                                     dest="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF/web.xml">
+                                <insert path="/web-app/servlet[last()]" buffer="foobar"
+                                        position="after"/>
+                                <insert path="/web-app/servlet-mapping[last()]" buffer="foobar2"
+                                        position="after"/>
+                            </xmltask>
+
+                        </then>
+                        <else>
+                            <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF"
+                                  file="${plugin.dev.dest.dir}/@{plugin}/target/jspc/web.xml"
+                                  overwrite="${overwrite}"/>
+                        </else>
+                    </if>
+
+                    <!-- Compile java classes -->
+                    <javac
+                            destdir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/classes"
                             includeAntRuntime="no"
                             debug="on"
                             source="1.5"
-                            includes="**/*.java"
-                        >
-                            <src path="@{pluginlib}/source"/>
-                            <classpath>
-                                <pathelement location="${plugin.dev.dest.dir}/@{plugin}/target/classes"/>
-                                <path>
-                                    <path refid="plugin.dependencies"/>
-                                    <!-- Jars used by the plugin to compile with -->
-                                    <fileset dir="@{pluginsrc}/@{plugin}" includes="lib/*.jar"/>
-                                </path>
-                            </classpath>
-                        </javac>
+                            target="1.5"
+                            >
+                        <src path="${plugin.dev.dest.dir}/@{plugin}/target/jspc/java"/>
+                        <classpath>
+                            <path refid="jspc.dependencies"/>
+                            <pathelement path="${compile.dir}"/>
+                            <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target" includes="lib/*.jar"/>
+                        </classpath>
+                    </javac>
 
+                    <!-- Make a jar of compiled jsp classes -->
+                    <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}-jspc.jar">
+                        <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/classes"
+                                 includes="**/*.class"/>
+                    </jar>
 
-                        <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/@{plugin}-lib.jar">
-                            <fileset dir="@{pluginlib}/classes" />
-                        </jar>
-                    </then>
-                </if>
+                </then>
+            </if>
 
-                <!-- Make the jar -->
-                <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}.jar">
-                    <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/classes" >
-                        <present present="srconly" targetdir="@{pluginlib}/classes"/>
-                    </fileset>
-                </jar>
+            <!-- Some JAR files don't work well through Pack200. When that's the case, they should
+                 be manually added to this list.
+            -->
+            <property name="pack200.excludes"
+                      value="gnujaxp.jar,mail.jar,activation.jar,bouncycastle.jar,tangosol.jar"/>
 
-                <!-- Clean-up our source files for the "srcinc" files -->
-                <delete dir="@{pluginlib}/classes" />
-                <delete dir="@{pluginlib}/source" />
+			<if>
+				<equals arg1="${pack200.enabled}" arg2="true" />
+				<then>	
+					<for param="jar">
+						<path>
+							<fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/lib" includes="*.jar"
+									 excludes="${pack200.excludes}"/>
+						</path>
+						<sequential>
+							<delete file="@{jar}.pack"/>
+							<pack200 src="@{jar}"
+									 destfile="@{jar}.pack"
+									 gzipoutput="false"
+									/>
+						</sequential>
+					</for>
+					
+		            <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" overwrite="true">
+		                <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target">
+				            <include name="lib/*.pack"/>
+							<include name="web/WEB-INF/web.xml"/>
+		                    <include name="web/WEB-INF/web-custom.xml"/>
+				        </fileset>
+					</copy>
+					
+					<!-- Excluded pack files need to be copied over as well -->
+					<copy todir="${plugin.dev.dest.dir}/@{plugin}/jar/lib" overwrite="true">
+						<fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/lib"
+								 includes="${pack200.excludes}"/>
+					</copy>					
+				</then>
+				<else>
+					<copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" overwrite="true">
+						<fileset dir="${plugin.dev.dest.dir}/@{plugin}/target">
+							<include name="lib/*.jar"/>
+							<include name="web/WEB-INF/web.xml"/>
+							<include name="web/WEB-INF/web-custom.xml"/>
+						</fileset>
+					</copy>
+				</else>				
+			</if>
+			
+            <!-- Copy everything else to Openfire's plugin dir -->
+            <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" overwrite="true">
+                <fileset dir="@{pluginsrc}/@{plugin}">
+                    <include name="classes/**/*.*"/>
+                </fileset>
+                <fileset dir="@{pluginsrc}/@{plugin}/src">
+                    <include name="database/**/*.sql"/>
+                    <include name="i18n/*.properties"/>
+                    <include name="web/**/*.*"/>
+                    <exclude name="web/WEB-INF/web.xml"/>
+                    <exclude name="web/**/*.jsp"/>
+                    <exclude name="web/**/*.jspf"/>
+                    <exclude name="java/**/*.java"/>
+                </fileset>
+            </copy>
 
-                <available file="@{pluginsrc}/@{plugin}/src/include" type="dir"
-                           property="@{plugin}.include.exists"/>
-                <if>
-                    <equals arg1="${@{plugin}.include.exists}" arg2="true"/>
-                    <then>
-                        <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}.jar"
-                             update="true">
-                            <fileset dir="@{pluginsrc}/@{plugin}/src/include" includes="**/*.*"/>
-                        </jar>
-                    </then>
-                </if>
+            <!-- Jar the plugin -->
+            <jar jarfile="${plugin.dest.dir}/@{plugin}.jar">
+                <fileset dir="${plugin.dev.dest.dir}/@{plugin}/jar"/>
+            </jar>
 
-                <!-- Copy anything in the plugin's lib dir to the target lib dir -->
-                <if>
-                    <available file="@{pluginsrc}/@{plugin}/lib" />
-                    <then>
-                        <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/lib" failonerror="false"
-                              overwrite="${overwrite}">
-                            <fileset dir="@{pluginsrc}/@{plugin}/lib" includes="**/*.*"/>
-                        </copy>
-                    </then>
-                </if>
+            <!-- Delete the exploded plugin -->
+            <delete dir="${plugin.dev.dest.dir}/@{plugin}/jar"/>
 
-                <!-- Copy web.xml to web-custom.xml -->
-                <if>
-                    <available file="@{pluginsrc}/@{plugin}/src/web/WEB-INF" />
-                    <then>
-                        <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF" failonerror="false"
-                              overwrite="${overwrite}">
-                            <fileset dir="@{pluginsrc}/@{plugin}/src/web/WEB-INF" includes="web.xml"/>
-                            <mapper type="glob" from="web.xml" to="web-custom.xml"/>
-                        </copy>
-                    </then>
-                </if>
-
-                <!-- Copy the plugin.xml and documentation to the target dir, code below assumes it's there -->
-                <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/jar"/>
-                <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" failonerror="false"
-                      overwrite="${overwrite}">
-                    <fileset dir="@{pluginsrc}/@{plugin}" includes="*.xml, *.html, *.gif, *.png, *.ico"/>
-                </copy>
-
-                <!-- Copy the database and i18n file to the target dir, if they exist. -->
-                <!--<copy todir="${plugin.dev.dest.dir}/@{plugin}/target/database" failonerror="false">-->
-                <!--<fileset dir="@{pluginsrc}/@{plugin}/src/database"/>-->
-                <!--</copy>-->
-
-                <!-- JSPC any JSP pages. Do this conditionally as there might not be a web dir. -->
-                <available property="plugin.@{plugin}.webdocs.available"
-                           type="dir" file="@{pluginsrc}/@{plugin}/src/web"/>
-                <if>
-                    <equals arg1="${plugin.@{plugin}.webdocs.available}" arg2="true"/>
-                    <then>
-
-                        <!-- Continue with JSPC tasks... -->
-
-                        <!-- Create output dir -->
-                        <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/java"/>
-                        <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/classes"/>
-
-                        <!-- Copy jsp's from plugin and web.xml from openfire to a temp dir. We'll
-                             not fail on an error since the web dir might not exist.
-                        -->
-                        <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/web"
-                              overwrite="${overwrite}">
-                            <fileset dir="@{pluginsrc}/@{plugin}/src/web">
-                                <exclude name="WEB-INF/web.xml"/>
-                            </fileset>
-                            <fileset dir="${web.dir}">
-                                <include name="WEB-INF/**/*.*"/>
-                                <exclude name="WEB-INF/web.xml"/>
-                                <exclude name="WEB-INF/classes/openfire_init.xml"/>
-                                <exclude name="WEB-INF/tmp/**/*.*"/>
-                                <exclude name="WEB-INF/work/**/*.*"/>
-                            </fileset>
-                        </copy>
-
-                        <!-- Declare the jspc task with our plugin's classpath -->
-                        <taskdef classname="org.apache.jasper.JspC" name="jasper2" loaderref="jasperB">
-                            <classpath>
-                                <pathelement location="${java.home}/../lib/tools.jar"/>
-                                <pathelement
-                                        location="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}.jar"/>
-                                <path refid="jspc.dependencies"/>
-                                <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target" includes="lib/*.jar"/>
-                                <pathelement path="${compile.dir}"/>
-                            </classpath>
-                        </taskdef>
-
-                        <!-- JSP to Java -->
-                        <jasper2
-                                validateXml="false"
-                                uriroot="${plugin.dev.dest.dir}/@{plugin}/target/web"
-                                outputDir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/java"
-                                package="org.jivesoftware.openfire.plugin.@{plugin}"
-                                webXml="${plugin.dev.dest.dir}/@{plugin}/target/jspc/web.xml"
-                                />
-
-                        <!-- Use xmltask to merge the generated web.xml file and a developer one (if any) -->
-                        <available property="plugin.@{plugin}.webxml.available"
-                                   type="file" file="@{pluginsrc}/@{plugin}/src/web/WEB-INF/web.xml"/>
-
-                        <mkdir dir="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF"/>
-
-                        <if>
-                            <equals arg1="${plugin.@{plugin}.webxml.available}" arg2="true"/>
-                            <then>
-
-                                <!-- Copy the servlet and servlet-mapping elements from the original web.xml to a temp buffer.
-                                     Note: The original web.xml can only contain one servlet and servlet-mapping -->
-                                <xmltask source="@{pluginsrc}/@{plugin}/src/web/WEB-INF/web.xml">
-                                    <copy path="//web-app/servlet[last()]" buffer="foobar"/>
-                                    <copy path="//web-app/servlet-mapping[last()]" buffer="foobar2"/>
-                                </xmltask>
-                                <!-- Add the copied servlet and servlet-mapping elements to the generated web.xml -->
-                                <xmltask source="${plugin.dev.dest.dir}/@{plugin}/target/jspc/web.xml"
-                                         dest="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF/web.xml">
-                                    <insert path="/web-app/servlet[last()]" buffer="foobar"
-                                            position="after"/>
-                                    <insert path="/web-app/servlet-mapping[last()]" buffer="foobar2"
-                                            position="after"/>
-                                </xmltask>
-
-                            </then>
-                            <else>
-                                <copy todir="${plugin.dev.dest.dir}/@{plugin}/target/web/WEB-INF"
-                                      file="${plugin.dev.dest.dir}/@{plugin}/target/jspc/web.xml"
-                                      overwrite="${overwrite}"/>
-                            </else>
-                        </if>
-
-                        <!-- Compile java classes -->
-                        <javac
-                                destdir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/classes"
-                                includeAntRuntime="no"
-                                debug="on"
-                                source="1.5"
-                                target="1.5"
-                                >
-                            <src path="${plugin.dev.dest.dir}/@{plugin}/target/jspc/java"/>
-                            <classpath>
-                                <path refid="jspc.dependencies"/>
-                                <pathelement path="${compile.dir}"/>
-                                <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target" includes="lib/*.jar"/>
-                            </classpath>
-                        </javac>
-
-                        <!-- Make a jar of compiled jsp classes -->
-                        <jar jarfile="${plugin.dev.dest.dir}/@{plugin}/target/lib/plugin-@{plugin}-jspc.jar">
-                            <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/jspc/classes"
-                                     includes="**/*.class"/>
-                        </jar>
-
-                    </then>
-                </if>
-
-                <!-- Some JAR files don't work well through Pack200. When that's the case, they should
-                     be manually added to this list.
-                -->
-                <property name="pack200.excludes"
-                          value="gnujaxp.jar,mail.jar,activation.jar,bouncycastle.jar,tangosol.jar"/>
-
-                <if>
-                    <equals arg1="${pack200.enabled}" arg2="true" />
-                    <then>
-                        <for param="jar">
-                            <path>
-                                <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/lib" includes="*.jar"
-                                         excludes="${pack200.excludes}"/>
-                            </path>
-                            <sequential>
-                                <delete file="@{jar}.pack"/>
-                                <pack200 src="@{jar}"
-                                         destfile="@{jar}.pack"
-                                         gzipoutput="false"
-                                        />
-                            </sequential>
-                        </for>
-
-                        <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" overwrite="true">
-                            <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target">
-                                <include name="lib/*.pack"/>
-                                <include name="web/WEB-INF/web.xml"/>
-                                <include name="web/WEB-INF/web-custom.xml"/>
-                            </fileset>
-                        </copy>
-
-                        <!-- Excluded pack files need to be copied over as well -->
-                        <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar/lib" overwrite="true">
-                            <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target/lib"
-                                     includes="${pack200.excludes}"/>
-                        </copy>
-                    </then>
-                    <else>
-                        <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" overwrite="true">
-                            <fileset dir="${plugin.dev.dest.dir}/@{plugin}/target">
-                                <include name="lib/*.jar"/>
-                                <include name="web/WEB-INF/web.xml"/>
-                                <include name="web/WEB-INF/web-custom.xml"/>
-                            </fileset>
-                        </copy>
-                    </else>
-                </if>
-
-                <!-- Copy everything else to Openfire's plugin dir -->
-                <copy todir="${plugin.dev.dest.dir}/@{plugin}/jar" overwrite="true">
-                    <fileset dir="@{pluginsrc}/@{plugin}">
-                        <include name="classes/**/*.*"/>
-                    </fileset>
-                    <fileset dir="@{pluginsrc}/@{plugin}/src">
-                        <include name="database/**/*.sql"/>
-                        <include name="i18n/*.properties"/>
-                        <include name="web/**/*.*"/>
-                        <exclude name="web/WEB-INF/web.xml"/>
-                        <exclude name="web/**/*.jsp"/>
-                        <exclude name="web/**/*.jspf"/>
-                        <exclude name="java/**/*.java"/>
-                    </fileset>
-                </copy>
-
-                <!-- Jar the plugin -->
-                <jar jarfile="${plugin.dest.dir}/@{plugin}.jar">
-                    <fileset dir="${plugin.dev.dest.dir}/@{plugin}/jar"/>
-                </jar>
-
-                <!-- Delete the exploded plugin -->
-                <delete dir="${plugin.dev.dest.dir}/@{plugin}/jar"/>
-            </try>
-                <catch>
-                    <property name="exception" refid="exception_ref" />
-                    <property name="message" value="Error building plugin: @{plugin}. Exception:${line.separator}${exception}" />
-                    <echo message="${message}" />
-                </catch>
-            </trycatch>
         </sequential>
-
     </macrodef>
 
     <!-- anttasks ============================================================================== -->
@@ -1755,7 +1726,7 @@
             <replacefilter token="%COPYRIGHT%" value="${copyrightyear}"/>
         </replace>
         <copy todir="${target.osx}" file="${basedir}/build/osx/Description.plist"/>
-        <exec executable="/Developer/usr/bin/packagemaker">
+        <exec executable="/Developer/Tools/packagemaker">
             <arg value="-build"/>
             <arg value="-f"/>
             <arg value="${mac.pkg.dir}"/>
@@ -1782,7 +1753,6 @@
         <exec executable="hdiutil" failonerror="true">
             <arg line="attach '${target.osx}/tmp.dmg' -readwrite -noverify -noautoopen -noidme -mountpoint '${mac.dmg.dir}'"/>
         </exec>
-<!-- OF-386 - commented out since it wasn't working with our Bamboo remote agent // TODO: fix it
         <exec executable="osascript" dir="${basedir}/build/osx/" failonerror="true">
             <arg value="dmg_openfire.scpt"/>
             <arg value="Openfire"/>
@@ -1793,7 +1763,6 @@
             <arg value="220"/>
             <arg value="128"/>
         </exec>
--->
         <exec executable="hdiutil" failonerror="true">
             <arg line="detach ${mac.dmg.dir} -quiet -force"/>
         </exec>

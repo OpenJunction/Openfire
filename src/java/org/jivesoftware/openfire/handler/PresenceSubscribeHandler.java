@@ -5,32 +5,14 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
 
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-
-import org.jivesoftware.openfire.ChannelHandler;
-import org.jivesoftware.openfire.PacketDeliverer;
-import org.jivesoftware.openfire.PacketException;
-import org.jivesoftware.openfire.PresenceManager;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.SharedGroupException;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.container.BasicModule;
 import org.jivesoftware.openfire.roster.Roster;
 import org.jivesoftware.openfire.roster.RosterItem;
@@ -40,11 +22,15 @@ import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.JID;
+import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.Presence;
+
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implements the presence protocol. Clients use this protocol to
@@ -90,9 +76,7 @@ import org.xmpp.packet.Presence;
  *
  * @author Iain Shigeoka
  */
-public class PresenceSubscribeHandler extends BasicModule implements ChannelHandler<Presence> {
-
-	private static final Logger Log = LoggerFactory.getLogger(PresenceSubscribeHandler.class);
+public class PresenceSubscribeHandler extends BasicModule implements ChannelHandler {
 
     private RoutingTable routingTable;
     private XMPPServer localServer;
@@ -106,7 +90,8 @@ public class PresenceSubscribeHandler extends BasicModule implements ChannelHand
         super("Presence subscription handler");
     }
 
-    public void process(Presence presence) throws PacketException {
+    public void process(Packet xmppPacket) throws PacketException {
+        Presence presence = (Presence) xmppPacket;
         try {
             JID senderJID = presence.getFrom();
             JID recipientJID = presence.getTo();
@@ -140,23 +125,25 @@ public class PresenceSubscribeHandler extends BasicModule implements ChannelHand
                 if (!(type == Presence.Type.subscribed && recipientRoster != null && !recipientSubChanged)) {
 
                     // If the user is already subscribed to the *local* user's presence then do not 
-                    // forward the subscription request. Also, do not send an auto-reply on behalf
-                    // of the user. This presence stanza is the user's server know that it MUST no 
-                	// longer send notification of the subscription state change to the user. 
-                	// See http://tools.ietf.org/html/rfc3921#section-7 and/or OF-38 
+                    // forward the subscription request and instead send an auto-reply on behalf
+                    // of the user
                     if (type == Presence.Type.subscribe && recipientRoster != null && !recipientSubChanged) {
                         try {
                             RosterItem.SubType subType = recipientRoster.getRosterItem(senderJID)
                                     .getSubStatus();
                             if (subType == RosterItem.SUB_FROM || subType == RosterItem.SUB_BOTH) {
+                                // auto-reply by sending a presence stanza of type "subscribed"
+                                // to the contact on behalf of the user
+                                Presence reply = new Presence();
+                                reply.setTo(senderJID);
+                                reply.setFrom(recipientJID);
+                                reply.setType(Presence.Type.subscribed);
+                                deliverer.deliver(reply);
                                 return;
                             }
                         }
                         catch (UserNotFoundException e) {
                             // Weird case: Roster item does not exist. Should never happen
-                        	Log.error("User does not exist while trying to update roster item. " +
-                        			"This should never happen (this indicates a programming " +
-                        			"logic error). Processing stanza: " + presence.toString(), e);
                         }
                     }
 
@@ -168,8 +155,7 @@ public class PresenceSubscribeHandler extends BasicModule implements ChannelHand
                     if (!jids.isEmpty()) {
                         for (JID jid : jids) {
                             Presence presenteToSend = presence.createCopy();
-                            // Stamp the presence with the user's bare JID as the 'from' address,
-                            // as required by section 8.2.5 of RFC 3921
+                            // Stamp the presence with the user's bare JID as the 'from' address
                             presenteToSend.setFrom(senderJID.toBareJID());
                             routingTable.routePacket(jid, presenteToSend, false);
                         }
@@ -231,15 +217,14 @@ public class PresenceSubscribeHandler extends BasicModule implements ChannelHand
     }
 
     /**
-     * Manage the subscription request. This method updates a user's roster
-     * state, storing any changes made, and updating the roster owner if changes
-     * occured.
+     * Manage the subscription request. This method retrieves a user's roster
+     * and updates it's state, storing any changes made, and updating the roster
+     * owner if changes occured.
      *
      * @param target    The roster target's jid (the item's jid to be changed)
      * @param isSending True if the request is being sent by the owner
      * @param type      The subscription change type (subscribe, unsubscribe, etc.)
-     * @param roster    The Roster that is updated.
-     * @return <tt>true</tt> if the subscription state has changed.
+     * @return true if the subscription state has changed.
      */
     private boolean manageSub(JID target, boolean isSending, Presence.Type type, Roster roster)
             throws UserAlreadyExistsException, SharedGroupException
@@ -487,8 +472,7 @@ public class PresenceSubscribeHandler extends BasicModule implements ChannelHand
         }
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         localServer = server;
         serverName = server.getServerInfo().getXMPPDomain();

@@ -5,37 +5,28 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub.models;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.QName;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.group.Group;
 import org.jivesoftware.openfire.pubsub.Node;
 import org.jivesoftware.openfire.roster.Roster;
 import org.jivesoftware.openfire.roster.RosterItem;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Anyone in the specified roster group(s) may subscribe and retrieve items.
@@ -44,13 +35,10 @@ import org.xmpp.packet.PacketError;
  */
 public class RosterAccess extends AccessModel {
 
-	private static final Logger Log = LoggerFactory.getLogger(RosterAccess.class);
-
     RosterAccess() {
     }
 
-    @Override
-	public boolean canSubscribe(Node node, JID owner, JID subscriber) {
+    public boolean canSubscribe(Node node, JID owner, JID subscriber) {
         // Let node owners and sysadmins always subcribe to the node
         if (node.isAdmin(owner)) {
             return true;
@@ -97,29 +85,24 @@ public class RosterAccess extends AccessModel {
         return false;
     }
 
-    @Override
-	public boolean canAccessItems(Node node, JID owner, JID subscriber) {
+    public boolean canAccessItems(Node node, JID owner, JID subscriber) {
         return canSubscribe(node, owner, subscriber);
     }
 
-    @Override
-	public String getName() {
+    public String getName() {
         return "roster";
     }
 
-    @Override
-	public PacketError.Condition getSubsriptionError() {
+    public PacketError.Condition getSubsriptionError() {
         return PacketError.Condition.not_authorized;
     }
 
-    @Override
-	public Element getSubsriptionErrorDetail() {
+    public Element getSubsriptionErrorDetail() {
         return DocumentHelper.createElement(
                 QName.get("not-in-roster-group", "http://jabber.org/protocol/pubsub#errors"));
     }
 
-    @Override
-	public boolean isAuthorizationRequired() {
+    public boolean isAuthorizationRequired() {
         return false;
     }
 }

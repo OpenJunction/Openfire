@@ -1,37 +1,20 @@
-/**
- * Copyright (C) 2004-2009 Jive Software. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.jivesoftware.openfire.clearspace;
-
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 
 import org.dom4j.Attribute;
 import org.dom4j.Element;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.muc.MUCEventDelegate;
 import org.jivesoftware.openfire.muc.MUCRoom;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Handles checking with Clearspace regarding whether a user can join a particular MUC room (based
@@ -44,8 +27,6 @@ import org.xmpp.packet.PacketError;
  */
 public class ClearspaceMUCEventDelegate extends MUCEventDelegate {
 
-	private static final Logger Log = LoggerFactory.getLogger(ClearspaceMUCEventDelegate.class);
-
     private String csMucDomain;
     private String csComponentAddress;
     private final String GET_ROOM_CONFIG_WARNING ="Clearspace sent an unexpected reply to a get-room-config request.";
@@ -56,8 +37,7 @@ public class ClearspaceMUCEventDelegate extends MUCEventDelegate {
         csComponentAddress = ClearspaceManager.CLEARSPACE_COMPONENT + "." + xmppDomain;
     }
 
-    @Override
-	public InvitationResult sendingInvitation(MUCRoom room, JID invitee, JID inviter, String reason)
+    public InvitationResult sendingInvitation(MUCRoom room, JID invitee, JID inviter, String reason)
     {
         // Packet should look like:
         // <iq to="clearspace.example.org" from="clearspace-conference.example.org">
@@ -104,8 +84,7 @@ public class ClearspaceMUCEventDelegate extends MUCEventDelegate {
      * @param userjid  the JID of the user attempting to join the room.
      * @return true if the user is allowed to join the room.
      */
-    @Override
-	public boolean joiningRoom(MUCRoom room, JID userjid) {
+    public boolean joiningRoom(MUCRoom room, JID userjid) {
         // Always allow an owner to join the room (especially since they need to join to configure the
         // room on initial creation).
         Collection<String> owners = room.getOwners();
@@ -147,13 +126,11 @@ public class ClearspaceMUCEventDelegate extends MUCEventDelegate {
         return false;
     }
 
-    @Override
-	public boolean shouldRecreate(String roomName, JID userjid) {
+    public boolean shouldRecreate(String roomName, JID userjid) {
         return !(roomName + "@" + csComponentAddress).equals(userjid.toBareJID());
     }
 
-    @Override
-	public Map<String, String> getRoomConfig(String roomName) {
+    public Map<String, String> getRoomConfig(String roomName) {
         Map<String, String> roomConfig = new HashMap<String, String>();
 
         IQ iq = new IQ(IQ.Type.get);
@@ -213,8 +190,7 @@ public class ClearspaceMUCEventDelegate extends MUCEventDelegate {
      * @param userjid  the JID of the user attempting to destroy the room.
      * @return true if the user is allowed to destroy the room.
      */
-    @Override
-	public boolean destroyingRoom(String roomName, JID userjid) {
+    public boolean destroyingRoom(String roomName, JID userjid) {
         // We never allow destroying a room as a user, but clearspace components are permitted.
         return ClearspaceManager.getInstance().isFromClearspace(userjid);
     }

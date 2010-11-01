@@ -5,57 +5,26 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc.spi;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.PacketException;
 import org.jivesoftware.openfire.PacketRouter;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
-import org.jivesoftware.openfire.muc.CannotBeInvitedException;
-import org.jivesoftware.openfire.muc.ConflictException;
-import org.jivesoftware.openfire.muc.ForbiddenException;
-import org.jivesoftware.openfire.muc.HistoryRequest;
-import org.jivesoftware.openfire.muc.MUCRole;
-import org.jivesoftware.openfire.muc.MUCRoom;
-import org.jivesoftware.openfire.muc.MUCUser;
-import org.jivesoftware.openfire.muc.MultiUserChatService;
-import org.jivesoftware.openfire.muc.NotAcceptableException;
-import org.jivesoftware.openfire.muc.NotAllowedException;
-import org.jivesoftware.openfire.muc.RegistrationRequiredException;
-import org.jivesoftware.openfire.muc.RoomLockedException;
-import org.jivesoftware.openfire.muc.ServiceUnavailableException;
+import org.jivesoftware.openfire.muc.*;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.NotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.xmpp.packet.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Representation of users interacting with the chat service. A user
@@ -70,8 +39,6 @@ import org.xmpp.packet.Presence;
  * @author Gaston Dombiak
  */
 public class LocalMUCUser implements MUCUser {
-
-	private static final Logger Log = LoggerFactory.getLogger(LocalMUCUser.class);
 
     /** The chat server this user belongs to. */
     private MultiUserChatService server;
@@ -315,16 +282,15 @@ public class LocalMUCUser implements MUCUser {
                                     // Send invitations to invitees
                                     for (Iterator it=userInfo.elementIterator("invite");it.hasNext();) {
                                         Element info = (Element) it.next();
-                                        JID jid = new JID(info.attributeValue("to"));
 
                                         // Add the user as a member of the room if the room is
                                         // members only
                                         if (room.isMembersOnly()) {
-                                            room.addMember(jid, null, role);
+                                            room.addMember(info.attributeValue("to"), null, role);
                                         }
 
                                         // Send the invitation to the invitee
-                                        room.sendInvitation(jid,
+                                        room.sendInvitation(new JID(info.attributeValue("to")),
                                                 info.elementTextTrim("reason"), role, extensions);
                                     }
                                 }
@@ -440,7 +406,7 @@ public class LocalMUCUser implements MUCUser {
                     }
                     catch (Exception e) {
                         sendErrorPacket(packet, PacketError.Condition.internal_server_error);
-                        Log.error(e.getMessage(), e);
+                        Log.error(e);
                     }
                 }
             }
@@ -546,7 +512,7 @@ public class LocalMUCUser implements MUCUser {
                             role.getChatRoom().leaveRoom(role);
                         }
                         catch (Exception e) {
-                            Log.error(e.getMessage(), e);
+                            Log.error(e);
                         }
                     }
                     else {

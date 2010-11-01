@@ -4,35 +4,23 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.security;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.database.SequenceManager;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.util.JiveConstants;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.openfire.XMPPServer;
+
+import java.util.List;
+import java.util.Date;
+import java.util.ArrayList;
+import java.sql.*;
 
 /**
  * The default security audit provider stores the logs in a ofSecurityAuditLog table.
@@ -40,8 +28,6 @@ import org.slf4j.LoggerFactory;
  * @author Daniel Henninger
  */
 public class DefaultSecurityAuditProvider implements SecurityAuditProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(DefaultSecurityAuditProvider.class);
 
     private static final String LOG_ENTRY =
             "INSERT INTO ofSecurityAuditLog(msgID,username,entryStamp,summary,node,details) VALUES(?,?,?,?,?,?)";
@@ -124,7 +110,12 @@ public class DefaultSecurityAuditProvider implements SecurityAuditProvider {
         try {
             con = DbConnectionManager.getConnection();
             pstmt = DbConnectionManager.createScrollablePreparedStatement(con, sql);
-            
+            if (skipEvents != null) {
+                DbConnectionManager.scrollResultSet(rs, skipEvents);
+            }
+            if (numEvents != null) {
+                DbConnectionManager.setFetchSize(rs, numEvents);
+            }
             int i = 1;
             if (username != null) {
                 pstmt.setString(i, username);
@@ -137,15 +128,7 @@ public class DefaultSecurityAuditProvider implements SecurityAuditProvider {
             if (endTime != null) {
                 pstmt.setLong(i, endTime.getTime());
             }
-            
             rs = pstmt.executeQuery();
-            if (skipEvents != null) {
-                DbConnectionManager.scrollResultSet(rs, skipEvents);
-            }
-            if (numEvents != null) {
-                DbConnectionManager.setFetchSize(rs, numEvents);
-            }
-            
             int count = 0;
             while (rs.next() && count < numEvents) {
                 SecurityAuditEvent event = new SecurityAuditEvent();
@@ -160,7 +143,7 @@ public class DefaultSecurityAuditProvider implements SecurityAuditProvider {
             }
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

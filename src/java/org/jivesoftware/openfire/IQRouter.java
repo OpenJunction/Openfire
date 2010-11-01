@@ -5,27 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.container.BasicModule;
@@ -38,15 +23,12 @@ import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.TaskEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.component.IQResultListener;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
+import org.xmpp.packet.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Routes iq packets throughout the server. Routing is based on the recipient
@@ -58,9 +40,7 @@ import org.xmpp.packet.PacketError;
  */
 public class IQRouter extends BasicModule {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQRouter.class);
-
-	private RoutingTable routingTable;
+    private RoutingTable routingTable;
     private MulticastRouter multicastRouter;
     private String serverName;
     private List<IQHandler> iqHandlers = new ArrayList<IQHandler>();
@@ -109,7 +89,7 @@ public class IQRouter extends BasicModule {
                 reply.setError(PacketError.Condition.bad_request);
                 session.process(reply);
                 Log.warn("User tried to authenticate with this server using an unknown receipient: " +
-                        packet.toXML());
+                        packet);
             }
             else if (session == null || session.getStatus() == Session.STATUS_AUTHENTICATED || (
                     isLocalServer(to) && (
@@ -249,8 +229,7 @@ public class IQRouter extends BasicModule {
         resultTimeout.put(id, System.currentTimeMillis() + timeoutmillis);
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         TaskEngine.getInstance().scheduleAtFixedRate(new TimeoutTask(), 5000, 5000);
         serverName = server.getServerInfo().getXMPPDomain();
@@ -334,7 +313,7 @@ public class IQRouter extends BasicModule {
                 if (namespace == null) {
                     if (packet.getType() != IQ.Type.result && packet.getType() != IQ.Type.error) {
                         // Do nothing. We can't handle queries outside of a valid namespace
-                        Log.warn("Unknown packet " + packet.toXML());
+                        Log.warn("Unknown packet " + packet);
                     }
                 }
                 else {
@@ -392,7 +371,7 @@ public class IQRouter extends BasicModule {
 
     private void sendErrorPacket(IQ originalPacket, PacketError.Condition condition) {
         if (IQ.Type.error == originalPacket.getType()) {
-            Log.error("Cannot reply an IQ error to another IQ error: " + originalPacket.toXML());
+            Log.error("Cannot reply an IQ error to another IQ error: " + originalPacket);
             return;
         }
         IQ reply = IQ.createResultIQ(originalPacket);
@@ -434,11 +413,11 @@ public class IQRouter extends BasicModule {
         // If a route to the target address was not found then try to answer a
         // service_unavailable error code to the sender of the IQ packet
         if (IQ.Type.result != iq.getType() && IQ.Type.error != iq.getType()) {
-            Log.info("Packet sent to unreachable address " + packet.toXML());
+            Log.info("Packet sent to unreachable address " + packet);
             sendErrorPacket(iq, PacketError.Condition.service_unavailable);
         }
         else {
-            Log.warn("Error or result packet could not be delivered " + packet.toXML());
+            Log.warn("Error or result packet could not be delivered " + packet);
         }
     }
     

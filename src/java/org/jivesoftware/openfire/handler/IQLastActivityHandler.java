@@ -1,19 +1,3 @@
-/**
- * Copyright (C) 2004-2009 Jive Software. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.jivesoftware.openfire.handler;
 
 import org.dom4j.Element;
@@ -52,8 +36,7 @@ public class IQLastActivityHandler extends IQHandler implements ServerFeaturesPr
         info = new IQHandlerInfo("query", "jabber:iq:last");
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException {
         IQ reply = IQ.createResultIQ(packet);
         Element lastActivity = reply.setChildElement("query", "jabber:iq:last");
         String sender = packet.getFrom().getNode();
@@ -100,8 +83,7 @@ public class IQLastActivityHandler extends IQHandler implements ServerFeaturesPr
         return reply;
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 
@@ -111,8 +93,7 @@ public class IQLastActivityHandler extends IQHandler implements ServerFeaturesPr
         return features.iterator();
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         presenceManager = server.getPresenceManager();
         rosterManager = server.getRosterManager();

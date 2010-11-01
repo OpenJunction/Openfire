@@ -1,31 +1,16 @@
 /**
  * $RCSfile$
- * $Revision: 11388 $
- * $Date: 2009-11-08 16:26:55 -0800 (Sun, 08 Nov 2009) $
+ * $Revision: 10308 $
+ * $Date: 2008-04-28 13:13:42 -0700 (Mon, 28 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.admin;
-
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Enumeration;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentFactory;
@@ -33,12 +18,14 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.clearspace.ClearspaceManager;
-import org.jivesoftware.util.ClassUtils;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.*;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * A model for admin tab and sidebar info. This class loads in XML definitions of the
@@ -51,8 +38,6 @@ import org.slf4j.LoggerFactory;
  * <tt>admin-sidebar.xml</tt> file for documentation of its format.
  */
 public class AdminConsole {
-
-	private static final Logger Log = LoggerFactory.getLogger(AdminConsole.class);
 
     private static Element coreModel;
     private static Map<String,Element> overrideModels;

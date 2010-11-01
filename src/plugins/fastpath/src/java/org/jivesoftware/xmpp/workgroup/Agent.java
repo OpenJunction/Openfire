@@ -5,36 +5,26 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
+
+import org.jivesoftware.xmpp.workgroup.spi.JiveLiveProperties;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.dom4j.QName;
+import org.jivesoftware.database.DbConnectionManager;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.IQ;
+import org.xmpp.packet.JID;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.Comparator;
-
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.QName;
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.xmpp.workgroup.spi.JiveLiveProperties;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
 
 /**
  * Workgroup agents, which are stored in the database.
@@ -42,8 +32,6 @@ import org.xmpp.packet.JID;
  * @author Derek DeMoro
  */
 public class Agent {
-
-	private static final Logger Log = LoggerFactory.getLogger(Agent.class);
 
     private static final String LOAD_AGENT =
             "SELECT name, agentJID, maxchats FROM fpAgent WHERE agentID=?";
@@ -88,8 +76,7 @@ public class Agent {
         loadAgent(agentID);
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return "AI-" + Integer.toHexString(hashCode()) + " JID " + agentJID.toString() + " MAX " +
                 Integer.toString(maxChats);
     }
@@ -205,7 +192,7 @@ public class Agent {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -231,7 +218,7 @@ public class Agent {
             pstmt.executeUpdate();
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -322,9 +309,9 @@ public class Agent {
      * <p>The comparator does not handle other objects, using Agents with any other
      * object type in the same sorted container will cause a ClassCastException to be thrown.</p>
      */
-    class AgentAddressComparator implements Comparator<Agent> {
-        public int compare(Agent o1, Agent o2) {
-            return o1.getAgentJID().toBareJID().compareTo(o2.getAgentJID().toBareJID());
+    class AgentAddressComparator implements Comparator {
+        public int compare(Object o1, Object o2) {
+            return ((Agent)o1).getAgentJID().toBareJID().compareTo( ((Agent)o2).getAgentJID().toBareJID());
         }
     }
 }

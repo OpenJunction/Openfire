@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.sip.tester.stack;
@@ -39,7 +31,7 @@ import java.util.List;
 public class SIPTest implements CommunicationsListener {
 
     private SipAccount sipAccount;
-    //private InetAddress localAddress;
+    private InetAddress localAddress;
     private Result result = null;
     private SipManager sipManager = null;
     private List<TestListener> listeners = new ArrayList<TestListener>();
@@ -52,7 +44,7 @@ public class SIPTest implements CommunicationsListener {
 
     public SIPTest(InetAddress localAddress, SipAccount sipAccount) {
         this.sipAccount = sipAccount;
-        //this.localAddress = localAddress;
+        this.localAddress = localAddress;
         sipManager = new SipManager(localAddress);
     }
 
@@ -93,25 +85,25 @@ public class SIPTest implements CommunicationsListener {
                     sipManager.startRegisterProcess(sipAccount.getSipUsername(), sipAccount.getAuthUsername(), sipAccount.getPassword());
                 } catch (CommunicationsException e) {
                     setResult(Result.NetworkError);
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
 
                 try {
                     Thread.sleep(timeout);
                 } catch (InterruptedException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
 
                 if (getResult().equals(Result.Trying)) setResult(Result.Timeout);
 
             } catch (CommunicationsException e) {
                 setResult(Result.NetworkError);
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             } finally {
                 try {
                     sipManager.stop();
                 } catch (CommunicationsException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }
@@ -135,7 +127,7 @@ public class SIPTest implements CommunicationsListener {
         try {
             sipManager.unregister();
         } catch (CommunicationsException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -161,7 +153,7 @@ public class SIPTest implements CommunicationsListener {
             sipManager.stop();
             Log.debug("Stopped");
         } catch (CommunicationsException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 

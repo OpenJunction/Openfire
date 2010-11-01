@@ -5,20 +5,29 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.component;
+
+import org.dom4j.Element;
+import org.jivesoftware.openfire.*;
+import org.jivesoftware.openfire.container.BasicModule;
+import org.jivesoftware.openfire.disco.IQDiscoItemsHandler;
+import org.jivesoftware.openfire.session.ComponentSession;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.cache.CacheFactory;
+import org.xmpp.component.Component;
+import org.xmpp.component.ComponentException;
+import org.xmpp.component.ComponentManager;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.IQ;
+import org.xmpp.packet.JID;
+import org.xmpp.packet.Packet;
+import org.xmpp.packet.Presence;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,29 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-import org.dom4j.Element;
-import org.jivesoftware.openfire.PacketException;
-import org.jivesoftware.openfire.PacketRouter;
-import org.jivesoftware.openfire.RoutableChannelHandler;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.container.BasicModule;
-import org.jivesoftware.openfire.disco.IQDiscoItemsHandler;
-import org.jivesoftware.openfire.session.ComponentSession;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.component.Component;
-import org.xmpp.component.ComponentException;
-import org.xmpp.component.ComponentManager;
-import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.component.IQResultListener;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.Presence;
 
 /**
  * Manages the registration and delegation of Components. The ComponentManager
@@ -65,8 +51,6 @@ import org.xmpp.packet.Presence;
  * @author Derek DeMoro
  */
 public class InternalComponentManager extends BasicModule implements ComponentManager, RoutableChannelHandler {
-
-	private static final Logger Log = LoggerFactory.getLogger(InternalComponentManager.class);
 
     final private Map<String, RoutableComponents> routables = new ConcurrentHashMap<String, RoutableComponents>();
     private Map<String, IQ> componentInfo = new ConcurrentHashMap<String, IQ>();
@@ -97,14 +81,12 @@ public class InternalComponentManager extends BasicModule implements ComponentMa
         return instance;
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         routingTable = server.getRoutingTable();
     }
 
-    @Override
-	public void start() {
+    public void start() {
         // Set this ComponentManager as the current component manager
         ComponentManagerFactory.setComponentManager(instance);
 
@@ -118,8 +100,7 @@ public class InternalComponentManager extends BasicModule implements ComponentMa
         }
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
         if (getAddress() != null) {
             // Remove the route to this service
@@ -282,7 +263,7 @@ public class InternalComponentManager extends BasicModule implements ComponentMa
         }
     }
 
-    public IQ query(Component component, IQ packet, long timeout) throws ComponentException {
+    public IQ query(Component component, IQ packet, int timeout) throws ComponentException {
         final LinkedBlockingQueue<IQ> answer = new LinkedBlockingQueue<IQ>(8);
         XMPPServer.getInstance().getIQRouter().addIQResultListener(packet.getID(), new IQResultListener() {
             public void receivedAnswer(IQ packet) {
@@ -359,6 +340,57 @@ public class InternalComponentManager extends BasicModule implements ComponentMa
         return false;
     }
 
+    public org.xmpp.component.Log getLog() {
+        return new  org.xmpp.component.Log() {
+            public void error(String msg) {
+                Log.error(msg);
+            }
+
+            public void error(String msg, Throwable throwable) {
+                Log.error(msg, throwable);
+            }
+
+            public void error(Throwable throwable) {
+                Log.error(throwable);
+            }
+
+            public void warn(String msg) {
+                Log.warn(msg);
+            }
+
+            public void warn(String msg, Throwable throwable) {
+                Log.warn(msg, throwable);
+            }
+
+            public void warn(Throwable throwable) {
+                Log.warn(throwable);
+            }
+
+            public void info(String msg) {
+                Log.info(msg);
+            }
+
+            public void info(String msg, Throwable throwable) {
+                Log.info(msg, throwable);
+            }
+
+            public void info(Throwable throwable) {
+                Log.info(throwable);
+            }
+
+            public void debug(String msg) {
+                Log.debug("InternalComponentManager: "+msg);
+            }
+
+            public void debug(String msg, Throwable throwable) {
+                Log.debug(msg, throwable);
+            }
+
+            public void debug(Throwable throwable) {
+                Log.debug("InternalComponentManager: ",throwable);
+            }
+        };
+    }
 
     /**
      * Retrieves the <code>Component</code> which is mapped to the specified JID. The

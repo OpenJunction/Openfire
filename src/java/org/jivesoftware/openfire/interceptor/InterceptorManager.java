@@ -5,20 +5,17 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.interceptor;
+
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.session.Session;
+import org.jivesoftware.util.Log;
+import org.xmpp.packet.Packet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -26,12 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.session.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.Packet;
 
 /**
  * An InterceptorManager manages the list of global interceptors and per-user
@@ -49,8 +40,6 @@ import org.xmpp.packet.Packet;
  * @author Gaston Dombiak
  */
 public class InterceptorManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(InterceptorManager.class);
 
     private static InterceptorManager instance = new InterceptorManager();
 

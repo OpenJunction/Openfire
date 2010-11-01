@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
@@ -41,8 +33,7 @@ public class MXParser extends org.xmlpull.mxp1.MXParser {
      */
     private long lastHeartbeat = 0;
 
-    @Override
-	protected int nextImpl()
+    protected int nextImpl()
         throws XmlPullParserException, IOException
     {
         text = null;
@@ -360,27 +351,5 @@ public class MXParser extends org.xmlpull.mxp1.MXParser {
         reset();
         reader = oldReader;
         inputEncoding = oldEncoding;
-    }
-
-	/**
-	 * Makes sure that each individual character is a valid XML character.
-	 * 
-	 * Note that when MXParser is being modified to handle multibyte chars correctly, this method needs to change (as
-	 * then, there are more codepoints to check).
-	 */
-    @Override
-    protected char more() throws IOException, XmlPullParserException {
-    	final char codePoint  = super.more(); // note - this does NOT return a codepoint now, but simply a (single byte) character!
-		if ((codePoint == 0x0) ||  // 0x0 is not allowed, but flash clients insist on sending this as the very first character of a stream. We should stop allowing this codepoint after the first byte has been parsed.
-				(codePoint == 0x9) ||          				     
-				(codePoint == 0xA) ||
-				(codePoint == 0xD) ||
-				((codePoint >= 0x20) && (codePoint <= 0xD7FF)) ||
-				((codePoint >= 0xE000) && (codePoint <= 0xFFFD)) ||
-				((codePoint >= 0x10000) && (codePoint <= 0x10FFFF))) {
-			return codePoint;
-		}
-		
-		throw new XmlPullParserException("Illegal XML character: " + Integer.parseInt(codePoint+"", 16));
     }
 }

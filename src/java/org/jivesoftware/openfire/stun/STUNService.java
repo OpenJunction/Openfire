@@ -1,20 +1,26 @@
 /**
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.stun;
+
+import de.javawi.jstun.test.demo.StunServer;
+import org.dom4j.Element;
+import org.jivesoftware.openfire.IQHandlerInfo;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.auth.UnauthorizedException;
+import org.jivesoftware.openfire.container.BasicModule;
+import org.jivesoftware.openfire.handler.IQHandler;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.PropertyEventDispatcher;
+import org.jivesoftware.util.PropertyEventListener;
+import org.xmpp.packet.IQ;
+import org.xmpp.packet.PacketError;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -25,22 +31,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
-import org.dom4j.Element;
-import org.jivesoftware.openfire.IQHandlerInfo;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.auth.UnauthorizedException;
-import org.jivesoftware.openfire.container.BasicModule;
-import org.jivesoftware.openfire.handler.IQHandler;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.PacketError;
-
-import de.javawi.jstun.test.demo.StunServer;
-
 /**
  * STUN server and service module. It provides address discovery for p2p sessions to be
  * used for media transmission and receiving of UDP packets. It's especially useful for
@@ -49,8 +39,6 @@ import de.javawi.jstun.test.demo.StunServer;
  * @author Thiago Camargo
  */
 public class STUNService extends BasicModule {
-
-	private static final Logger Log = LoggerFactory.getLogger(STUNService.class);
 
     private static final String ELEMENT_NAME = "stun";
     private static final String NAMESPACE = "google:jingleinfo";
@@ -79,14 +67,12 @@ public class STUNService extends BasicModule {
         super("STUN Service");
     }
 
-    @Override
-	public void destroy() {
+    public void destroy() {
         super.destroy();
         stunServer = null;
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
 
         this.enabled = JiveGlobals.getBooleanProperty("stun.enabled", true);
@@ -150,8 +136,7 @@ public class STUNService extends BasicModule {
         });
     }
 
-    @Override
-	public void start() {
+    public void start() {
         if (isEnabled()) {
             startSTUNService();
             if (isLocalEnabled()) {
@@ -200,8 +185,7 @@ public class STUNService extends BasicModule {
         }
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
         this.enabled = false;
         stopSTUNService();
@@ -215,8 +199,7 @@ public class STUNService extends BasicModule {
         stunServer = null;
     }
 
-    @Override
-	public String getName() {
+    public String getName() {
         return "stun";
     }
 
@@ -393,8 +376,7 @@ public class STUNService extends BasicModule {
             super("stun");
         }
 
-        @Override
-		public IQ handleIQ(IQ iq) throws UnauthorizedException {
+        public IQ handleIQ(IQ iq) throws UnauthorizedException {
             IQ reply = IQ.createResultIQ(iq);
             Element childElement = iq.getChildElement();
             String namespace = childElement.getNamespaceURI();
@@ -428,7 +410,7 @@ public class STUNService extends BasicModule {
                         }
                     }
                     catch (UnknownHostException e) {
-                        Log.error(e.getMessage(), e);
+                        Log.error(e);
                     }
                 }
 
@@ -441,13 +423,12 @@ public class STUNService extends BasicModule {
                 Log.debug("STUNService: RETURNED:" + reply.toXML());
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
             return reply;
         }
 
-        @Override
-		public IQHandlerInfo getInfo() {
+        public IQHandlerInfo getInfo() {
             return new IQHandlerInfo(ELEMENT_NAME, NAMESPACE);
         }
     }

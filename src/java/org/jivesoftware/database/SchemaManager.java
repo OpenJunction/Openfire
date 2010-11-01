@@ -4,42 +4,23 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.database;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Arrays;
-
-import org.jivesoftware.database.bugfix.OF33;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.container.Plugin;
 import org.jivesoftware.openfire.container.PluginManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.sql.*;
+import java.util.Arrays;
 
 /**
  * Manages database schemas for Openfire and Openfire plugins. The manager uses the
@@ -56,8 +37,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SchemaManager {
 
-	private static final Logger Log = LoggerFactory.getLogger(SchemaManager.class);
-
     private static final String CHECK_VERSION_OLD =
             "SELECT minorVersion FROM jiveVersion";
     private static final String CHECK_VERSION =
@@ -68,7 +47,7 @@ public class SchemaManager {
     /**
      * Current Openfire database schema version.
      */
-    private static final int DATABASE_VERSION = 21;
+    private static final int DATABASE_VERSION = 20;
 
     /**
      * Creates a new Schema manager.
@@ -91,8 +70,7 @@ public class SchemaManager {
         try {
             return checkSchema(con, "openfire", DATABASE_VERSION,
                     new ResourceLoader() {
-                        @Override
-						public InputStream loadResource(String resourceName) {
+                        public InputStream loadResource(String resourceName) {
                             File file = new File(JiveGlobals.getHomeDirectory() + File.separator +
                                     "resources" + File.separator + "database", resourceName);
                             try {
@@ -134,8 +112,7 @@ public class SchemaManager {
         try {
             con = DbConnectionManager.getConnection();
             return checkSchema(con, schemaKey, schemaVersion, new ResourceLoader() {
-                @Override
-				public InputStream loadResource(String resourceName) {
+                public InputStream loadResource(String resourceName) {
                     File file = new File(pluginManager.getPluginDirectory(plugin) +
                             File.separator + "database", resourceName);
                     try {
@@ -185,7 +162,8 @@ public class SchemaManager {
         catch (SQLException sqle) {
             // The database schema must not be installed.
             Log.debug("SchemaManager: Error verifying "+schemaKey+" version, probably ignorable.", sqle);
-            DbConnectionManager.closeStatement(rs, pstmt);
+            DbConnectionManager.closeResultSet(rs);
+            DbConnectionManager.closeStatement(pstmt);
             if (schemaKey.equals("openfire")) {
                 try {
                     // Releases of Openfire before 3.6.0 stored the version in a jiveVersion table.
@@ -199,13 +177,15 @@ public class SchemaManager {
                 catch (SQLException sqlea) {
                     // The database schema must not be installed.
                     Log.debug("SchemaManager: Error verifying "+schemaKey+" version, probably ignorable.", sqlea);
-                    DbConnectionManager.closeStatement(rs, pstmt);
-
+                    DbConnectionManager.closeResultSet(rs);
+                    DbConnectionManager.closeStatement(pstmt);
                     // Releases of Openfire before 2.6.0 stored a major and minor version
                     // number so the normal check for version can fail. Check for the
                     // version using the old format in that case.
                     try {
-
+                        if (pstmt != null) {
+                            pstmt.close();
+                        }
                         pstmt = con.prepareStatement(CHECK_VERSION_OLD);
                         rs = pstmt.executeQuery();
                         if (rs.next()) {
@@ -220,7 +200,8 @@ public class SchemaManager {
             }
         }
         finally {
-            DbConnectionManager.closeStatement(rs, pstmt);
+            DbConnectionManager.closeResultSet(rs);
+            DbConnectionManager.closeStatement(pstmt);
         }
         // If already up to date, return.
         if (currentVersion >= requiredVersion) {
@@ -244,7 +225,7 @@ public class SchemaManager {
                 executeSQLScript(con, resource, !schemaKey.equals("openfire") && !schemaKey.equals("wildfire"));
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
                 return false;
             }
             finally {
@@ -282,16 +263,6 @@ public class SchemaManager {
             // Run all upgrade scripts until we're up to the latest schema.
             for (int i = currentVersion + 1; i <= requiredVersion; i++) {
                 InputStream resource = getUpgradeResource(resourceLoader, i, schemaKey);
-                
-                // apply the 'database-patches-done-in-java'
-				try {
-					if (i == 21 && schemaKey.equals("openfire")) {
-						OF33.executeFix(con);
-					}
-				} catch (Exception e) {
-					Log.error(e.getMessage(), e);
-					return false;
-				}
                 if (resource == null) {
                     continue;
                 }
@@ -299,7 +270,7 @@ public class SchemaManager {
                     executeSQLScript(con, resource, !schemaKey.equals("openfire") && !schemaKey.equals("wildfire"));
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                     return false;
                 }
                 finally {
@@ -398,22 +369,19 @@ public class SchemaManager {
                             DbConnectionManager.getDatabaseType() == DbConnectionManager.DatabaseType.db2) {
                         command.deleteCharAt(command.length() - 1);
                     }
-                    PreparedStatement pstmt = null;
                     try {
                         String cmdString = command.toString();
                         if (autoreplace)  {
                             cmdString = cmdString.replaceAll("jiveVersion", "ofVersion");
                         }
-                        pstmt = con.prepareStatement(cmdString);
-                        pstmt.execute();
+                        Statement stmt = con.createStatement();
+                        stmt.execute(cmdString);
+                        stmt.close();
                     }
                     catch (SQLException e) {
                         // Lets show what failed
                         Log.error("SchemaManager: Failed to execute SQL:\n"+command.toString());
                         throw e;
-                    }
-                    finally {
-                        DbConnectionManager.closeStatement(pstmt);
                     }
                 }
             }
@@ -424,7 +392,7 @@ public class SchemaManager {
                     in.close();
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }

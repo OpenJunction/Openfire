@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.util.cache;
 
@@ -185,17 +177,6 @@ public class DummyExternalizableUtil implements ExternalizableUtilStrategy {
         return 0;
     }
 
-    public void writeSerializableCollection(DataOutput out, Collection<? extends Serializable> value)
-	    throws IOException {
-    	// Do nothing
-	}
-	
-	public int readSerializableCollection(DataInput in, Collection<? extends Serializable> value,
-	                                    ClassLoader loader) throws IOException {
-		// Do nothing
-		return 0;
-	}
-	
     public void writeExternalizableMap(DataOutput out, Map<String, ? extends Externalizable> map) throws IOException {
         // Do nothing
     }
@@ -206,15 +187,6 @@ public class DummyExternalizableUtil implements ExternalizableUtilStrategy {
         return 0;
     }
 
-    public void writeSerializableMap(DataOutput out, Map<String, ? extends Serializable> map) throws IOException {
-        // Do nothing
-    }
-
-    public int readSerializableMap(DataInput in, Map<String, ? extends Serializable> map, ClassLoader loader)
-            throws IOException {
-        // Do nothing
-        return 0;
-    }
     public void writeStringsMap(DataOutput out, Map<String, Set<String>> map) throws IOException {
         // Do nothing
     }

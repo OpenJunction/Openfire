@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.starter;
@@ -48,7 +40,7 @@ class JiveClassLoader extends URLClassLoader {
      * @throws java.net.MalformedURLException if the libDir path is not valid.
      */
     JiveClassLoader(ClassLoader parent, File libDir) throws MalformedURLException {
-        super(new URL[] { libDir.toURI().toURL() }, parent);
+        super(new URL[] { libDir.toURL() }, parent);
 
         File[] jars = libDir.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
@@ -71,7 +63,7 @@ class JiveClassLoader extends URLClassLoader {
 
         for (int i = 0; i < jars.length; i++) {
             if (jars[i].isFile()) {
-                addURL(jars[i].toURI().toURL());
+                addURL(jars[i].toURL());
             }
         }
     }

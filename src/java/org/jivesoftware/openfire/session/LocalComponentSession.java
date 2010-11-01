@@ -5,25 +5,11 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.session;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.jivesoftware.openfire.Connection;
 import org.jivesoftware.openfire.PacketException;
@@ -33,8 +19,7 @@ import org.jivesoftware.openfire.auth.AuthFactory;
 import org.jivesoftware.openfire.component.ExternalComponentManager;
 import org.jivesoftware.openfire.component.InternalComponentManager;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmpp.component.ComponentException;
@@ -44,14 +29,14 @@ import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.StreamError;
 
+import java.util.*;
+
 /**
  * Represents a session between the server and a component.
  *
  * @author Gaston Dombiak
  */
 public class LocalComponentSession extends LocalSession implements ComponentSession {
-
-	private static final Logger Log = LoggerFactory.getLogger(LocalComponentSession.class);
 
     private LocalExternalComponent component;
     /**
@@ -190,19 +175,16 @@ public class LocalComponentSession extends LocalSession implements ComponentSess
         super(serverName, conn, id);
     }
 
-    @Override
-	public String getAvailableStreamFeatures() {
+    public String getAvailableStreamFeatures() {
         // Nothing special to add
         return null;
     }
 
-    @Override
-	boolean canProcess(Packet packet) {
+    boolean canProcess(Packet packet) {
         return true;
     }
 
-    @Override
-	void deliver(Packet packet) throws PacketException {
+    void deliver(Packet packet) throws PacketException {
         component.deliver(packet);
     }
 
@@ -400,8 +382,7 @@ public class LocalComponentSession extends LocalSession implements ComponentSess
             }
         }
 
-        @Override
-		public String toString() {
+        public String toString() {
             return super.toString() + " - subdomains: " + subdomains;
         }
 

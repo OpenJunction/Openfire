@@ -5,52 +5,29 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.QName;
 import org.jivesoftware.openfire.PacketRouter;
-import org.jivesoftware.openfire.RoutingTable;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.XMPPServerListener;
-import org.jivesoftware.openfire.component.InternalComponentManager;
 import org.jivesoftware.openfire.pubsub.models.AccessModel;
 import org.jivesoftware.openfire.user.UserManager;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.forms.DataForm;
 import org.xmpp.forms.FormField;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.xmpp.packet.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A PubSubEngine is responsible for handling packets sent to a pub-sub service.
@@ -58,8 +35,6 @@ import org.xmpp.packet.Presence;
  * @author Matt Tucker
  */
 public class PubSubEngine {
-
-	private static final Logger Log = LoggerFactory.getLogger(PubSubEngine.class);
 
     /**
      * The packet router for the server.
@@ -611,18 +586,7 @@ public class PubSubEngine {
     private void unsubscribeNode(PubSubService service, IQ iq, Element unsubscribeElement) {
         String nodeID = unsubscribeElement.attributeValue("node");
         String subID = unsubscribeElement.attributeValue("subid");
-        String jidAttribute = unsubscribeElement.attributeValue("jid");
-
-        // Check if the specified JID has a subscription with the node
-        if (jidAttribute == null) {
-            // No JID was specified so return an error indicating that jid is required
-            Element pubsubError = DocumentHelper.createElement(
-                    QName.get("jid-required", "http://jabber.org/protocol/pubsub#errors"));
-            sendErrorPacket(iq, PacketError.Condition.bad_request, pubsubError);
-            return;
-        }
         Node node;
-
         if (nodeID == null) {
             if (service.isCollectionNodesSupported()) {
                 // Entity unsubscribes from root collection node
@@ -646,9 +610,7 @@ public class PubSubEngine {
             }
         }
         NodeSubscription subscription;
-        JID owner = new JID(jidAttribute);
-        
-        if (node.isMultipleSubscriptionsEnabled() && node.getSubscriptions(owner).size() > 1) {
+        if (node.isMultipleSubscriptionsEnabled()) {
             if (subID == null) {
                 // No subid was specified and the node supports multiple subscriptions
                 Element pubsubError = DocumentHelper.createElement(
@@ -668,6 +630,15 @@ public class PubSubEngine {
             }
         }
         else {
+            String jidAttribute = unsubscribeElement.attributeValue("jid");
+            // Check if the specified JID has a subscription with the node
+            if (jidAttribute == null) {
+                // No JID was specified so return an error indicating that jid is required
+                Element pubsubError = DocumentHelper.createElement(
+                        QName.get("jid-required", "http://jabber.org/protocol/pubsub#errors"));
+                sendErrorPacket(iq, PacketError.Condition.bad_request, pubsubError);
+                return;
+            }
             JID subscriberJID = new JID(jidAttribute);
             subscription = node.getSubscription(subscriberJID);
             if (subscription == null) {
@@ -685,6 +656,8 @@ public class PubSubEngine {
             return;
         }
 
+        // TODO Assumed that the owner of the subscription is the bare JID of the subscription JID. Waiting StPeter answer for explicit field.
+        JID owner = new JID(from.toBareJID());
         // A subscription was found so check if the user is allowed to cancel the subscription
         if (!subscription.canModify(from) && !subscription.canModify(owner)) {
             // Requestor is prohibited from unsubscribing entity
@@ -868,21 +841,10 @@ public class PubSubEngine {
     private void getSubscriptions(PubSubService service, IQ iq, Element childElement) {
         // TODO Assuming that owner is the bare JID (as defined in the JEP). This can be replaced with an explicit owner specified in the packet
         JID owner = new JID(iq.getFrom().toBareJID());
-        Element subscriptionsElement = childElement.element("subscriptions");
-        
-        String nodeID = subscriptionsElement.attributeValue("node");
+        // Collect subscriptions of owner for all nodes at the service
         Collection<NodeSubscription> subscriptions = new ArrayList<NodeSubscription>();
-        
-        if (nodeID == null)
-        {
-            // Collect subscriptions of owner for all nodes at the service
-            for (Node node : service.getNodes()) {
-                subscriptions.addAll(node.getSubscriptions(owner));
-            }
-        }
-        else
-        {
-            subscriptions.addAll(service.getNode(nodeID).getSubscriptions(owner));
+        for (Node node : service.getNodes()) {
+            subscriptions.addAll(node.getSubscriptions(owner));
         }
         // Create reply to send
         IQ reply = IQ.createResultIQ(iq);
@@ -895,11 +857,11 @@ public class PubSubEngine {
             Node node = subscription.getNode();
             NodeAffiliate nodeAffiliate = subscription.getAffiliate();
             // Do not include the node id when node is the root collection node
-            // or the results are for a specific node
-            if (!node.isRootCollectionNode() && (nodeID == null)) {
+            if (!node.isRootCollectionNode()) {
                 subElement.addAttribute("node", node.getNodeID());
             }
             subElement.addAttribute("jid", subscription.getJID().toString());
+            subElement.addAttribute("affiliation", nodeAffiliate.getAffiliation().name());
             subElement.addAttribute("subscription", subscription.getState().name());
             if (node.isMultipleSubscriptionsEnabled()) {
                 subElement.addAttribute("subid", subscription.getID());
@@ -993,10 +955,9 @@ public class PubSubEngine {
 
         // Get the user's subscription
         NodeSubscription subscription = null;
-        if (node.isMultipleSubscriptionsEnabled() && (node.getSubscriptions(owner).size() > 1)) {
+        if (node.isMultipleSubscriptionsEnabled() && !node.getSubscriptions(owner).isEmpty()) {
             if (subID == null) {
-                // No subid was specified and the node supports multiple subscriptions and the user
-            	// has multiple subscriptions
+                // No subid was specified and the node supports multiple subscriptions
                 Element pubsubError = DocumentHelper.createElement(
                         QName.get("subid-required", "http://jabber.org/protocol/pubsub#errors"));
                 sendErrorPacket(iq, PacketError.Condition.bad_request, pubsubError);
@@ -1085,7 +1046,7 @@ public class PubSubEngine {
         // Get sender of the IQ packet
         JID from = iq.getFrom();
         // Verify that sender has permissions to create nodes
-        if (!service.canCreateNode(from) || (!UserManager.getInstance().isRegisteredUser(from) && !isComponent(from)) ) {
+        if (!service.canCreateNode(from) || !UserManager.getInstance().isRegisteredUser(from)) {
             // The user is not allowed to create nodes so return an error
             sendErrorPacket(iq, PacketError.Condition.forbidden, null);
             return;
@@ -1733,7 +1694,7 @@ public class PubSubEngine {
 
     public void shutdown(PubSubService service) {
         // Stop the maintenance processes
-    	service.getPublishedItemTask().cancel();
+        service.getTimer().cancel();
         // Delete from the database items contained in the itemsToDelete queue
         PublishedItem entry;
         while (!service.getItemsToDelete().isEmpty()) {
@@ -1751,10 +1712,6 @@ public class PubSubEngine {
         }
         // Stop executing ad-hoc commands
         service.getManager().stop();
-        
-        // clear all nodes for this service, to remove circular references back to the service instance.
-		service.getNodes().clear(); // FIXME: this is an ugly hack. getNodes() is documented to return an unmodifiable collection (but does not).
-
     }
 
     /*******************************************************************************
@@ -1914,18 +1871,4 @@ public class PubSubEngine {
         }
     }
 
-    /**
-	 * Checks to see if the jid given is a component by looking at the routing
-	 * table. Similar to {@link InternalComponentManager#hasComponent(JID)}.
-	 * 
-	 * @param jid
-	 * @return <tt>true</tt> if the JID is a component, <tt>false<.tt> if not.
-	 */
-	private boolean isComponent(JID jid) {
-		final RoutingTable routingTable = XMPPServer.getInstance().getRoutingTable();
-		if (routingTable != null) {
-			return routingTable.hasComponentRoute(jid);
-		}
-		return false;
-	}
 }

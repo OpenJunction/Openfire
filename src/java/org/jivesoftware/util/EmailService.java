@@ -1,49 +1,24 @@
 /**
  * $RCSfile$
- * $Revision: 11388 $
- * $Date: 2009-11-08 16:26:55 -0800 (Sun, 08 Nov 2009) $
+ * $Revision: 10457 $
+ * $Date: 2008-05-29 10:11:00 -0700 (Thu, 29 May 2008) $
  *
  * Copyright (C) 2003-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
 import java.security.Security;
 import java.text.SimpleDateFormat;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Properties;
+import java.util.*;
 
 import javax.mail.Address;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Part;
-import javax.mail.SendFailedException;
-import javax.mail.Session;
-import javax.mail.Transport;
-import javax.mail.URLName;
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeBodyPart;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
-import javax.mail.internet.MimeUtility;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.mail.*;
+import javax.mail.internet.*;
 
 /**
  * A service to send email.<p>
@@ -86,8 +61,6 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public class EmailService {
-
-	private static final Logger Log = LoggerFactory.getLogger(EmailService.class);
 
     private static final String SSL_FACTORY = "org.jivesoftware.util.SimpleSSLSocketFactory";
 
@@ -271,7 +244,7 @@ public class EmailService {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }
@@ -484,7 +457,7 @@ public class EmailService {
                 sendMessages();
             }
             catch (MessagingException me) {
-                Log.error(me.getMessage(), me);
+                Log.error(me);
             }
         }
 
@@ -505,10 +478,10 @@ public class EmailService {
                             message.getRecipients(MimeMessage.RecipientType.TO));
                     }
                     catch (AddressException ae) {
-                        Log.error(ae.getMessage(), ae);
+                        Log.error(ae);
                     }
                     catch (SendFailedException sfe) {
-                        Log.error(sfe.getMessage(), sfe);
+                        Log.error(sfe);
                     }
                 }
             }

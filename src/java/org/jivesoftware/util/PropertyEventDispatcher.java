@@ -1,21 +1,13 @@
 /**
  * $RCSfile$
- * $Revision: 11388 $
- * $Date: 2009-11-08 16:26:55 -0800 (Sun, 08 Nov 2009) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
@@ -23,9 +15,6 @@ package org.jivesoftware.util;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Dispatches property events. Each event has a {@link EventType type}
@@ -44,8 +33,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class PropertyEventDispatcher {
-
-	private static final Logger Log = LoggerFactory.getLogger(PropertyEventDispatcher.class);
 
     private static Set<PropertyEventListener> listeners =
             new CopyOnWriteArraySet<PropertyEventListener>();
@@ -107,7 +94,7 @@ public class PropertyEventDispatcher {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }

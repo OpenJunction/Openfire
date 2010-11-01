@@ -1,20 +1,12 @@
 <%--
-  -	$Revision: 11592 $
-  -	$Date: 2010-02-01 07:46:59 -0800 (Mon, 01 Feb 2010) $
+  -	$Revision: 10910 $
+  -	$Date: 2008-11-20 00:11:22 -0800 (Thu, 20 Nov 2008) $
   -
   - Copyright (C) 2004-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="com.sun.syndication.feed.synd.SyndEntry,
@@ -542,7 +534,7 @@
     </tr>
     <% } %>
     <tr>
-        <td><%= adminConsolePlugin.getBindInterface() == null ? LocaleUtils.getLocalizedString("ports.all_ports") : adminConsolePlugin.getBindInterface() %></td>
+        <td><%= interfaceName == null ? LocaleUtils.getLocalizedString("ports.all_ports") : interfaceName %></td>
         <td><%= adminConsolePlugin.getAdminUnsecurePort() %></td>
         <td><img src="images/blank.gif" width="1" height="1" alt=""></td>
         <td><fmt:message key="ports.admin_console" /></td>
@@ -552,7 +544,7 @@
         if (adminConsolePlugin.getAdminSecurePort() > 0) {
     %>
     <tr>
-        <td><%= adminConsolePlugin.getBindInterface() == null ? LocaleUtils.getLocalizedString("ports.all_ports") : adminConsolePlugin.getBindInterface() %></td>
+        <td><%= interfaceName == null ? LocaleUtils.getLocalizedString("ports.all_ports") : interfaceName %></td>
         <td><%= adminConsolePlugin.getAdminSecurePort() %></td>
         <td><img src="images/lock.gif" width="16" height="16" border="0" alt=""/></td>
         <td><fmt:message key="ports.admin_console" /></td>

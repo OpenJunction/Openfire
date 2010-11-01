@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
@@ -25,15 +17,10 @@ import org.jivesoftware.openfire.PacketRouter;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.session.LocalIncomingServerSession;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.Presence;
-import org.xmpp.packet.StreamError;
+import org.xmpp.packet.*;
 
 /**
  * Handler of XML stanzas sent by remote servers. Remote servers that send stanzas
@@ -52,14 +39,11 @@ import org.xmpp.packet.StreamError;
  */
 public class ServerStanzaHandler extends StanzaHandler {
 
-	private static final Logger Log = LoggerFactory.getLogger(ServerStanzaHandler.class);
-
     public ServerStanzaHandler(PacketRouter router, String serverName, Connection connection) {
         super(router, serverName, connection);
     }
 
-    @Override
-	boolean processUnknowPacket(Element doc) throws UnauthorizedException {
+    boolean processUnknowPacket(Element doc) throws UnauthorizedException {
         // Handle subsequent db:result packets
         if ("db".equals(doc.getNamespacePrefix()) && "result".equals(doc.getName())) {
             if (!((LocalIncomingServerSession) session).validateSubsequentDomain(doc)) {
@@ -76,24 +60,20 @@ public class ServerStanzaHandler extends StanzaHandler {
         return false;
     }
 
-    @Override
-	String getNamespace() {
+    String getNamespace() {
         return "jabber:server";
     }
 
-    @Override
-	boolean validateHost() {
+    boolean validateHost() {
         return true;
     }
 
-    @Override
-	boolean validateJIDs() {
+    boolean validateJIDs() {
         // TODO Should we trust other servers???
         return false;
     }
 
-    @Override
-	boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
+    boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
             throws XmlPullParserException {
         // TODO Finish implementation
         /*if ("jabber:server".equals(namespace)) {
@@ -104,8 +84,7 @@ public class ServerStanzaHandler extends StanzaHandler {
         return false;
     }
 
-    @Override
-	void startTLS() throws Exception {
+    void startTLS() throws Exception {
         // TODO Finish implementation. We need to get the name of the remote server if we want to validate certificates of the remote server that requested TLS
 
         boolean needed = JiveGlobals.getBooleanProperty("xmpp.server.certificate.verify", true) &&
@@ -113,22 +92,19 @@ public class ServerStanzaHandler extends StanzaHandler {
                 !JiveGlobals.getBooleanProperty("xmpp.server.certificate.accept-selfsigned", false);
         connection.startTLS(false, "IMPLEMENT_ME", needed ? Connection.ClientAuth.needed : Connection.ClientAuth.wanted);
     }
-    @Override
-	protected void processIQ(IQ packet) throws UnauthorizedException {
+    protected void processIQ(IQ packet) throws UnauthorizedException {
         packetReceived(packet);
         // Actually process the packet
         super.processIQ(packet);
     }
 
-    @Override
-	protected void processPresence(Presence packet) throws UnauthorizedException {
+    protected void processPresence(Presence packet) throws UnauthorizedException {
         packetReceived(packet);
         // Actually process the packet
         super.processPresence(packet);
     }
 
-    @Override
-	protected void processMessage(Message packet) throws UnauthorizedException {
+    protected void processMessage(Message packet) throws UnauthorizedException {
         packetReceived(packet);
         // Actually process the packet
         super.processMessage(packet);

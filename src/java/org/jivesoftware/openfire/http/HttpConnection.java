@@ -5,23 +5,15 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.http;
 
 import org.jivesoftware.util.JiveConstants;
-import org.eclipse.jetty.continuation.Continuation;
+import org.mortbay.util.ajax.Continuation;
 
 import java.security.cert.X509Certificate;
 
@@ -43,7 +35,6 @@ public class HttpConnection {
     private X509Certificate[] sslCertificates;
 
     private static final String CONNECTION_CLOSED = "connection closed";
-    private static final String SUSPENDED = "org.eclipse.jetty.continuation.Suspended";
 
     /**
      * Constructs an HTTP Connection.
@@ -122,7 +113,7 @@ public class HttpConnection {
         }
 
         if (continuation != null) {
-            continuation.setAttribute("response-body", body);
+            continuation.setObject(body);
             continuation.resume();
         }
         else {
@@ -131,8 +122,8 @@ public class HttpConnection {
     }
 
     /**
-     * A call that will suspend the request if there is no deliverable currently available.
-     * Once the response becomes available, it is returned.
+     * A call that will cause a wait, or in the case of Jetty the thread to be freed, if there is no
+     * deliverable currently available. Once the response becomes available, it is returned.
      *
      * @return the deliverable to send to the client
      * @throws HttpBindTimeoutException to indicate that the maximum wait time requested by the
@@ -195,17 +186,8 @@ public class HttpConnection {
     }
 
     private String waitForResponse() throws HttpBindTimeoutException {
-        // we enter this method when we have no messages pending delivery
-	// when we resume a suspended continuation, or when we time out
-	if (!Boolean.TRUE.equals(continuation.getAttribute(SUSPENDED))) {
-	    continuation.setTimeout(session.getWait() * JiveConstants.SECOND);
-            continuation.suspend();
-            continuation.setAttribute(SUSPENDED, Boolean.TRUE);
-            continuation.undispatch();
-        }
-
-        if (continuation.isResumed()) {
-            String deliverable = (String) continuation.getAttribute("response-body");
+        if (continuation.suspend(session.getWait() * JiveConstants.SECOND)) {
+            String deliverable = (String) continuation.getObject();
             // This will occur when the hold attribute of a session has been exceded.
             this.isDelivered = true;
             if (deliverable == null) {
@@ -216,7 +198,6 @@ public class HttpConnection {
             }
             return deliverable;
         }
-
         this.isDelivered = true;
         throw new HttpBindTimeoutException("Request " + requestId + " exceeded response time from " +
                 "server of " + session.getWait() + " seconds.");

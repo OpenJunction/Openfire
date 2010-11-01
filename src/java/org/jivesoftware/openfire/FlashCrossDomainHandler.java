@@ -5,20 +5,16 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire;
+
+import org.jivesoftware.openfire.container.BasicModule;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,15 +24,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import org.jivesoftware.openfire.container.BasicModule;
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FlashCrossDomainHandler extends BasicModule {
-	
-	private static final Logger Log = LoggerFactory.getLogger(FlashCrossDomainHandler.class);
-
     private ServerSocket serverSocket;
 
     public static String CROSS_DOMAIN_TEXT = "<?xml version=\"1.0\"?>" +
@@ -50,15 +38,14 @@ public class FlashCrossDomainHandler extends BasicModule {
         super("Flash CrossDomain Handler");
     }
 
-    @Override
-	public void start() {
+    public void start() {
         Thread thread = new Thread(new Runnable() {
             public void run() {
                 try {
                     startServer();
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }, "Flash Cross Domain");
@@ -66,15 +53,14 @@ public class FlashCrossDomainHandler extends BasicModule {
         thread.start();
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         try {
             if (serverSocket != null) {
                 serverSocket.close();
             }
         }
         catch (IOException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -83,16 +69,11 @@ public class FlashCrossDomainHandler extends BasicModule {
     }
 
     private void startServer() throws Exception {
-        if(!JiveGlobals.getBooleanProperty("flash.crossdomain.enabled",true)){
-            Log.debug("Flash cross domain listener is disabled");
-            return;
-        }
-        
-        int port = JiveGlobals.getIntProperty("flash.crossdomain.port",5229);
         try {
             // Listen on a specific network interface if it has been set.
             String interfaceName = JiveGlobals.getXMLProperty("network.interface");
             InetAddress bindInterface = null;
+            int port = 5229;
             if (interfaceName != null) {
                 if (interfaceName.trim().length() > 0) {
                     bindInterface = InetAddress.getByName(interfaceName);
@@ -102,7 +83,7 @@ public class FlashCrossDomainHandler extends BasicModule {
             Log.debug("Flash cross domain is listening on " + interfaceName + " on port " + port);
         }
         catch (IOException e) {
-            Log.error("Could not listen on port: " + port, e);
+            Log.error("Could not listen on port: 5229.", e);
             return;
         }
 
@@ -130,7 +111,7 @@ public class FlashCrossDomainHandler extends BasicModule {
                 if (XMPPServer.getInstance().isShuttingDown()) {
                     break;
                 }
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
             finally {
             	if (out != null) {

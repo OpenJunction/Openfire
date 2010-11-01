@@ -5,30 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pep;
-
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.TimeZone;
-import java.util.Timer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -39,17 +21,7 @@ import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.commands.AdHocCommandManager;
 import org.jivesoftware.openfire.entitycaps.EntityCapabilities;
 import org.jivesoftware.openfire.entitycaps.EntityCapabilitiesManager;
-import org.jivesoftware.openfire.pubsub.CollectionNode;
-import org.jivesoftware.openfire.pubsub.DefaultNodeConfiguration;
-import org.jivesoftware.openfire.pubsub.LeafNode;
-import org.jivesoftware.openfire.pubsub.Node;
-import org.jivesoftware.openfire.pubsub.NodeSubscription;
-import org.jivesoftware.openfire.pubsub.PendingSubscriptionsCommand;
-import org.jivesoftware.openfire.pubsub.PubSubEngine;
-import org.jivesoftware.openfire.pubsub.PubSubPersistenceManager;
-import org.jivesoftware.openfire.pubsub.PubSubService;
-import org.jivesoftware.openfire.pubsub.PublishedItem;
-import org.jivesoftware.openfire.pubsub.PublishedItemTask;
+import org.jivesoftware.openfire.pubsub.*;
 import org.jivesoftware.openfire.pubsub.models.AccessModel;
 import org.jivesoftware.openfire.pubsub.models.PublisherModel;
 import org.jivesoftware.openfire.roster.Roster;
@@ -57,26 +29,25 @@ import org.jivesoftware.openfire.roster.RosterItem;
 import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.FastDateFormat;
-import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.LocaleUtils;
 import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.util.cache.Cacheable;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketExtension;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+
 /**
  * A PEPService is a {@link PubSubService} for use with XEP-0163: "Personal Eventing via
  * Pubsub" Version 1.0
  * 
- * Note: Although this class implements {@link Cacheable}, instances should only be 
- * cached in caches that have time-based (as opposed to size-based) eviction policies.
+ * @author Armando Jagucki
  * 
- * @author Armando Jagucki 
  */
-public class PEPService implements PubSubService, Cacheable {
-	
+public class PEPService implements PubSubService {
     /**
      * Timer to save published items to the database or remove deleted or old
      * items.
@@ -137,12 +108,12 @@ public class PEPService implements PubSubService, Cacheable {
     /**
      * Queue that holds the items that need to be added to the database.
      */
-    private Queue<PublishedItem> itemsToAdd = new LinkedBlockingQueue<PublishedItem>(10000);
+    private Queue<PublishedItem> itemsToAdd = new LinkedBlockingQueue<PublishedItem>();
 
     /**
      * Queue that holds the items that need to be deleted from the database.
      */
-    private Queue<PublishedItem> itemsToDelete = new LinkedBlockingQueue<PublishedItem>(10000);
+    private Queue<PublishedItem> itemsToDelete = new LinkedBlockingQueue<PublishedItem>();
 
     /**
      * Manager that keeps the list of ad-hoc commands and processing command
@@ -167,7 +138,7 @@ public class PEPService implements PubSubService, Cacheable {
     private PublishedItemTask publishedItemTask;
 
     static {
-        fastDateFormat = FastDateFormat.getInstance(JiveConstants.XMPP_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
+        fastDateFormat = FastDateFormat.getInstance("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", TimeZone.getTimeZone("UTC"));
     }
 
     /**
@@ -186,9 +157,7 @@ public class PEPService implements PubSubService, Cacheable {
 
         // Save or delete published items from the database every 2 minutes
         // starting in 2 minutes (default values)
-        publishedItemTask = new PublishedItemTask(this) {
-        	
-        };
+        publishedItemTask = new PublishedItemTask(this);
         timer.schedule(publishedItemTask, items_task_timeout, items_task_timeout);
 
         // Load default configuration for leaf nodes
@@ -545,7 +514,7 @@ public class PEPService implements PubSubService, Cacheable {
                 notification.setBody(LocaleUtils.getLocalizedString("pubsub.notification.message.body"));
             }
             // Include date when published item was created
-            notification.getElement().addElement("delay", "urn:xmpp:delay").addAttribute("stamp", fastDateFormat.format(leafLastPublishedItem.getCreationDate()));
+            notification.getElement().addElement("x", "jabber:x:delay").addAttribute("stamp", fastDateFormat.format(leafLastPublishedItem.getCreationDate()));
             // Send the event notification to the subscriber
             this.sendNotification(subscription.getNode(), notification, subscription.getJID());
         }
@@ -553,10 +522,12 @@ public class PEPService implements PubSubService, Cacheable {
 
     public void queueItemToAdd(PublishedItem newItem) {
         PubSubEngine.queueItemToAdd(this, newItem);
+
     }
 
     public void queueItemToRemove(PublishedItem removedItem) {
         PubSubEngine.queueItemToRemove(this, removedItem);
+
     }
 
     public Map<String, Map<String, String>> getBarePresences() {
@@ -594,10 +565,5 @@ public class PEPService implements PubSubService, Cacheable {
     public void setItemsTaskTimeout(int timeout) {
         items_task_timeout = timeout;
     }
-
-	public int getCachedSize() {
-		// Rather arbitrary. Don't use this for size-based eviction policies!
-		return 600;
-	}
 
 }

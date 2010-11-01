@@ -1,51 +1,29 @@
 /**
- * $Revision: 11929 $
- * $Date: 2010-10-14 10:24:45 -0700 (Thu, 14 Oct 2010) $
+ * $Revision: 10205 $
+ * $Date: 2008-04-11 15:48:27 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.AddressException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.BreakIterator;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.mail.internet.AddressException;
-import javax.mail.internet.InternetAddress;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Utility class to peform common String manipulation algorithms.
  */
 public class StringUtils {
-
-	private static final Logger Log = LoggerFactory.getLogger(StringUtils.class);
 
     // Constants used by escapeHTMLTags
     private static final char[] QUOTE_ENCODE = "&quot;".toCharArray();
@@ -368,10 +346,10 @@ public class StringUtils {
      */
     public static String hash(String data, String algorithm) {
         try {
-            return hash(data.getBytes("UTF-8"), algorithm);
+            return hash(data.getBytes("utf-8"), algorithm);
         }
         catch (UnsupportedEncodingException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         return data;
     }
@@ -524,7 +502,7 @@ public class StringUtils {
             bytes = data.getBytes("UTF-8");
         }
         catch (UnsupportedEncodingException uee) {
-            Log.error(uee.getMessage(), uee);
+            Log.error(uee);
         }
         return encodeBase64(bytes);
     }
@@ -981,22 +959,22 @@ public class StringUtils {
     public static String getTimeFromLong(long diff) {
         final String HOURS = "h";
         final String MINUTES = "min";
-        //final String SECONDS = "sec";
+        final String SECONDS = "sec";
 
         final long MS_IN_A_DAY = 1000 * 60 * 60 * 24;
         final long MS_IN_AN_HOUR = 1000 * 60 * 60;
         final long MS_IN_A_MINUTE = 1000 * 60;
         final long MS_IN_A_SECOND = 1000;
-        //Date currentTime = new Date();
-        //long numDays = diff / MS_IN_A_DAY;
+        Date currentTime = new Date();
+        long numDays = diff / MS_IN_A_DAY;
         diff = diff % MS_IN_A_DAY;
         long numHours = diff / MS_IN_AN_HOUR;
         diff = diff % MS_IN_AN_HOUR;
         long numMinutes = diff / MS_IN_A_MINUTE;
         diff = diff % MS_IN_A_MINUTE;
-        //long numSeconds = diff / MS_IN_A_SECOND;
+        long numSeconds = diff / MS_IN_A_SECOND;
         diff = diff % MS_IN_A_SECOND;
-        //long numMilliseconds = diff;
+        long numMilliseconds = diff;
 
         StringBuffer buf = new StringBuffer();
         if (numHours > 0) {
@@ -1103,26 +1081,4 @@ public class StringUtils {
             return false;
         }
     }
-    
-    /**
-	 * Removes characters likely to enable Cross Site Scripting attacks from the
-	 * provided input string. The characters that are removed from the input
-	 * string, if present, are:
-	 * 
-	 * <pre>
-	 * &lt; &gt; &quot; ' % ; ) ( &amp; + -
-	 * </pre>
-	 * 
-	 * @param string
-	 *            input
-	 * @return Input without certain characters;
-	 */
-	public static String removeXSSCharacters(String input) {
-		final String[] xss = { "<", ">", "\"", "'", "%", ";", ")", "(", "&",
-				"+", "-" };
-		for (int i = 0; i < xss.length; i++) {
-			input = input.replace(xss[i], "");
-		}
-		return input;
-	}
 }

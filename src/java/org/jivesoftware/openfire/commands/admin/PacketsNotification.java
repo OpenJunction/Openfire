@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.commands.admin;
@@ -41,8 +33,7 @@ import java.util.List;
  */
 public class PacketsNotification extends AdHocCommand {
 
-    @Override
-	protected void addStageInformation(SessionData data, Element command) {
+    protected void addStageInformation(SessionData data, Element command) {
         DataForm form = new DataForm(DataForm.Type.form);
         form.setTitle("Receiving notification of packets activity");
         form.addInstruction("Fill out this form to configure packets to receive.");
@@ -81,8 +72,7 @@ public class PacketsNotification extends AdHocCommand {
         command.add(form.getElement());
     }
 
-    @Override
-	public void execute(SessionData data, Element command) {
+    public void execute(SessionData data, Element command) {
         boolean presenceEnabled = false;
         boolean messageEnabled = false;
         boolean iqEnabled = false;
@@ -112,28 +102,23 @@ public class PacketsNotification extends AdHocCommand {
         note.setText("Operation finished successfully");
     }
 
-    @Override
-	public String getCode() {
+    public String getCode() {
         return "http://jabber.org/protocol/admin#packets_notification";
     }
 
-    @Override
-	public String getDefaultLabel() {
+    public String getDefaultLabel() {
         return "Get notifications of packet activity";
     }
 
-    @Override
-	protected List<Action> getActions(SessionData data) {
+    protected List<Action> getActions(SessionData data) {
         return Arrays.asList(Action.complete);
     }
 
-    @Override
-	protected Action getExecuteAction(SessionData data) {
+    protected Action getExecuteAction(SessionData data) {
         return Action.complete;
     }
 
-    @Override
-	public int getMaxStages(SessionData data) {
+    public int getMaxStages(SessionData data) {
         return 1;
     }
 
@@ -144,8 +129,7 @@ public class PacketsNotification extends AdHocCommand {
      * @param requester the JID of the user requesting to execute this command.
      * @return true if the requester can access this command.
      */
-    @Override
-	public boolean hasPermission(JID requester) {
+    public boolean hasPermission(JID requester) {
         return InternalComponentManager.getInstance().hasComponent(requester);
     }
 }

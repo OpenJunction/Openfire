@@ -5,25 +5,12 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.vcard;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.StringTokenizer;
 
 import org.dom4j.Element;
 import org.jivesoftware.openfire.XMPPServer;
@@ -32,16 +19,14 @@ import org.jivesoftware.openfire.disco.ServerFeaturesProvider;
 import org.jivesoftware.openfire.event.UserEventAdapter;
 import org.jivesoftware.openfire.event.UserEventDispatcher;
 import org.jivesoftware.openfire.user.User;
-import org.jivesoftware.util.AlreadyExistsException;
-import org.jivesoftware.util.ClassUtils;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.NotFoundException;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
+import org.jivesoftware.util.*;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 /**
  * Manages VCard information for users.
@@ -49,8 +34,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class VCardManager extends BasicModule implements ServerFeaturesProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(VCardManager.class);
 
     private VCardProvider provider;
     private static VCardManager instance;
@@ -244,8 +227,7 @@ public class VCardManager extends BasicModule implements ServerFeaturesProvider 
         return vCardElement;
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         instance = this;
 
         // Convert XML based provider setup to Database based
@@ -264,8 +246,7 @@ public class VCardManager extends BasicModule implements ServerFeaturesProvider 
         }
     }
 
-    @Override
-	public void start() {
+    public void start() {
         // Add this module as a user event listener so we can delete
         // all user properties when a user is deleted
         if (!provider.isReadOnly()) {
@@ -295,8 +276,7 @@ public class VCardManager extends BasicModule implements ServerFeaturesProvider 
         PropertyEventDispatcher.addListener(propListener);
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         // Remove this module as a user event listener
         UserEventDispatcher.removeListener(eventHandler);
     }
@@ -315,8 +295,7 @@ public class VCardManager extends BasicModule implements ServerFeaturesProvider 
     }
 
     private class EventHandler extends UserEventAdapter {
-        @Override
-		public void userDeleting(User user, Map params) {
+        public void userDeleting(User user, Map params) {
             try {
                 deleteVCard(user.getUsername());
             } catch (UnsupportedOperationException ue) { /* Do Nothing */ }

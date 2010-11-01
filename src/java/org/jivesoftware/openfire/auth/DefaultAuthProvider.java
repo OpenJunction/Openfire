@@ -5,33 +5,20 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.auth;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.openfire.XMPPServer;
+
+import java.sql.*;
 
 /**
  * Default AuthProvider implementation. It authenticates against the <tt>ofUser</tt>
@@ -43,8 +30,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class DefaultAuthProvider implements AuthProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(DefaultAuthProvider.class);
 
     private static final String LOAD_PASSWORD =
             "SELECT plainPassword,encryptedPassword FROM ofUser WHERE username=?";
@@ -129,7 +114,6 @@ public class DefaultAuthProvider implements AuthProvider {
         }
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         if (username.contains("@")) {
             // Check that the specified domain matches the server's domain
             int index = username.indexOf("@");
@@ -145,7 +129,7 @@ public class DefaultAuthProvider implements AuthProvider {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(LOAD_PASSWORD);
             pstmt.setString(1, username);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
             if (!rs.next()) {
                 throw new UserNotFoundException(username);
             }
@@ -165,7 +149,10 @@ public class DefaultAuthProvider implements AuthProvider {
             throw new UserNotFoundException(sqle);
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
     }
 
@@ -220,7 +207,10 @@ public class DefaultAuthProvider implements AuthProvider {
             throw new UserNotFoundException(sqle);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (pstmt != null) pstmt.close(); }
+            catch (Exception e) { Log.error(e); }
+            try { if (con != null) con.close(); }
+            catch (Exception e) { Log.error(e); }
         }
     }
 

@@ -4,20 +4,18 @@
  *
  * Copyright (C) 2006-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin.spark;
+
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.database.JiveID;
+import org.jivesoftware.database.SequenceManager;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.NotFoundException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,13 +29,6 @@ import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.database.JiveID;
-import org.jivesoftware.database.SequenceManager;
-import org.jivesoftware.util.NotFoundException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Represents a Bookmark. Each bookmark can apply to a set of users and groups, or to
@@ -64,8 +55,6 @@ import org.slf4j.LoggerFactory;
 @JiveID(55)
 public class Bookmark {
 
-	private static final Logger Log = LoggerFactory.getLogger(Bookmark.class);
-
     private static final String INSERT_BOOKMARK =
             "INSERT INTO ofBookmark(bookmarkID, bookmarkType, bookmarkName, bookmarkValue, " +
                     "isGlobal) VALUES (?,?,?,?,?)";
@@ -73,8 +62,8 @@ public class Bookmark {
             "INSERT INTO ofBookmarkPerm(bookmarkID, bookmarkType, name) VALUES(?,?,?)";
     private static final String LOAD_BOOKMARK_PERMISSIONS =
             "SELECT bookmarkType, name FROM ofBookmarkPerm WHERE bookmarkID=?";
-	//    private static final String SAVE_BOOKMARK_PERMISSIONS =
-	//            "UPDATE ofBookmarkPerm SET bookmarkType=?, name=? WHERE bookmarkID=?";
+    private static final String SAVE_BOOKMARK_PERMISSIONS =
+            "UPDATE ofBookmarkPerm SET bookmarkType=?, name=? WHERE bookmarkID=?";
     private static final String DELETE_BOOKMARK_PERMISSIONS =
             "DELETE from ofBookmarkPerm WHERE bookmarkID=?";
     private static final String SAVE_BOOKMARK =
@@ -123,7 +112,7 @@ public class Bookmark {
             insertBookmarkPermissions();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -363,7 +352,7 @@ public class Bookmark {
      *
      * @return an Iterator for the names of the extended properties.
      */
-    public Iterator<String> getPropertyNames() {
+    public Iterator getPropertyNames() {
         if (properties == null) {
             loadPropertiesFromDb();
         }
@@ -421,7 +410,7 @@ public class Bookmark {
             deleteBookmarkPermissions();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         // Persist users
@@ -431,7 +420,7 @@ public class Bookmark {
                     insertBookmarkPermission(USERS, user);
                 }
                 catch (SQLException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }
@@ -442,7 +431,7 @@ public class Bookmark {
                     insertBookmarkPermission(GROUPS, group);
                 }
                 catch (SQLException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }
@@ -517,7 +506,7 @@ public class Bookmark {
             groups = groupList;
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -550,7 +539,7 @@ public class Bookmark {
             pstmt.close();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -576,7 +565,7 @@ public class Bookmark {
         }
         catch (SQLException sqle) {
             abortTransaction = true;
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeTransactionConnection(con, abortTransaction);
@@ -603,7 +592,7 @@ public class Bookmark {
             rs.close();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -626,7 +615,7 @@ public class Bookmark {
             pstmt.executeUpdate();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
             abortTransaction = true;
         }
         finally {
@@ -650,7 +639,7 @@ public class Bookmark {
             pstmt.executeUpdate();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
             abortTransaction = true;
         }
         finally {
@@ -673,7 +662,7 @@ public class Bookmark {
             pstmt.execute();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
             abortTransaction = true;
         }
         finally {

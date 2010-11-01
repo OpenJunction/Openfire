@@ -1,61 +1,26 @@
 /**
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
 
+import org.jivesoftware.util.CertificateManager;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+
+import javax.net.ssl.X509TrustManager;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
-import java.security.PublicKey;
-import java.security.cert.CRLException;
-import java.security.cert.CertPath;
-import java.security.cert.CertPathBuilder;
-import java.security.cert.CertPathBuilderException;
-import java.security.cert.CertPathBuilderResult;
-import java.security.cert.CertPathValidator;
-import java.security.cert.CertPathValidatorException;
-import java.security.cert.CertStore;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.CollectionCertStoreParameters;
-import java.security.cert.PKIXBuilderParameters;
-import java.security.cert.PKIXCertPathValidatorResult;
-import java.security.cert.X509CRL;
-import java.security.cert.X509CertSelector;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Enumeration;
-import java.util.List;
-
-import javax.net.ssl.X509TrustManager;
-
-import org.jivesoftware.util.CertificateManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.security.*;
+import java.security.cert.*;
+import java.util.*;
 
 /**
  * ClientTrustManager is a Trust Manager that is only used for c2s connections. This TrustManager
@@ -68,8 +33,6 @@ import org.slf4j.LoggerFactory;
  * @author Jay Kline
  */
 public class ClientTrustManager implements X509TrustManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(ClientTrustManager.class);
 
     /**
      * KeyStore that holds the trusted CA
@@ -258,7 +221,7 @@ public class ClientTrustManager implements X509TrustManager {
                     }
                 }
                 catch (KeyStoreException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
                 if (!trusted) {
                     //Log.debug("certificate not trusted of "+peerIdentities);
@@ -384,7 +347,7 @@ public class ClientTrustManager implements X509TrustManager {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
                 X509Certs = null;
             }
             return X509Certs;

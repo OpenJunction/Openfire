@@ -5,32 +5,23 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.container;
-
-import java.io.InputStream;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
+
+import java.io.InputStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * A helper class to read cache configuration data for a plugin and register the defined caches with
@@ -62,8 +53,6 @@ import org.slf4j.LoggerFactory;
  */
 public class PluginCacheConfigurator {
 
-	private static final Logger Log = LoggerFactory.getLogger(PluginCacheConfigurator.class);
-
     private InputStream configDataStream;
 
     public void setInputStream(InputStream configDataStream) {
@@ -81,7 +70,7 @@ public class PluginCacheConfigurator {
             }
         }
         catch (DocumentException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 

@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
@@ -127,13 +119,13 @@ public class WorkgroupResultFilter {
      * @param rawResults Iterator over all support group members
      * @return Iterator over group members fitting the current filter settings
      */
-    public synchronized <E> Iterator<E> filter(Iterator<E> rawResults) {
-        Iterator<E> result = null;
+    public synchronized Iterator filter(Iterator rawResults) {
+        Iterator result = null;
         if (startIndex == 0 && numResults == NO_RESULT_LIMIT) {
             result = rawResults;
         }
         else {
-            LinkedList<E> list = new LinkedList<E>();
+            LinkedList list = new LinkedList();
             while (rawResults.hasNext() && startIndex-- > 0) {
                 rawResults.next(); // skip over first x entries
             }

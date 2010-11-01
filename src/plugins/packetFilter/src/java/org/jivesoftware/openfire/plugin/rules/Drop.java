@@ -1,22 +1,17 @@
 package org.jivesoftware.openfire.plugin.rules;
 
-import org.jivesoftware.openfire.interceptor.PacketRejectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.Packet;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 
 
 public class Drop extends AbstractRule implements Rule {
 
-	private static final Logger Log = LoggerFactory.getLogger(Drop.class);
-	
-    @Override
-	public String getDisplayName() {
+    public String getDisplayName() {
         return "Drop";
     }
 
-    @Override
-	public Packet doAction(Packet packet) throws PacketRejectedException {
+    public Packet doAction(Packet packet) throws PacketRejectedException {
         if (doLog()) {
             Log.info("Dropping from "+packet.getFrom()+" to "+packet.getTo());
         }

@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.commands;
@@ -36,8 +28,8 @@ import org.jivesoftware.openfire.commands.clearspace.SystemAdminAdded;
 import org.jivesoftware.openfire.commands.clearspace.SystemAdminRemoved;
 import org.jivesoftware.openfire.commands.event.*;
 import org.jivesoftware.openfire.disco.*;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
 import org.jivesoftware.openfire.handler.IQHandler;
-import org.xmpp.forms.DataForm;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 
@@ -84,13 +76,11 @@ public class AdHocCommandHandler extends IQHandler
         manager = new AdHocCommandManager();
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException {
         return manager.process(packet);
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 
@@ -113,7 +103,7 @@ public class AdHocCommandHandler extends IQHandler
         return Arrays.asList(NAMESPACE, "jabber:x:data").iterator();
     }
 
-    public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+    public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
         return null;
     }
 
@@ -146,16 +136,14 @@ public class AdHocCommandHandler extends IQHandler
         return answer.iterator();
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         serverName = server.getServerInfo().getXMPPDomain();
         infoHandler = server.getIQDiscoInfoHandler();
         itemsHandler = server.getIQDiscoItemsHandler();
     }
 
-    @Override
-	public void start() throws IllegalStateException {
+    public void start() throws IllegalStateException {
         super.start();
         infoHandler.setServerNodeInfoProvider(NAMESPACE, this);
         itemsHandler.setServerNodeInfoProvider(NAMESPACE, this);
@@ -163,8 +151,7 @@ public class AdHocCommandHandler extends IQHandler
         addDefaultCommands();
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
         infoHandler.removeServerNodeInfoProvider(NAMESPACE);
         itemsHandler.removeServerNodeInfoProvider(NAMESPACE);

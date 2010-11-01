@@ -1,7 +1,7 @@
 /**
  * $RCSfile$
- * $Revision: 11608 $
- * $Date: 2010-02-07 13:03:12 -0800 (Sun, 07 Feb 2010) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  */
@@ -26,10 +26,9 @@ public class AdminConsoleTest extends TestCase {
     /**
      * Resets the admin console internal data structures.
      */
-    @Override
-	public void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         Class c = AdminConsole.class;
-        Method init = c.getDeclaredMethod("load", (Class[])null);
+        Method init = c.getDeclaredMethod("init", (Class[])null);
         init.setAccessible(true);
         init.invoke((Object)null, (Object[])null);
     }

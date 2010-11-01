@@ -1,31 +1,13 @@
 /**
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
-import org.jivesoftware.admin.AuthCheckFilter;
 import org.jivesoftware.openfire.MessageRouter;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.container.Plugin;
@@ -36,12 +18,21 @@ import org.jivesoftware.openfire.group.Group;
 import org.jivesoftware.openfire.group.GroupManager;
 import org.jivesoftware.openfire.group.GroupNotFoundException;
 import org.jivesoftware.openfire.user.User;
+import org.jivesoftware.admin.AuthCheckFilter;
 import org.jivesoftware.util.EmailService;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Registration plugin.
@@ -49,9 +40,6 @@ import org.xmpp.packet.Message;
  * @author Ryan Graham.
  */
 public class RegistrationPlugin implements Plugin {
-    
-    private static final Logger Log = LoggerFactory.getLogger(RegistrationPlugin.class);
-    
     private static final String URL = "registration/sign-up.jsp";
    
     /**
@@ -83,27 +71,6 @@ public class RegistrationPlugin implements Plugin {
      * url http://[SERVER_NAME}:9090/plugins/registration/sign-up.jsp
      */
     private static final String WEB_ENABLED = "registration.web.enabled";
-    
-    /**
-      * The expected value is a boolean, if true any users will be need to verify its a human at the
-     * following url http://[SERVER_NAME}:9090/plugins/registration/sign-up.jsp
-     */
-    private static final String RECAPTCHA_ENABLED = "registration.recaptcha.enabled";
-    
-    /**
-     * The expected value is a boolean, if true recaptcha uses the noscript tag.
-     */
-    private static final String RECAPTCHA_NOSCRIPT = "registration.recaptcha.noscript";
-    
-    /**
-     * The expected value is a String that contains the public key for the recaptcha login.
-     */
-    private static final String RECAPTCHA_PUBLIC_KEY = "registration.recaptcha.key.public";
-    
-    /**
-     * The expected value is a String that contains the private key for the recaptcha login.
-     */
-    private static final String RECAPTCHA_PRIVATE_KEY = "registration.recaptcha.key.private";
     
     /**
      * The expected value is a comma separated String of usernames who will receive a instant
@@ -275,38 +242,6 @@ public class RegistrationPlugin implements Plugin {
             + JiveGlobals.getXMLProperty("adminConsole.port") + "/plugins/" + URL;
     }
     
-    public void setReCaptchaEnabled(boolean enable) {
-        JiveGlobals.setProperty(RECAPTCHA_ENABLED, enable ? "true" : "false");
-    }
-    
-    public boolean reCaptchaEnabled() {
-        return JiveGlobals.getBooleanProperty(RECAPTCHA_ENABLED, false);
-    }
-    
-    public void setReCaptchaNoScript(boolean enable) {
-        JiveGlobals.setProperty(RECAPTCHA_NOSCRIPT, enable ? "true" : "false");
-    }
-    
-    public boolean reCaptchaNoScript() {
-        return JiveGlobals.getBooleanProperty(RECAPTCHA_NOSCRIPT, true);
-    }
-    
-    public void setReCaptchaPublicKey(String publicKey) {
-        JiveGlobals.setProperty(RECAPTCHA_PUBLIC_KEY, publicKey);
-    }
-    
-    public String getReCaptchaPublicKey() {
-        return JiveGlobals.getProperty(RECAPTCHA_PUBLIC_KEY);
-    }
-    
-    public void setReCaptchaPrivateKey(String privateKey) {
-        JiveGlobals.setProperty(RECAPTCHA_PRIVATE_KEY, privateKey);
-    }
-    
-    public String getReCaptchaPrivateKey() {
-        return JiveGlobals.getProperty(RECAPTCHA_PRIVATE_KEY);
-    }
-    
     public void setGroup(String group) {
         JiveGlobals.setProperty(REGISTRAION_GROUP, group);
     }
@@ -324,7 +259,7 @@ public class RegistrationPlugin implements Plugin {
     }
     
     private class RegistrationUserEventListener implements UserEventListener {
-        public void userCreated(User user, Map<String, Object> params) {
+        public void userCreated(User user, Map params) {
             if (imNotificationEnabled()) {
                 sendIMNotificatonMessage(user);
             }
@@ -342,10 +277,10 @@ public class RegistrationPlugin implements Plugin {
             }
         }
 
-        public void userDeleting(User user, Map<String, Object> params) {
+        public void userDeleting(User user, Map params) {           
         }
 
-        public void userModified(User user, Map<String, Object> params) {
+        public void userModified(User user, Map params) {
         }
         
         private void sendIMNotificatonMessage(User user) {
@@ -368,7 +303,7 @@ public class RegistrationPlugin implements Plugin {
                            subject, body, null);
                }
                catch (Exception e) {
-                   Log.error(e.getMessage(), e);
+                   Log.error(e);
                }
            }
         }
@@ -396,7 +331,7 @@ public class RegistrationPlugin implements Plugin {
                 group.getMembers().add(XMPPServer.getInstance().createJID(user.getUsername(), null));
             }
             catch (GroupNotFoundException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }

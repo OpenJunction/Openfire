@@ -5,37 +5,24 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc.spi;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.dom4j.Element;
 import org.jivesoftware.openfire.PacketRouter;
-import org.jivesoftware.openfire.muc.CannotBeInvitedException;
-import org.jivesoftware.openfire.muc.ConflictException;
-import org.jivesoftware.openfire.muc.ForbiddenException;
-import org.jivesoftware.openfire.muc.MUCRole;
-import org.jivesoftware.openfire.muc.NotAllowedException;
+import org.jivesoftware.openfire.muc.*;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.JiveGlobals;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.Presence;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A handler for the IQ packet with namespace http://jabber.org/protocol/muc#admin. This kind of 
@@ -46,17 +33,13 @@ import org.xmpp.packet.Presence;
  * @author Gaston Dombiak
  */
 public class IQAdminHandler {
-	
-	private LocalMUCRoom room;
+    private LocalMUCRoom room;
 
     private PacketRouter router;
-
-    private boolean skipInvite;
 
     public IQAdminHandler(LocalMUCRoom chatroom, PacketRouter packetRouter) {
         this.room = chatroom;
         this.router = packetRouter;
-        this.skipInvite = JiveGlobals.getBooleanProperty("xmpp.muc.skipInvite", false);
     }
 
     /**
@@ -247,20 +230,19 @@ public class IQAdminHandler {
                     } else if ("member".equals(target)) {
                         // Add the user as a member of the room based on the bare JID
                         boolean hadAffiliation = room.getAffiliation(jid.toBareJID()) != MUCRole.Affiliation.none;
-                        presences.addAll(room.addMember(jid, nick, senderRole));
+                        presences.addAll(room.addMember(jid.toBareJID(), nick, senderRole));
                         // If the user had an affiliation don't send an invitation. Otherwise
-                        // send an invitation if the room is members-only and skipping invites
-                       // are not disabled system-wide xmpp.muc.skipInvite
-                        if (!skipInvite && !hadAffiliation && room.isMembersOnly()) {
+                        // send an invitation if the room is members-only
+                        if (!hadAffiliation && room.isMembersOnly()) {
                             room.sendInvitation(jid, null, senderRole, null);
                         }
                     } else if ("outcast".equals(target)) {
                         // Add the user as an outcast of the room based on the bare JID
-                        presences.addAll(room.addOutcast(jid, item.elementTextTrim("reason"), senderRole));
+                        presences.addAll(room.addOutcast(jid.toBareJID(), item.elementTextTrim("reason"), senderRole));
                     } else if ("none".equals(target)) {
                         if (hasAffiliation) {
                             // Set that this jid has a NONE affiliation based on the bare JID
-                            presences.addAll(room.addNone(jid, senderRole));
+                            presences.addAll(room.addNone(jid.toBareJID(), senderRole));
                         } else {
                             // Kick the user from the room
                             if (MUCRole.Role.moderator != senderRole.getRole()) {

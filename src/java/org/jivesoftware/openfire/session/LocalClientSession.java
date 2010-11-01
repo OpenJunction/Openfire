@@ -5,26 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.session;
-
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.StringTokenizer;
 
 import org.jivesoftware.openfire.Connection;
 import org.jivesoftware.openfire.SessionManager;
@@ -42,9 +28,8 @@ import org.jivesoftware.openfire.user.PresenceEventDispatcher;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.Cache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmpp.packet.JID;
@@ -52,14 +37,18 @@ import org.xmpp.packet.Packet;
 import org.xmpp.packet.Presence;
 import org.xmpp.packet.StreamError;
 
+import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.StringTokenizer;
+
 /**
  * Represents a session between the server and a client.
  *
  * @author Gaston Dombiak
  */
 public class LocalClientSession extends LocalSession implements ClientSession {
-
-	private static final Logger Log = LoggerFactory.getLogger(LocalClientSession.class);
 
     private static final String ETHERX_NAMESPACE = "http://etherx.jabber.org/streams";
     private static final String FLASH_NAMESPACE = "http://www.jabber.com/streams/flash";
@@ -223,7 +212,7 @@ public class LocalClientSession extends LocalSession implements ClientSession {
                     minorVersion = version[1];
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }
@@ -254,7 +243,7 @@ public class LocalClientSession extends LocalSession implements ClientSession {
                 hasCertificates = SSLConfig.getKeyStore().size() > 0;
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
             Connection.TLSPolicy tlsPolicy = getTLSPolicy();
             if (Connection.TLSPolicy.required == tlsPolicy && !hasCertificates) {
@@ -481,7 +470,7 @@ public class LocalClientSession extends LocalSession implements ClientSession {
             try {
                 return PrivacyListManager.getInstance().getPrivacyList(getUsername(), activeList);
             } catch (UserNotFoundException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         return null;
@@ -513,7 +502,7 @@ public class LocalClientSession extends LocalSession implements ClientSession {
             try {
                 return PrivacyListManager.getInstance().getPrivacyList(getUsername(), defaultList);
             } catch (UserNotFoundException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         return null;
@@ -771,8 +760,7 @@ public class LocalClientSession extends LocalSession implements ClientSession {
         }
     }
 
-    @Override
-	public String getAvailableStreamFeatures() {
+    public String getAvailableStreamFeatures() {
         // Offer authenticate and registration only if TLS was not required or if required
         // then the connection is already secured
         if (conn.getTlsPolicy() == Connection.TLSPolicy.required && !conn.isSecure()) {
@@ -822,8 +810,7 @@ public class LocalClientSession extends LocalSession implements ClientSession {
      * @param packet the packet to analyze if it must be blocked.
      * @return true if the specified packet must be blocked.
      */
-    @Override
-	public boolean canProcess(Packet packet) {
+    public boolean canProcess(Packet packet) {
         PrivacyList list = getActiveList();
         if (list != null) {
             // If a privacy list is active then make sure that the packet is not blocked
@@ -837,15 +824,13 @@ public class LocalClientSession extends LocalSession implements ClientSession {
         }
     }
 
-    @Override
-	void deliver(Packet packet) throws UnauthorizedException {
+    void deliver(Packet packet) throws UnauthorizedException {
         if (conn != null && !conn.isClosed()) {
             conn.deliver(packet);
         }
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return super.toString() + " presence: " + presence;
     }
 }

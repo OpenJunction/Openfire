@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin.presence;
@@ -42,8 +34,7 @@ import java.io.PrintWriter;
  */
 class XMLPresenceProvider extends PresenceInfoProvider {
 
-    @Override
-	public void sendInfo(HttpServletRequest request, HttpServletResponse response,
+    public void sendInfo(HttpServletRequest request, HttpServletResponse response,
             Presence presence) throws IOException {
         response.setContentType("text/xml");
         PrintWriter out = response.getWriter();
@@ -70,8 +61,7 @@ class XMLPresenceProvider extends PresenceInfoProvider {
         out.flush();
     }
 
-    @Override
-	public void sendUserNotFound(HttpServletRequest request, HttpServletResponse response)
+    public void sendUserNotFound(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         response.setContentType("text/xml");
         PrintWriter out = response.getWriter();

@@ -5,31 +5,17 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
 
-import gnu.inet.encoding.IDNAException;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-
-import org.jivesoftware.openfire.IQHandlerInfo;
-import org.jivesoftware.openfire.PacketException;
-import org.jivesoftware.openfire.PacketRouter;
-import org.jivesoftware.openfire.SharedGroupException;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.stringprep.IDNAException;
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.disco.ServerFeaturesProvider;
 import org.jivesoftware.openfire.roster.Roster;
@@ -38,13 +24,13 @@ import org.jivesoftware.openfire.roster.RosterManager;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
+
+import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * Implements the TYPE_IQ jabber:iq:roster protocol. Clients
@@ -79,8 +65,6 @@ import org.xmpp.packet.PacketError;
  */
 public class IQRosterHandler extends IQHandler implements ServerFeaturesProvider {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQRosterHandler.class);
-
     private IQHandlerInfo info;
 
     private UserManager userManager;
@@ -108,8 +92,7 @@ public class IQRosterHandler extends IQHandler implements ServerFeaturesProvider
      * @param packet The update packet
      * @return The reply or null if no reply
      */
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException, PacketException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException, PacketException {
         try {
             IQ returnPacket = null;
             org.xmpp.packet.Roster roster = (org.xmpp.packet.Roster)packet;
@@ -308,16 +291,14 @@ public class IQRosterHandler extends IQHandler implements ServerFeaturesProvider
         return response;
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         localServer = server;
         userManager = server.getUserManager();
         router = server.getPacketRouter();
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 

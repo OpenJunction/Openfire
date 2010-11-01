@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc;
@@ -27,6 +19,7 @@ import org.jivesoftware.openfire.muc.spi.IQAdminHandler;
 import org.jivesoftware.openfire.muc.spi.IQOwnerHandler;
 import org.jivesoftware.openfire.muc.spi.LocalMUCRole;
 import org.jivesoftware.openfire.muc.spi.LocalMUCUser;
+import org.jivesoftware.openfire.resultsetmanager.Result;
 import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveConstants;
@@ -35,7 +28,6 @@ import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.Presence;
-import org.xmpp.resultsetmanagement.Result;
 
 import java.io.Externalizable;
 import java.util.Collection;
@@ -306,21 +298,8 @@ public interface MUCRoom extends Externalizable, Result {
      * @return the list of updated presences of all the client resources that the client used to
      *         join the room.
      * @throws ForbiddenException If the user is not allowed to modify the owner list.
-     * @deprecated Replaced by {@link #addOwner(JID, MUCRole)}
      */
-    @Deprecated
     public List<Presence> addOwner(String bareJID, MUCRole senderRole) throws ForbiddenException;
-
-    /**
-     * Adds a new user to the list of owners.
-     * 
-     * @param jid The JID of the user to add as owner.
-     * @param senderRole the role of the user that is trying to modify the owners list.
-     * @return the list of updated presences of all the client resources that the client used to
-     *         join the room.
-     * @throws ForbiddenException If the user is not allowed to modify the owner list.
-     */
-    public List<Presence> addOwner(JID jid, MUCRole senderRole) throws ForbiddenException;
 
     /**
      * Adds a list of users to the list of owners.
@@ -356,23 +335,8 @@ public interface MUCRoom extends Externalizable, Result {
      *         join the room.
      * @throws ForbiddenException If the user is not allowed to modify the admin list.
      * @throws ConflictException If the room was going to lose all its owners.
-     * @deprecated Replaced by {@link #addAdmin(JID, MUCRole)}
      */
-    @Deprecated
     public List<Presence> addAdmin(String bareJID, MUCRole senderRole) throws ForbiddenException,
-            ConflictException;
-    
-    /**
-     * Adds a new user to the list of admins.
-     * 
-     * @param jid The JID of the user to add as admin.
-     * @param senderRole The role of the user that is trying to modify the admins list.
-     * @return the list of updated presences of all the client resources that the client used to
-     *         join the room.
-     * @throws ForbiddenException If the user is not allowed to modify the admin list.
-     * @throws ConflictException If the room was going to lose all its owners.
-     */
-    public List<Presence> addAdmin(JID jid, MUCRole senderRole) throws ForbiddenException,
             ConflictException;
 
     /**
@@ -386,25 +350,8 @@ public interface MUCRoom extends Externalizable, Result {
      * @throws ForbiddenException If the user is not allowed to modify the members list.
      * @throws ConflictException If the desired room nickname is already reserved for the room or if
      *             the room was going to lose all its owners.
-     * @deprecated Replaced by {@link #addMember(JID, String, MUCRole)}
      */
-    @Deprecated
     public List<Presence> addMember(String bareJID, String nickname, MUCRole senderRole)
-            throws ForbiddenException, ConflictException;
-
-    /**
-     * Adds a new user to the list of members.
-     * 
-     * @param jid The JID of the user to add as a member.
-     * @param nickname The reserved nickname of the member for the room or null if none.
-     * @param senderRole the role of the user that is trying to modify the members list.
-     * @return the list of updated presences of all the client resources that the client used to
-     *         join the room.
-     * @throws ForbiddenException If the user is not allowed to modify the members list.
-     * @throws ConflictException If the desired room nickname is already reserved for the room or if
-     *             the room was going to lose all its owners.
-     */
-    public List<Presence> addMember(JID jid, String nickname, MUCRole senderRole)
             throws ForbiddenException, ConflictException;
 
     /**
@@ -418,25 +365,8 @@ public interface MUCRoom extends Externalizable, Result {
      * @throws NotAllowedException Thrown if trying to ban an owner or an administrator.
      * @throws ForbiddenException If the user is not allowed to modify the outcast list.
      * @throws ConflictException If the room was going to lose all its owners.
-     * @deprecated Replaced by {@link #addOutcast(JID, String, MUCRole)}
      */
-    @Deprecated
     public List<Presence> addOutcast(String bareJID, String reason, MUCRole senderRole)
-            throws NotAllowedException, ForbiddenException, ConflictException;
-
-    /**
-     * Adds a new user to the list of outcast users.
-     * 
-     * @param jid The JID of the user to add as an outcast.
-     * @param reason The reason why the user was banned.
-     * @param senderRole The role of the user that initiated the ban.
-     * @return the list of updated presences of all the client resources that the client used to
-     *         join the room.
-     * @throws NotAllowedException Thrown if trying to ban an owner or an administrator.
-     * @throws ForbiddenException If the user is not allowed to modify the outcast list.
-     * @throws ConflictException If the room was going to lose all its owners.
-     */
-    public List<Presence> addOutcast(JID jid, String reason, MUCRole senderRole)
             throws NotAllowedException, ForbiddenException, ConflictException;
 
     /**
@@ -448,23 +378,8 @@ public interface MUCRoom extends Externalizable, Result {
      *         join the room or null if none was updated.
      * @throws ForbiddenException If the user is not allowed to modify the none list.
      * @throws ConflictException If the room was going to lose all its owners.
-     * @deprecated Replaced by {@link #addNone(JID, MUCRole)}
      */
-    @Deprecated
-	public List<Presence> addNone(String bareJID, MUCRole senderRole) throws ForbiddenException,
-            ConflictException;
-
-    /**
-     * Removes the user from all the other affiliation list thus giving the user a NONE affiliation.
-     * 
-     * @param jid The JID of the user to keep with a NONE affiliation.
-     * @param senderRole The role of the user that set the affiliation to none.
-     * @return the list of updated presences of all the client resources that the client used to
-     *         join the room or null if none was updated.
-     * @throws ForbiddenException If the user is not allowed to modify the none list.
-     * @throws ConflictException If the room was going to lose all its owners.
-     */
-    public List<Presence> addNone(JID jid, MUCRole senderRole) throws ForbiddenException,
+    public List<Presence> addNone(String bareJID, MUCRole senderRole) throws ForbiddenException,
             ConflictException;
 
     /**

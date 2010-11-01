@@ -5,34 +5,17 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pep;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.QName;
+import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.openfire.IQHandlerInfo;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
@@ -43,33 +26,31 @@ import org.jivesoftware.openfire.disco.UserItemsProvider;
 import org.jivesoftware.openfire.event.UserEventDispatcher;
 import org.jivesoftware.openfire.event.UserEventListener;
 import org.jivesoftware.openfire.handler.IQHandler;
-import org.jivesoftware.openfire.pubsub.CollectionNode;
-import org.jivesoftware.openfire.pubsub.LeafNode;
-import org.jivesoftware.openfire.pubsub.Node;
-import org.jivesoftware.openfire.pubsub.NodeSubscription;
-import org.jivesoftware.openfire.pubsub.PubSubEngine;
+import org.jivesoftware.openfire.pubsub.*;
 import org.jivesoftware.openfire.pubsub.models.AccessModel;
 import org.jivesoftware.openfire.roster.Roster;
 import org.jivesoftware.openfire.roster.RosterEventDispatcher;
 import org.jivesoftware.openfire.roster.RosterEventListener;
 import org.jivesoftware.openfire.roster.RosterItem;
-import org.jivesoftware.openfire.roster.RosterManager;
 import org.jivesoftware.openfire.session.ClientSession;
-import org.jivesoftware.openfire.user.PresenceEventDispatcher;
-import org.jivesoftware.openfire.user.PresenceEventListener;
-import org.jivesoftware.openfire.user.RemotePresenceEventDispatcher;
-import org.jivesoftware.openfire.user.RemotePresenceEventListener;
-import org.jivesoftware.openfire.user.User;
-import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.openfire.user.*;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.forms.DataForm;
 import org.xmpp.forms.FormField;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.Presence;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * <p>
@@ -98,37 +79,29 @@ import org.xmpp.packet.Presence;
  * </p>
  *
  * @author Armando Jagucki
- * @author Guus der Kinderen, guus.der.kinderen@gmail.com
+ *
  */
 public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider, ServerFeaturesProvider,
         UserIdentitiesProvider, UserItemsProvider, PresenceEventListener, RemotePresenceEventListener,
         RosterEventListener, UserEventListener {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQPEPHandler.class);
+    final static String GET_PEP_SERVICE = "SELECT DISTINCT serviceID FROM ofPubsubNode WHERE serviceID=?";
 
     /**
-     * Metadata that relates to the IQ processing capabilities of this specific {@link IQHandler}.
+     * Map of PEP services. Table, Key: bare JID (String); Value: PEPService
      */
-    private final IQHandlerInfo info;
+    private Map<String, PEPService> pepServices;
 
-    private PEPServiceManager pepServiceManager = null;
+    private IQHandlerInfo info;
 
-	/**
-	 * The managed thread pool that will do most of the processing. The amount
-	 * of worker threads in this pool should be kept low to avoid resource
-	 * contention.
-	 */
-    // There's room for future improvement here. If anywhere in the future,
-	// Openfire allows implementations to use dedicated resource pools, we can
-	// significantly increase the number of worker threads in this executor. The
-	// bottleneck for this particular executor is the database pool. During
-	// startup, PEP queries the database a lot, which causes all of the
-	// connections in the generic database pool to be used up by this PEP
-	// implementation. This can cause problems in other parts of Openfire that
-	// depend on database access (ideally, these should get dedicated resource
-	// pools too).
-    private ExecutorService executor = null;
-    
+    private PubSubEngine pubSubEngine = null;
+
+    /**
+     * Queue that will store the JID of the local users that came online. This queue
+     * will be consumed by another thread to improve performance of the server.
+     */
+    private static BlockingQueue<JID> availableSessions = new LinkedBlockingQueue<JID>();
+
     /**
      * A map of all known full JIDs that have sent presences from a remote server.
      * table: key Bare JID (String); value Set of JIDs
@@ -138,184 +111,161 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
      */
     private Map<String, Set<JID>> knownRemotePresences = new ConcurrentHashMap<String, Set<JID>>();
 
-    /**
-     * Constructs a new {@link IQPEPHandler} instance.
-     */
     public IQPEPHandler() {
         super("Personal Eventing Handler");
+        pepServices = new ConcurrentHashMap<String, PEPService>();
         info = new IQHandlerInfo("pubsub", "http://jabber.org/protocol/pubsub");
+        // Create a thread that will process the queued JIDs of the sessions that came online. We
+        // are processing the events one at a time so we no longer have the paralellism to the database
+        // that was slowing down the server
+        Thread thread = new Thread("PEP avaiable sessions handler ") {
+            public void run() {
+                final XMPPServer server = XMPPServer.getInstance();
+                while (!server.isShuttingDown()) {
+                    try {
+                        JID availableSessionJID = availableSessions.take();
+
+                        // Send the last published items for the contacts on availableSessionJID's roster.
+                        try {
+                            Roster roster = server.getRosterManager().getRoster(availableSessionJID.getNode());
+                            for (RosterItem item : roster.getRosterItems()) {
+                                if (server.isLocal(item.getJid()) && (item.getSubStatus() == RosterItem.SUB_BOTH ||
+                                        item.getSubStatus() == RosterItem.SUB_TO)) {
+                                    PEPService pepService = getPEPService(item.getJid().toBareJID());
+                                    if (pepService != null) {
+                                        pepService.sendLastPublishedItems(availableSessionJID);
+                                    }
+                                }
+                            }
+                        }
+                        catch (UserNotFoundException e) {
+                            // Do nothing
+                        }
+                    }
+                    catch (Exception e) {
+                        Log.error(e);
+                    }
+                }
+            }
+        };
+        thread.setDaemon(true);
+        thread.start();
     }
 
-    /* 
-     * (non-Javadoc)
-     * @see org.jivesoftware.openfire.handler.IQHandler#initialize(org.jivesoftware.openfire.XMPPServer)
-     */
     @Override
     public void initialize(XMPPServer server) {
         super.initialize(server);
 
-        pepServiceManager = new PEPServiceManager();
-    }
-
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jivesoftware.openfire.container.BasicModule#destroy()
-	 */
-    @Override
-	public void destroy() {
-        super.destroy();
-    }
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jivesoftware.openfire.container.BasicModule#start()
-	 */
-	@Override
-	public void start() {
-		super.start();
-		
-		// start the service manager
-		pepServiceManager.start();
-		
-        // start a new executor service
-        startExecutor();
-        
         // Listen to presence events to manage PEP auto-subscriptions.
         PresenceEventDispatcher.addListener(this);
+
         // Listen to remote presence events to manage the knownRemotePresences map.
         RemotePresenceEventDispatcher.addListener(this);
+
         // Listen to roster events for PEP subscription cancelling on contact deletion.
         RosterEventDispatcher.addListener(this);
+
         // Listen to user events in order to destroy a PEP service when a user is deleted.
         UserEventDispatcher.addListener(this);
-	}
-	
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jivesoftware.openfire.container.BasicModule#stop()
-	 */
-    @Override
-	public void stop() {
-        super.stop();
-        
-        // Remove listeners
-        PresenceEventDispatcher.removeListener(this);
-        RemotePresenceEventDispatcher.removeListener(this);
-        RosterEventDispatcher.removeListener(this);
-        UserEventDispatcher.removeListener(this);        
-        
-        // stop the executor service
-        stopExecutor();
-        
-        // stop the pepservicemananger
-        pepServiceManager.stop();
-    }
-    
-    /**
-	 * Starts a new thread pool, unless an existing one is still running.
-	 */
-	private void startExecutor() {
-		if (executor == null || executor.isShutdown()) {
-			// keep the amount of workers low! See comment that goes with the
-			// field named 'executor'.
-			Log.debug("Starting executor service...");
-			executor = Executors.newScheduledThreadPool(2);
-		}
-	}
-    
-	/**
-	 * Shuts down the executor by dropping all tasks from the queue. This method
-	 * will allow the executor to finish operations on running tasks for a
-	 * period of two seconds. After that, tasks are forcefully stopped.
-	 * <p>
-	 * The order in which the various shutdown routines of the executor are
-	 * called, is:
-	 * <ol>
-	 * <li>{@link ExecutorService#shutdown()}</li>
-	 * <li>{@link ExecutorService#awaitTermination(long, TimeUnit)} (two
-	 * seconds)</li>
-	 * <li>{@link ExecutorService#shutdownNow()}</li>
-	 * </ol>
-	 */
-	private void stopExecutor() {
-		Log.debug("Stopping executor service...");
-		/*
-		 * This method gets called as part of the Component#shutdown() routine.
-		 * If that method gets called, the component has already been removed
-		 * from the routing tables. We don't need to worry about new packets to
-		 * arrive - there won't be any.
-		 */
-		executor.shutdown();
-		try {
-			if (!executor.awaitTermination(2, TimeUnit.SECONDS)) {
-				Log.debug("Forcing a shutdown for the executor service (after a two-second timeout has elapsed...");
-				executor.shutdownNow();
-				// Note that if any IQ request stanzas had been scheduled, they
-				// MUST be responded to with an error here. A list of tasks that
-				// have never been commenced by the executor is returned by the
-				// #shutdownNow() method of the ExecutorService.
-			}
-		} catch (InterruptedException e) {
-			// ignore, as we're shutting down anyway.
-		}
-	}
 
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.jivesoftware.openfire.handler.IQHandler#getInfo()
-	 */
-    @Override
-    public IQHandlerInfo getInfo() {
-        return info;
+        pubSubEngine = new PubSubEngine(server.getPacketRouter());
     }
-
-    /**
-     * Implements ServerIdentitiesProvider and UserIdentitiesProvider, adding
-     * the PEP identity to the respective disco#info results.
-     */
-    public Iterator<Element> getIdentities() {
-        ArrayList<Element> identities = new ArrayList<Element>();
-        Element identity = DocumentHelper.createElement("identity");
-        identity.addAttribute("category", "pubsub");
-        identity.addAttribute("type", "pep");
-        identities.add(identity);
-        return identities.iterator();
-    }
-
-    /**
-     * Implements ServerFeaturesProvider to include all supported XEP-0060 features
-     * in the server's disco#info result (as per section 4 of XEP-0163).
-     */
-    public Iterator<String> getFeatures() {
-        return XMPPServer.getInstance().getPubSubModule().getFeatures(null, null, null);
-    }
-
 
     /**
      * Returns true if the PEP service is enabled in the server.
      *
      * @return true if the PEP service is enabled in the server.
      */
-    // TODO: listen for property changes to stop/start this module.
     public boolean isEnabled() {
         return JiveGlobals.getBooleanProperty("xmpp.pep.enabled", true);
     }
 
-    // *****************************************************************
-    // *** Generic module management ends here. From this point on   ***
-    // *** more specific PEP related implementation after this point ***
-    // *****************************************************************
-    
-    /*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.jivesoftware.openfire.handler.IQHandler#handleIQ(org.xmpp.packet.IQ)
-	 */
+    /**
+     * Loads a PEP service from the database, if it exists.
+     *
+     * @param jid the JID of the owner of the PEP service.
+     * @return the loaded PEP service, or null if not found.
+     */
+    private PEPService loadPEPServiceFromDB(String jid) {
+        PEPService pepService = null;
+
+        Connection con = null;
+        PreparedStatement pstmt = null;
+        try {
+            con = DbConnectionManager.getConnection();
+            // Get all PEP services
+            pstmt = con.prepareStatement(GET_PEP_SERVICE);
+            pstmt.setString(1, jid);
+            ResultSet rs = pstmt.executeQuery();
+            // Restore old PEPServices
+            while (rs.next()) {
+                String serviceID = rs.getString(1);
+
+                // Create a new PEPService
+                pepService = new PEPService(XMPPServer.getInstance(), serviceID);
+                pepServices.put(serviceID, pepService);
+                pubSubEngine.start(pepService);
+
+                if (Log.isDebugEnabled()) {
+                    Log.debug("PEP: Restored service for " + serviceID + " from the database.");
+                }
+            }
+            rs.close();
+            pstmt.close();
+        }
+        catch (SQLException sqle) {
+            Log.error(sqle);
+        }
+        finally {
+            try {
+                if (pstmt != null)
+                    pstmt.close();
+            }
+            catch (Exception e) {
+                Log.error(e);
+            }
+            try {
+                if (con != null)
+                    con.close();
+            }
+            catch (Exception e) {
+                Log.error(e);
+            }
+        }
+
+        return pepService;
+    }
+
+    public void stop() {
+        super.stop();
+        for (PEPService service : pepServices.values()) {
+            pubSubEngine.shutdown(service);
+        }
+    }
+
+    public void destroy() {
+        super.destroy();
+        // Remove listeners
+        PresenceEventDispatcher.removeListener(this);
+        RemotePresenceEventDispatcher.removeListener(this);
+        RosterEventDispatcher.removeListener(this);
+        UserEventDispatcher.removeListener(this);
+    }
+
+    @Override
+    public IQHandlerInfo getInfo() {
+        return info;
+    }
+
+    /**
+     * Returns the knownRemotePresences map.
+     *
+     * @return the knownRemotePresences map
+     */
+    public Map<String, Set<JID>> getKnownRemotePresenes() {
+        return knownRemotePresences;
+    }
+
     @Override
     public IQ handleIQ(IQ packet) throws UnauthorizedException {
         // Do nothing if server is not enabled
@@ -326,52 +276,53 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
             return reply;
         }
 
-        final JID senderJID = packet.getFrom();
+        JID senderJID = packet.getFrom();
         if (packet.getTo() == null) {
-        	// packet addressed to service itself (not to a node/user)
-        	
             if (packet.getType() == IQ.Type.set) {
-                final String jidFrom = senderJID.toBareJID();
-                PEPService pepService = pepServiceManager.getPEPService(jidFrom);
+                String jidFrom = senderJID.toBareJID();
+
+                PEPService pepService = getPEPService(jidFrom);
 
                 // If no service exists yet for jidFrom, create one.
                 if (pepService == null) {
-                	try {
-                		pepService = pepServiceManager.create(senderJID);                		
-                	} catch (IllegalArgumentException ex) {
-            			final IQ reply = IQ.createResultIQ(packet);
-            			reply.setChildElement(packet.getChildElement().createCopy());
-            			reply.setError(PacketError.Condition.not_allowed);
-            			return reply;
-                	}
+                    // Return an error if the packet is from an anonymous, unregistered user
+                    // or remote user
+                    if (!XMPPServer.getInstance().isLocal(senderJID) || !UserManager.getInstance().isRegisteredUser(senderJID.getNode())) {
+                        IQ reply = IQ.createResultIQ(packet);
+                        reply.setChildElement(packet.getChildElement().createCopy());
+                        reply.setError(PacketError.Condition.not_allowed);
+                        return reply;
+                    }
 
-            		// Probe presences
-            		pepServiceManager.start(pepService);
+                    pepService = new PEPService(XMPPServer.getInstance(), jidFrom);
+                    pepServices.put(jidFrom, pepService);
 
-            		// Those who already have presence subscriptions to jidFrom
-					// will now automatically be subscribed to this new
-					// PEPService.
-					try {
-						final RosterManager rm = XMPPServer.getInstance()
-								.getRosterManager();
-						final Roster roster = rm.getRoster(senderJID.getNode());
-						for (final RosterItem item : roster.getRosterItems()) {
-							if (item.getSubStatus() == RosterItem.SUB_BOTH
-									|| item.getSubStatus() == RosterItem.SUB_FROM) {
-								createSubscriptionToPEPService(pepService, item
-										.getJid(), senderJID);
-							}
-						}
-					} catch (UserNotFoundException e) {
-						// Do nothing
-					}
+                    // Probe presences
+                    pubSubEngine.start(pepService);
+                    if (Log.isDebugEnabled()) {
+                        Log.debug("PEP: " + jidFrom + " had a PEPService created");
+                    }
+
+                    // Those who already have presence subscriptions to jidFrom
+                    // will now automatically be subscribed to this new PEPService.
+                    try {
+                        Roster roster = XMPPServer.getInstance().getRosterManager().getRoster(senderJID.getNode());
+                        for (RosterItem item : roster.getRosterItems()) {
+                            if (item.getSubStatus() == RosterItem.SUB_BOTH || item.getSubStatus() == RosterItem.SUB_FROM) {
+                                createSubscriptionToPEPService(pepService, item.getJid(), senderJID);
+                            }
+                        }
+                    }
+                    catch (UserNotFoundException e) {
+                        // Do nothing
+                    }
                 }
 
                 // If publishing a node, and the node doesn't exist, create it.
-                final Element childElement = packet.getChildElement();
-                final Element publishElement = childElement.element("publish");
+                Element childElement = packet.getChildElement();
+                Element publishElement = childElement.element("publish");
                 if (publishElement != null) {
-                    final String nodeID = publishElement.attributeValue("node");
+                    String nodeID = publishElement.attributeValue("node");
 
                     // Do not allow User Avatar nodes to be created.
                     // TODO: Implement XEP-0084
@@ -384,35 +335,36 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
 
                     if (pepService.getNode(nodeID) == null) {
                         // Create the node
-                        final JID creator = new JID(jidFrom);
-                        final LeafNode newNode = new LeafNode(pepService, pepService.getRootCollectionNode(), nodeID, creator);
+                        JID creator = new JID(jidFrom);
+                        LeafNode newNode = new LeafNode(pepService, pepService.getRootCollectionNode(), nodeID, creator);
                         newNode.addOwner(creator);
                         newNode.saveToDB();
                     }
                 }
 
                 // Process with PubSub as usual.
-                pepServiceManager.process(pepService, packet);
+                pubSubEngine.process(pepService, packet);
             }
         }
         else if (packet.getType() == IQ.Type.get || packet.getType() == IQ.Type.set) {
-        	// packet was addressed to a node.
-        	
-            final String jidTo = packet.getTo().toBareJID();
+            String jidTo = packet.getTo().toBareJID();
 
-            final PEPService pepService = pepServiceManager.getPEPService(jidTo);
+            PEPService pepService = getPEPService(jidTo);
 
             if (pepService != null) {
-            	pepServiceManager.process(pepService, packet);
-            } else {
+                pubSubEngine.process(pepService, packet);
+            }
+            else {
                 // Process with PubSub using a dummyService. In the case where an IQ packet is sent to
                 // a user who does not have a PEP service, we wish to utilize the error reporting flow
                 // already present in the PubSubEngine. This gives the illusion that every user has a
                 // PEP service, as required by the specification.
                 PEPService dummyService = new PEPService(XMPPServer.getInstance(), senderJID.toBareJID());
-                pepServiceManager.process(dummyService, packet);
+                pubSubEngine.process(dummyService, packet);
             }
-        } else {
+
+        }
+        else {
             // Ignore IQ packets of type 'error' or 'result'.
             return null;
         }
@@ -420,14 +372,24 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
         // Other error flows were handled in pubSubEngine.process(...)
         return null;
     }
-    
+
     /**
-     * Returns the knownRemotePresences map.
+     * Retrieves a PEP service -- attempting first from memory, then from the database. Note
+     * that if no PEP service was found the next request of the PEP service will hit the
+     * database since we are not caching 'no PEP services'.
      *
-     * @return the knownRemotePresences map
+     * @param jid the bare JID of the user that owns the PEP service.
+     * @return the requested PEP service if found or null if not found.
      */
-    public Map<String, Set<JID>> getKnownRemotePresenes() {
-        return knownRemotePresences;
+    public PEPService getPEPService(String jid) {
+        PEPService pepService = pepServices.get(jid);
+
+        if (pepService == null) {
+            pepService = loadPEPServiceFromDB(jid);
+            // TODO Cache that no PEP service was found so we do not look for it again. Remove from cache when created
+        }
+
+        return pepService;
     }
 
     /**
@@ -490,7 +452,7 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
         formField.setVariable("pubsub#subscription_depth");
         formField.addValue("all");
 
-        pepServiceManager.process(pepService, subscriptionPacket);
+        pubSubEngine.process(pepService, subscriptionPacket);
     }
 
     /**
@@ -501,7 +463,7 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
      */
     private void cancelSubscriptionToPEPService(JID unsubscriber, JID serviceOwner) {
         // Retrieve recipientJID's PEP service, if it exists.
-        PEPService pepService = pepServiceManager.getPEPService(serviceOwner.toBareJID());
+        PEPService pepService = getPEPService(serviceOwner.toBareJID());
         if (pepService == null) {
             return;
         }
@@ -515,6 +477,27 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
     }
 
     /**
+     * Implements ServerIdentitiesProvider and UserIdentitiesProvider, adding
+     * the PEP identity to the respective disco#info results.
+     */
+    public Iterator<Element> getIdentities() {
+        ArrayList<Element> identities = new ArrayList<Element>();
+        Element identity = DocumentHelper.createElement("identity");
+        identity.addAttribute("category", "pubsub");
+        identity.addAttribute("type", "pep");
+        identities.add(identity);
+        return identities.iterator();
+    }
+
+    /**
+     * Implements ServerFeaturesProvider to include all supported XEP-0060 features
+     * in the server's disco#info result (as per section 4 of XEP-0163).
+     */
+    public Iterator<String> getFeatures() {
+        return XMPPServer.getInstance().getPubSubModule().getFeatures(null, null, null);
+    }
+
+    /**
      * Implements UserItemsProvider, adding PEP related items to a disco#items
      * result.
      */
@@ -522,7 +505,7 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
         ArrayList<Element> items = new ArrayList<Element>();
 
         String recipientJID = XMPPServer.getInstance().createJID(name, null, true).toBareJID();
-        PEPService pepService = pepServiceManager.getPEPService(recipientJID);
+        PEPService pepService = getPEPService(recipientJID);
 
         if (pepService != null) {
             CollectionNode rootNode = pepService.getRootCollectionNode();
@@ -549,7 +532,7 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
     }
 
     public void subscribedToPresence(JID subscriberJID, JID authorizerJID) {
-        final PEPService pepService = pepServiceManager.getPEPService(authorizerJID.toBareJID());
+        PEPService pepService = getPEPService(authorizerJID.toBareJID());
         if (pepService != null) {
             createSubscriptionToPEPService(pepService, subscriberJID, authorizerJID);
 
@@ -584,9 +567,9 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
         if (newlyAvailableJID == null) {
             return;
         }
-        
-        final GetNotificationsOnInitialPresence task = new GetNotificationsOnInitialPresence(newlyAvailableJID);
-        executor.submit(task);
+        // Store the JID of the session that became online. The processing of this
+        // event will take place in another thread to improve performance of the server
+        availableSessions.add(newlyAvailableJID);
     }
 
     public void remoteUserAvailable(Presence presence) {
@@ -614,7 +597,7 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
             // TODO Directed presences should be ignored when no presence subscription exists
 
             // Send the presence packet recipient's last published items to the remote user.
-            PEPService pepService = pepServiceManager.getPEPService(jidTo.toBareJID());
+            PEPService pepService = getPEPService(jidTo.toBareJID());
             if (pepService != null) {
                 pepService.sendLastPublishedItems(jidFrom);
             }
@@ -626,11 +609,11 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
         if (!isEnabled()) {
             return;
         }
-        final JID jidFrom = presence.getFrom();
-        final JID jidTo = presence.getTo();
+        JID jidFrom = presence.getFrom();
+        JID jidTo = presence.getTo();
 
         // Manage the cache of remote presence resources.
-        final Set<JID> remotePresenceSet = knownRemotePresences.get(jidTo.toBareJID());
+        Set<JID> remotePresenceSet = knownRemotePresences.get(jidTo.toBareJID());
 
         if (remotePresenceSet != null) {
             remotePresenceSet.remove(jidFrom);
@@ -646,15 +629,24 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
     }
 
     public void userDeleting(User user, Map<String, Object> params) {
-        final JID bareJID = XMPPServer.getInstance().createJID(user.getUsername(), null);
-        final PEPService pepService = pepServiceManager.getPEPService(bareJID.toString());
+        JID bareJID = XMPPServer.getInstance().createJID(user.getUsername(), null);
+        PEPService pepService = getPEPService(bareJID.toString());
 
         if (pepService == null) {
             return;
         }
 
+        // Delete the user's PEP nodes from memory and the database.
+        CollectionNode rootNode = pepService.getRootCollectionNode();
+        for (Node node : pepService.getNodes()) {
+            if (rootNode.isChildNode(node)) {
+                node.delete();
+            }
+        }
+        rootNode.delete();
+
         // Remove the user's PEP service, finally.
-        pepServiceManager.remove(bareJID);
+        pepServices.remove(bareJID.toString());
     }
 
     /**
@@ -662,10 +654,12 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
      */
     public void unavailableSession(ClientSession session, Presence presence) {
         // Do nothing
+
     }
 
     public void presenceChanged(ClientSession session, Presence presence) {
         // Do nothing
+
     }
 
     public boolean addingContact(Roster roster, RosterItem item, boolean persistent) {
@@ -675,49 +669,27 @@ public class IQPEPHandler extends IQHandler implements ServerIdentitiesProvider,
 
     public void contactAdded(Roster roster, RosterItem item) {
         // Do nothing
+
     }
 
     public void contactUpdated(Roster roster, RosterItem item) {
         // Do nothing
+
     }
 
     public void rosterLoaded(Roster roster) {
         // Do nothing
+
     }
 
     public void userCreated(User user, Map<String, Object> params) {
         // Do nothing
+
     }
 
     public void userModified(User user, Map<String, Object> params) {
         // Do nothing
+
     }
 
-    private class GetNotificationsOnInitialPresence implements Runnable {
-    	
-    	private final JID availableSessionJID;
-    	public GetNotificationsOnInitialPresence(final JID availableSessionJID) {
-    		this.availableSessionJID = availableSessionJID;
-    	}
-    	
-        public void run() {
-            // Send the last published items for the contacts on availableSessionJID's roster.
-            try {
-                final XMPPServer server = XMPPServer.getInstance();
-                final Roster roster = server.getRosterManager().getRoster(availableSessionJID.getNode());
-                for (final RosterItem item : roster.getRosterItems()) {
-                    if (server.isLocal(item.getJid()) && (item.getSubStatus() == RosterItem.SUB_BOTH ||
-                            item.getSubStatus() == RosterItem.SUB_TO)) {
-                        PEPService pepService = pepServiceManager.getPEPService(item.getJid().toBareJID());
-                        if (pepService != null) {
-                            pepService.sendLastPublishedItems(availableSessionJID);
-                        }
-                    }
-                }
-            }
-            catch (UserNotFoundException e) {
-                // Do nothing
-            }
-        }    	
-    }
 }

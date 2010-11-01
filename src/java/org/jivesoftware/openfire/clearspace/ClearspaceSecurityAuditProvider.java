@@ -4,34 +4,24 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.clearspace;
-
-import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.POST;
-
-import java.util.Date;
-import java.util.List;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
+import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.POST;
 import org.jivesoftware.openfire.security.EventNotFoundException;
 import org.jivesoftware.openfire.security.SecurityAuditEvent;
 import org.jivesoftware.openfire.security.SecurityAuditProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.JID;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * The ClearspaceSecurityAuditProvider uses the AuditService web service inside of Clearspace
@@ -41,8 +31,6 @@ import org.xmpp.packet.JID;
  * @author Daniel Henninger
  */
 public class ClearspaceSecurityAuditProvider implements SecurityAuditProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(ClearspaceSecurityAuditProvider.class);
 
     protected static final String AUDIT_URL_PREFIX = "auditService/";
 

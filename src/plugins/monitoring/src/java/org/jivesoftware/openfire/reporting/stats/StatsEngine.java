@@ -4,49 +4,25 @@
  *
  * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.reporting.stats;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimerTask;
 
 import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.reporting.util.TaskEngine;
 import org.jivesoftware.openfire.stats.Statistic;
 import org.jivesoftware.openfire.stats.StatisticsManager;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.jrobin.core.ConsolFuns;
-import org.jrobin.core.DsTypes;
-import org.jrobin.core.FetchData;
-import org.jrobin.core.RrdBackendFactory;
-import org.jrobin.core.RrdDb;
-import org.jrobin.core.RrdDef;
-import org.jrobin.core.RrdException;
-import org.jrobin.core.Sample;
+import org.jrobin.core.*;
 import org.picocontainer.Startable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * The stats workhorse. Handles the job of sampling the different statistics existing in
@@ -57,8 +33,6 @@ import org.slf4j.LoggerFactory;
  */
 public class StatsEngine implements Startable {
 
-	private static final Logger Log = LoggerFactory.getLogger(StatsEngine.class);
-	
     private static final int STAT_RESOULUTION = 60;
 
     private final TaskEngine taskEngine;
@@ -298,8 +272,7 @@ public class StatsEngine implements Startable {
     private class SampleTask extends TimerTask {
         private long lastSampleTime = 0;
 
-        @Override
-		public void run() {
+        public void run() {
             if (!ClusterManager.isSeniorClusterMember()) {
                 // Create statistics definitions but do not sample them since we are not the senior cluster member
                 for (Map.Entry<String, Statistic> statisticEntry : statsManager.getAllStatistics()) {
@@ -454,31 +427,26 @@ public class StatsEngine implements Startable {
             }
         }
 
-        @Override
-		public double[][] getData(long startTime, long endTime) {
+        public double[][] getData(long startTime, long endTime) {
             return fetchData(consolidationFunction, startTime, endTime, -1);
         }
 
-        @Override
-		public double[][] getData(long startTime, long endTime, int dataPoints) {
+        public double[][] getData(long startTime, long endTime, int dataPoints) {
             // Our greatest datapoints is 60 so if it is something less than that
             // then we want an average.
             return fetchData((dataPoints != 60 ? ConsolFuns.CF_AVERAGE : consolidationFunction),
                     startTime, endTime, dataPoints);
         }
 
-        @Override
-		public long getLastSampleTime() {
+        public long getLastSampleTime() {
             return lastSampleTime;
         }
 
-        @Override
-		public double getLastSample() {
+        public double getLastSample() {
             return lastSample;
         }
 
-        @Override
-		public double[] getMax(long startTime, long endTime) {
+        public double[] getMax(long startTime, long endTime) {
             return getMax(startTime, endTime, 1);
         }
 
@@ -530,13 +498,11 @@ public class StatsEngine implements Startable {
             return (endTime - startTime) / (dataPoints * 60);
         }
 
-        @Override
-		public double[] getMin(long startTime, long endTime) {
+        public double[] getMin(long startTime, long endTime) {
             return getMin(startTime, endTime, 1);
         }
 
-        @Override
-		public double[] getMin(long startTime, long endTime, int dataPoints) {
+        public double[] getMin(long startTime, long endTime, int dataPoints) {
             double[][] fetchedData = fetchData(consolidationFunction, startTime,
                     endTime, dataPoints);
             if (fetchedData != null) {
@@ -549,8 +515,7 @@ public class StatsEngine implements Startable {
             return new double[] { 0 };
         }
 
-        @Override
-		public double[] getMax(long startTime, long endTime, int dataPoints) {
+        public double[] getMax(long startTime, long endTime, int dataPoints) {
             double[][] fetchedData = fetchData(consolidationFunction, startTime,
                     endTime, dataPoints);
             if (fetchedData != null) {

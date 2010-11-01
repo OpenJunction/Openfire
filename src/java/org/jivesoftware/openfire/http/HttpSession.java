@@ -4,37 +4,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.http;
-
-import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.security.cert.Certificate;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -53,14 +28,22 @@ import org.jivesoftware.openfire.net.VirtualConnection;
 import org.jivesoftware.openfire.session.LocalClientSession;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.Presence;
+
+import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * A session represents a serious of interactions with an XMPP client sending packets using the HTTP
@@ -71,9 +54,6 @@ import org.xmpp.packet.Presence;
  * @author Alexander Wenckus
  */
 public class HttpSession extends LocalClientSession {
-	
-	private static final Logger Log = LoggerFactory.getLogger(HttpSession.class);
-
     private static XmlPullParserFactory factory = null;
     private static ThreadLocal<XMPPPacketReader> localParser = null;
     static {
@@ -86,8 +66,7 @@ public class HttpSession extends LocalClientSession {
         }
         // Create xmpp parser to keep in each thread
         localParser = new ThreadLocal<XMPPPacketReader>() {
-            @Override
-			protected XMPPPacketReader initialValue() {
+            protected XMPPPacketReader initialValue() {
                 XMPPPacketReader parser = new XMPPPacketReader();
                 factory.setNamespaceAware(true);
                 parser.setXPPFactory(factory);
@@ -175,8 +154,7 @@ public class HttpSession extends LocalClientSession {
         return elements;
     }
 
-    @Override
-	public String getAvailableStreamFeatures() {
+    public String getAvailableStreamFeatures() {
         StringBuilder sb = new StringBuilder(200);
         for (Element element : getAvailableStreamFeaturesElements()) {
             sb.append(element.asXML());
@@ -188,8 +166,7 @@ public class HttpSession extends LocalClientSession {
      * Closes the session. After a session has been closed it will no longer accept new connections
      * on the session ID.
      */
-    @Override
-	public void close() {
+    public void close() {
         if (isClosed) {
             return;
         }
@@ -201,8 +178,7 @@ public class HttpSession extends LocalClientSession {
      *
      * @return true if this session has been closed and no longer activley accepting connections.
      */
-    @Override
-	public synchronized boolean isClosed() {
+    public synchronized boolean isClosed() {
         return isClosed;
     }
 
@@ -344,8 +320,7 @@ public class HttpSession extends LocalClientSession {
      * @return true if all connections on this session should be secured, and false if they should
      *         not.
      */
-    @Override
-	public boolean isSecure() {
+    public boolean isSecure() {
         return isSecure;
     }
 
@@ -987,8 +962,7 @@ public class HttpSession extends LocalClientSession {
             this.address = address;
         }
 
-        @Override
-		public void closeVirtualConnection() {
+        public void closeVirtualConnection() {
             ((HttpSession) session).closeConnection();
         }
 
@@ -1016,8 +990,7 @@ public class HttpSession extends LocalClientSession {
             ((HttpSession) session).deliver(text);
         }
 
-        @Override
-		public Certificate[] getPeerCertificates() {
+        public Certificate[] getPeerCertificates() {
             return ((HttpSession) session).getPeerCertificates();
         }
     }
@@ -1036,28 +1009,7 @@ public class HttpSession extends LocalClientSession {
             this.text = null;
             this.packets = new ArrayList<String>();
             for (Packet packet : elements) {
-                // Rewrite packet namespace according XEP-0206
-                if (packet instanceof Presence) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("<presence xmlns=\"jabber:client\"");
-                    sb.append(packet.toXML().substring(9));
-                    this.packets.add(sb.toString());
-                }
-                else if (packet instanceof IQ) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("<iq xmlns=\"jabber:client\"");
-                    sb.append(packet.toXML().substring(3));
-                    this.packets.add(sb.toString());
-                }
-                else if (packet instanceof Message) {
-                    final StringBuilder sb = new StringBuilder();
-                    sb.append("<message xmlns=\"jabber:client\"");
-                    sb.append(packet.toXML().substring(8));
-                    this.packets.add(sb.toString());
-                }
-                else {
-                    this.packets.add(packet.toXML());
-                }
+                this.packets.add(packet.toXML());
             }
         }
 

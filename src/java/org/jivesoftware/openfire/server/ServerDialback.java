@@ -5,42 +5,17 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.server;
 
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.XMPPPacketReader;
-import org.jivesoftware.openfire.Connection;
-import org.jivesoftware.openfire.RemoteConnectionFailedException;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.StreamID;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.AuthFactory;
 import org.jivesoftware.openfire.net.DNSUtil;
 import org.jivesoftware.openfire.net.MXParser;
@@ -51,16 +26,21 @@ import org.jivesoftware.openfire.session.LocalIncomingServerSession;
 import org.jivesoftware.openfire.session.LocalOutgoingServerSession;
 import org.jivesoftware.openfire.spi.BasicStreamIDFactory;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.StreamError;
+
+import java.io.*;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Implementation of the Server Dialback method as defined by the RFC3920.
@@ -84,9 +64,6 @@ import org.xmpp.packet.StreamError;
  * @author Gaston Dombiak
  */
 public class ServerDialback {
-	
-	private static final Logger Log = LoggerFactory.getLogger(ServerDialback.class);
-
     /**
      * The utf-8 charset for decoding and encoding Jabber packet streams.
      */
@@ -194,37 +171,27 @@ public class ServerDialback {
      * Creates a new connection from the Originating Server to the Receiving Server for
      * authenticating the specified domain.
      *
-     * @param localDomain domain of the Originating Server to authenticate with the Receiving Server.
-     * @param remoteDomain IP address or hostname of the Receiving Server.
+     * @param domain domain of the Originating Server to authenticate with the Receiving Server.
+     * @param hostname IP address or hostname of the Receiving Server.
      * @param port port of the Receiving Server.
      * @return an OutgoingServerSession if the domain was authenticated or <tt>null</tt> if none.
      */
-    public LocalOutgoingServerSession createOutgoingSession(String localDomain, String remoteDomain, int port) {
-        String hostname = null;
+    public LocalOutgoingServerSession createOutgoingSession(String domain, String hostname, int port) {
+        String realHostname = null;
         int realPort = port;
         try {
             // Establish a TCP connection to the Receiving Server
+            // Get the real hostname to connect to using DNS lookup of the specified hostname
+            DNSUtil.HostAddress address = DNSUtil.resolveXMPPServerDomain(hostname, port);
+            realHostname = address.getHost();
+            realPort = address.getPort();
+            Log.debug("ServerDialback: OS - Trying to connect to " + hostname + ":" + port +
+                        "(DNS lookup: " + realHostname + ":" + realPort + ")");
+            // Connect to the remote server
             Socket socket = new Socket();
-            // Get a list of real hostnames to connect to using DNS lookup of the specified hostname
-            List<DNSUtil.HostAddress> hosts = DNSUtil.resolveXMPPDomain(remoteDomain, port);
-            for (Iterator<DNSUtil.HostAddress> it = hosts.iterator(); it.hasNext();) {
-                try {
-                    DNSUtil.HostAddress address = it.next();
-                    hostname = address.getHost();
-                    realPort = address.getPort();
-                    Log.debug("ServerDialback: OS - Trying to connect to " + remoteDomain + ":" + port +
-                            "(DNS lookup: " + hostname + ":" + realPort + ")");
-                    // Establish a TCP connection to the Receiving Server
-                    socket.connect(new InetSocketAddress(hostname, realPort),
-                            RemoteServerManager.getSocketTimeout());
-                    Log.debug("ServerDialback: OS - Connection to " + remoteDomain + ":" + port + " successful");
-                    break;
-                }
-                catch (Exception e) {
-                    Log.warn("Error trying to connect to remote server: " + remoteDomain +
-                            "(DNS lookup: " + hostname + ":" + realPort + ")", e);
-                }
-            }
+            socket.connect(new InetSocketAddress(realHostname, realPort),
+                    RemoteServerManager.getSocketTimeout());
+            Log.debug("ServerDialback: OS - Connection to " + hostname + ":" + port + " successful");
             connection =
                     new SocketConnection(XMPPServer.getInstance().getPacketDeliverer(), socket,
                             false);
@@ -234,10 +201,7 @@ public class ServerDialback {
             stream.append("<stream:stream");
             stream.append(" xmlns:stream=\"http://etherx.jabber.org/streams\"");
             stream.append(" xmlns=\"jabber:server\"");
-            stream.append(" to=\"").append(remoteDomain).append("\"");
-            stream.append(" from=\"").append(localDomain).append("\"");
-            stream.append(" xmlns:db=\"jabber:server:dialback\"");
-            stream.append(" version=\"1.0\">");
+            stream.append(" xmlns:db=\"jabber:server:dialback\">");
             connection.deliverRawText(stream.toString());
 
             // Set a read timeout (of 5 seconds) so we don't keep waiting forever
@@ -258,13 +222,13 @@ public class ServerDialback {
                 socket.setSoTimeout(soTimeout);
                 String id = xpp.getAttributeValue("", "id");
                 OutgoingServerSocketReader socketReader = new OutgoingServerSocketReader(reader);
-                if (authenticateDomain(socketReader, localDomain, remoteDomain, id)) {
+                if (authenticateDomain(socketReader, domain, hostname, id)) {
                     // Domain was validated so create a new OutgoingServerSession
                     StreamID streamID = new BasicStreamIDFactory().createStreamID(id);
-                    LocalOutgoingServerSession session = new LocalOutgoingServerSession(localDomain, connection, socketReader, streamID);
+                    LocalOutgoingServerSession session = new LocalOutgoingServerSession(domain, connection, socketReader, streamID);
                     connection.init(session);
                     // Set the hostname as the address of the session
-                    session.setAddress(new JID(null, remoteDomain, null));
+                    session.setAddress(new JID(null, hostname, null));
                     return session;
                 }
                 else {
@@ -282,17 +246,17 @@ public class ServerDialback {
             }
         }
         catch (IOException e) {
-            Log.debug("ServerDialback: Error connecting to the remote server: " + remoteDomain + "(DNS lookup: " +
-                    hostname + ":" + realPort + ")", e);
+            Log.debug("ServerDialback: Error connecting to the remote server: " + hostname + "(DNS lookup: " +
+                    realHostname + ":" + realPort + ")", e);
             // Close the connection
             if (connection != null) {
                 connection.close();
             }
         }
         catch (Exception e) {
-            Log.error("Error creating outgoing session to remote server: " + remoteDomain +
+            Log.error("Error creating outgoing session to remote server: " + hostname +
                     "(DNS lookup: " +
-                    hostname +
+                    realHostname +
                     ")",
                     e);
             // Close the connection
@@ -523,37 +487,12 @@ public class ServerDialback {
             else {
                 String key = doc.getTextTrim();
 
-                // Get a list of real hostnames and try to connect using DNS lookup of the specified domain
-                List<DNSUtil.HostAddress> hosts = DNSUtil.resolveXMPPDomain(hostname,
+                DNSUtil.HostAddress address = DNSUtil.resolveXMPPServerDomain(hostname,
                         RemoteServerManager.getPortForServer(hostname));
-                Socket socket = new Socket();
-                String realHostname = null;
-                int realPort;
-                for (Iterator<DNSUtil.HostAddress> it = hosts.iterator(); it.hasNext();) {
-                    try {
-                        DNSUtil.HostAddress address = it.next();
-                        realHostname = address.getHost();
-                        realPort = address.getPort();
-                        Log.debug("ServerDialback: RS - Trying to connect to Authoritative Server: " + hostname +
-                                "(DNS lookup: " + realHostname + ":" + realPort + ")");
-                        // Establish a TCP connection to the Receiving Server
-                        socket.connect(new InetSocketAddress(realHostname, realPort),
-                                RemoteServerManager.getSocketTimeout());
-                        Log.debug("ServerDialback: RS - Connection to AS: " + hostname + " successful");
-                        break;
-                    }
-                    catch (Exception e) {
-                        Log.warn("Error trying to connect to remote server: " + hostname +
-                                "(DNS lookup: " + realHostname + ")", e);
-                    }
-                }
-                if (!socket.isConnected()) {
-                    Log.warn("No server available for verifying key of remote server: " + hostname);
-                    return false;
-                }
 
                 try {
-                    boolean valid = verifyKey(key, streamID.toString(), recipient, hostname, socket);
+                    boolean valid = verifyKey(key, streamID.toString(), recipient, hostname,
+                            address.getHost(), address.getPort());
 
                     Log.debug("ServerDialback: RS - Sending key verification result to OS: " + hostname);
                     sb = new StringBuilder();
@@ -601,12 +540,19 @@ public class ServerDialback {
      * Verifies the key with the Authoritative Server.
      */
     private boolean verifyKey(String key, String streamID, String recipient, String hostname,
-            Socket socket) throws IOException, XmlPullParserException,
+            String host, int port) throws IOException, XmlPullParserException,
             RemoteConnectionFailedException {
         XMPPPacketReader reader;
         Writer writer = null;
+        // Establish a TCP connection back to the domain name asserted by the Originating Server
+        Log.debug("ServerDialback: RS - Trying to connect to Authoritative Server: " + hostname + ":" + port +
+                        "(DNS lookup: " + host + ":" + port + ")");
+        // Connect to the Authoritative server
+        Socket socket = new Socket();
+        socket.connect(new InetSocketAddress(host, port), RemoteServerManager.getSocketTimeout());
         // Set a read timeout
         socket.setSoTimeout(RemoteServerManager.getSocketTimeout());
+        Log.debug("ServerDialback: RS - Connection to AS: " + hostname + ":" + port + " successful");
         try {
             reader = new XMPPPacketReader();
             reader.setXPPFactory(FACTORY);

@@ -6,45 +6,32 @@
  *
  * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.archive.commands;
+
+import org.dom4j.Element;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.archive.*;
+import org.jivesoftware.openfire.commands.AdHocCommand;
+import org.jivesoftware.openfire.commands.SessionData;
+import org.jivesoftware.openfire.component.InternalComponentManager;
+import org.jivesoftware.openfire.plugin.MonitoringPlugin;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.StringUtils;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.forms.DataForm;
+import org.xmpp.forms.FormField;
+import org.xmpp.packet.JID;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-
-import org.dom4j.Element;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.archive.ArchiveSearch;
-import org.jivesoftware.openfire.archive.ArchiveSearcher;
-import org.jivesoftware.openfire.archive.Conversation;
-import org.jivesoftware.openfire.archive.ConversationManager;
-import org.jivesoftware.openfire.archive.ConversationUtils;
-import org.jivesoftware.openfire.commands.AdHocCommand;
-import org.jivesoftware.openfire.commands.SessionData;
-import org.jivesoftware.openfire.component.InternalComponentManager;
-import org.jivesoftware.openfire.plugin.MonitoringPlugin;
-import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
-import org.xmpp.packet.JID;
 
 /**
  * Command that allows to retrieve PDF content of group chat transcripts.
@@ -55,10 +42,7 @@ import org.xmpp.packet.JID;
  */
 public class GetGroupConversationTranscript extends AdHocCommand {
 
-	private static final Logger Log = LoggerFactory.getLogger(GetGroupConversationTranscript.class);
-	
-    @Override
-	protected void addStageInformation(SessionData data, Element command) {
+    protected void addStageInformation(SessionData data, Element command) {
         DataForm form = new DataForm(DataForm.Type.form);
         form.setTitle("Requesting PDF of conversation transcript");
         form.addInstruction("Fill out this form to request the conversation transcript in PDF format.");
@@ -96,8 +80,7 @@ public class GetGroupConversationTranscript extends AdHocCommand {
         command.add(form.getElement());
     }
 
-    @Override
-	public void execute(SessionData data, Element command) {
+    public void execute(SessionData data, Element command) {
         Element note = command.addElement("note");
         // Get handle on the Monitoring plugin
         MonitoringPlugin plugin = (MonitoringPlugin) XMPPServer.getInstance().getPluginManager()
@@ -177,28 +160,23 @@ public class GetGroupConversationTranscript extends AdHocCommand {
         }
     }
 
-    @Override
-	public String getCode() {
+    public String getCode() {
         return "http://jivesoftware.com/protocol/workgroup#get-group-conv-transcript";
     }
 
-    @Override
-	public String getDefaultLabel() {
+    public String getDefaultLabel() {
         return "Get Group Conversation Transcript";
     }
 
-    @Override
-	protected List<Action> getActions(SessionData data) {
+    protected List<Action> getActions(SessionData data) {
         return Arrays.asList(Action.complete);
     }
 
-    @Override
-	protected Action getExecuteAction(SessionData data) {
+    protected Action getExecuteAction(SessionData data) {
         return Action.complete;
     }
 
-    @Override
-	public int getMaxStages(SessionData data) {
+    public int getMaxStages(SessionData data) {
         return 1;
     }
 
@@ -209,8 +187,7 @@ public class GetGroupConversationTranscript extends AdHocCommand {
      * @param requester the JID of the entity requesting to execute this command.
      * @return true if the requester can access this command.
      */
-    @Override
-	public boolean hasPermission(JID requester) {
+    public boolean hasPermission(JID requester) {
         InternalComponentManager componentManager =
                 (InternalComponentManager) ComponentManagerFactory.getComponentManager();
         return super.hasPermission(requester) || componentManager.hasComponent(requester);

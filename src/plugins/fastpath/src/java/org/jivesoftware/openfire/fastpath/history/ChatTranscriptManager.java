@@ -5,37 +5,18 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.history;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-
+import org.jivesoftware.xmpp.workgroup.DbProperties;
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
+import org.jivesoftware.xmpp.workgroup.request.Request;
+import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
@@ -44,14 +25,15 @@ import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.util.EmailService;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.xmpp.workgroup.DbProperties;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
-import org.jivesoftware.xmpp.workgroup.request.Request;
-import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Utility class to control the update and retrieval of Chat Transcripts within the
@@ -60,8 +42,6 @@ import org.xmpp.packet.JID;
  * @author Derek DeMoro
  */
 public class ChatTranscriptManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(ChatTranscriptManager.class);
 
     private static final String GET_WORKGROUP_SESSIONS =
             "SELECT sessionID, userID, startTime, endTime, queueWaitTime, state " +
@@ -131,7 +111,7 @@ public class ChatTranscriptManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -164,7 +144,7 @@ public class ChatTranscriptManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -185,14 +165,14 @@ public class ChatTranscriptManager {
             element = DocumentHelper.parseText(transcript);
         }
         catch (DocumentException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
 
         StringBuilder buf = new StringBuilder();
 
         // Add the Messages and Presences contained in the retrieved transcript element
-        for (Iterator<Element> it = element.getRootElement().elementIterator(); it.hasNext();) {
-            Element packet = it.next();
+        for (Iterator it = element.getRootElement().elementIterator(); it.hasNext();) {
+            Element packet = (Element)it.next();
             String name = packet.getName();
 
             String message = "";
@@ -213,8 +193,10 @@ public class ChatTranscriptManager {
                 message = StringUtils.escapeHTMLTags(message);
             }
 
-            List<Element> el = packet.elements("x");
-            for (Element ele : el) {
+            List el = packet.elements("x");
+            Iterator iter = el.iterator();
+            while (iter.hasNext()) {
+                Element ele = (Element)iter.next();
                 if ("jabber:x:delay".equals(ele.getNamespaceURI())) {
                     String stamp = ele.attributeValue("stamp");
                     try {
@@ -234,7 +216,7 @@ public class ChatTranscriptManager {
                         }
                     }
                     catch (ParseException e) {
-                        Log.error(e.getMessage(), e);
+                        ComponentManagerFactory.getComponentManager().getLog().error(e);
                     }
                 }
             }
@@ -290,7 +272,7 @@ public class ChatTranscriptManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -322,7 +304,7 @@ public class ChatTranscriptManager {
             session.setMetadata(metadata);
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -361,7 +343,7 @@ public class ChatTranscriptManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -389,15 +371,15 @@ public class ChatTranscriptManager {
             element = DocumentHelper.parseText(transcript);
         }
         catch (DocumentException e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
 
         StringBuilder buf = new StringBuilder();
         String conv1 = null;
 
         // Add the Messages and Presences contained in the retrieved transcript element
-        for (Iterator<Element> it = element.getRootElement().elementIterator(); it.hasNext();) {
-            Element packet = it.next();
+        for (Iterator it = element.getRootElement().elementIterator(); it.hasNext();) {
+            Element packet = (Element)it.next();
             String name = packet.getName();
 
             String message = "";
@@ -421,8 +403,10 @@ public class ChatTranscriptManager {
                 }
             }
 
-            List<Element> el = packet.elements("x");
-            for (Element ele : el) {
+            List el = packet.elements("x");
+            Iterator iter = el.iterator();
+            while (iter.hasNext()) {
+                Element ele = (Element)iter.next();
                 if ("jabber:x:delay".equals(ele.getNamespaceURI())) {
                     String stamp = ele.attributeValue("stamp");
                     try {
@@ -447,7 +431,7 @@ public class ChatTranscriptManager {
                         }
                     }
                     catch (ParseException e) {
-                        Log.error(e.getMessage(), e);
+                        ComponentManagerFactory.getComponentManager().getLog().error(e);
                     }
                 }
             }

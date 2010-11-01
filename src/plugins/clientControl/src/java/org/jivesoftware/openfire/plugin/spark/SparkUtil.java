@@ -1,22 +1,15 @@
 /**
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin.spark;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
@@ -246,22 +239,22 @@ public final class SparkUtil {
     public static String getTimeFromLong(long diff) {
         final String HOURS = "h";
         final String MINUTES = "min";
-        //final String SECONDS = "sec";
+        final String SECONDS = "sec";
 
         final long MS_IN_A_DAY = 1000 * 60 * 60 * 24;
         final long MS_IN_AN_HOUR = 1000 * 60 * 60;
         final long MS_IN_A_MINUTE = 1000 * 60;
         final long MS_IN_A_SECOND = 1000;
-        //Date currentTime = new Date();
-        //long numDays = diff / MS_IN_A_DAY;
+        Date currentTime = new Date();
+        long numDays = diff / MS_IN_A_DAY;
         diff = diff % MS_IN_A_DAY;
         long numHours = diff / MS_IN_AN_HOUR;
         diff = diff % MS_IN_AN_HOUR;
         long numMinutes = diff / MS_IN_A_MINUTE;
         diff = diff % MS_IN_A_MINUTE;
-        //long numSeconds = diff / MS_IN_A_SECOND;
+        long numSeconds = diff / MS_IN_A_SECOND;
         diff = diff % MS_IN_A_SECOND;
-        //long numMilliseconds = diff;
+        long numMilliseconds = diff;
 
         StringBuffer buf = new StringBuffer();
         if (numHours > 0) {
@@ -287,8 +280,8 @@ public final class SparkUtil {
     /**
      * Build a List of all elements in an Iterator.
      */
-    public static <E> List<E> iteratorAsList(Iterator<E> i) {
-        ArrayList<E> list = new ArrayList<E>(10);
+    public static List iteratorAsList(Iterator i) {
+        ArrayList list = new ArrayList(10);
         while (i.hasNext()) {
             list.add(i.next());
         }
@@ -298,18 +291,18 @@ public final class SparkUtil {
     /**
      * Creates an Iterator that is the reverse of a ListIterator.
      */
-    public static <E> Iterator<E> reverseListIterator(ListIterator<E> i) {
-        return new ReverseListIterator<E>(i);
+    public static Iterator reverseListIterator(ListIterator i) {
+        return new ReverseListIterator(i);
     }
 }
 
 /**
  * An Iterator that is the reverse of a ListIterator.
  */
-class ReverseListIterator<E> implements Iterator<E> {
-    private ListIterator<E> listIterator;
+class ReverseListIterator implements Iterator {
+    private ListIterator listIterator;
 
-    ReverseListIterator(ListIterator<E> i) {
+    ReverseListIterator(ListIterator i) {
         listIterator = i;
         while (listIterator.hasNext()) listIterator.next();
     }
@@ -318,7 +311,7 @@ class ReverseListIterator<E> implements Iterator<E> {
         return listIterator.hasPrevious();
     }
 
-    public E next() {
+    public Object next() {
         return listIterator.previous();
     }
 

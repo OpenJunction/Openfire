@@ -1,37 +1,28 @@
 /**
  * $RCSfile$
- * $Revision: 11608 $
- * $Date: 2010-02-07 13:03:12 -0800 (Sun, 07 Feb 2010) $
+ * $Revision: 10269 $
+ * $Date: 2008-04-24 10:37:21 -0700 (Thu, 24 Apr 2008) $
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.database;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Properties;
-
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.logicalcobwebs.proxool.admin.SnapshotIF;
+import org.logicalcobwebs.proxool.ProxoolFacade;
 import org.logicalcobwebs.proxool.ConnectionPoolDefinitionIF;
 import org.logicalcobwebs.proxool.ProxoolException;
-import org.logicalcobwebs.proxool.ProxoolFacade;
-import org.logicalcobwebs.proxool.admin.SnapshotIF;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.DriverManager;
+import java.util.Properties;
 
 /**
  * Default Jive connection provider, which uses an internal connection pool.<p>
@@ -39,8 +30,6 @@ import org.slf4j.LoggerFactory;
  * @author Jive Software
  */
 public class DefaultConnectionProvider implements ConnectionProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(DefaultConnectionProvider.class);
 
     private Properties settings;
     private String driver;
@@ -380,8 +369,7 @@ public class DefaultConnectionProvider implements ConnectionProvider {
                 Double.toString(connectionTimeout));
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         try {
             ConnectionPoolDefinitionIF poolDef = ProxoolFacade.getConnectionPoolDefinition("openfire");
             SnapshotIF poolStats = ProxoolFacade.getSnapshot("openfire", true);

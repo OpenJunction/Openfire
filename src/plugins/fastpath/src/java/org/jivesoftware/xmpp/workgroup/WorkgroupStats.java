@@ -5,20 +5,23 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
+
+import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
+import org.dom4j.Document;
+import org.dom4j.DocumentHelper;
+import org.dom4j.Element;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.FastDateFormat;
+import org.jivesoftware.util.Log;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.IQ;
+import org.xmpp.packet.PacketError;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -31,21 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.util.FastDateFormat;
-import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.PacketError;
-
 public class WorkgroupStats {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupStats.class);
-	
     private static final String GET_SESSIONS_WITH_TRANSCRIPTS =
             "SELECT sessionID, startTime, endTime FROM fpSession WHERE workgroupID=? AND " +
             "userID=? AND transcript IS NOT NULL";
@@ -57,8 +47,8 @@ public class WorkgroupStats {
     private static final FastDateFormat UTC_FORMAT = FastDateFormat
         .getInstance("yyyyMMdd'T'HH:mm:ss", TimeZone.getTimeZone("GMT+0"));
 
-    private List<Object[]> chatList = new ArrayList<Object[]>();
-    private List<Object[]> transferList = new ArrayList<Object[]>();
+    private List chatList = new ArrayList();
+    private List transferList = new ArrayList();
     private Workgroup workgroup;
 
     // Defined Variables used in Stats
@@ -77,30 +67,30 @@ public class WorkgroupStats {
         this.workgroup = workgroup;
     }
 
-    public void processStatistics(Map<String, String> map) {
-        final String action = map.get(ACTION);
+    public void processStatistics(Map map) {
+        final String action = (String)map.get(ACTION);
         if (END_OF_CHAT.equals(action)) {
-            String agent = map.get(AGENT_JID);
-            Long startTime = new Long(map.get(START_TIME));
-            Long endTime = new Long(map.get(END_TIME));
+            String agent = (String)map.get(AGENT_JID);
+            Long startTime = new Long((String)map.get(START_TIME));
+            Long endTime = new Long((String)map.get(END_TIME));
             // String chatRoom = (String)map.get(CHAT_ROOM);
             // String workgroupName = (String)map.get(WORKGROUP_NAME);
             chatList.add(new Object[]{agent, startTime, endTime});
         }
         else if (AGENT_TRANSFER.equals(action)) {
-            final String agent = map.get(AGENT_JID);
-            final Long startTime = new Long(map.get(START_TIME));
-            final Long transferTime = new Long(map.get(END_TIME));
-            final String agentTransferedTo = map.get(OTHER_AGENT_JID);
+            final String agent = (String)map.get(AGENT_JID);
+            final Long startTime = new Long((String)map.get(START_TIME));
+            final Long transferTime = new Long((String)map.get(END_TIME));
+            final String agentTransferedTo = (String)map.get(OTHER_AGENT_JID);
             transferList.add(new Object[]{agent, startTime, transferTime, agentTransferedTo});
         }
     }
 
-    public Iterator<Object[]> getCompletedChats() {
+    public Iterator getCompletedChats() {
         return chatList.iterator();
     }
 
-    public Iterator<Object[]> getChatsTransfered() {
+    public Iterator getChatsTransfered() {
         return transferList.iterator();
     }
 
@@ -142,7 +132,7 @@ public class WorkgroupStats {
                 }
             }
             catch (Exception ex) {
-                Log.error(
+                ComponentManagerFactory.getComponentManager().getLog().error(
                     "Error retrieving chat transcript(s)", ex);
             }
             finally {
@@ -152,7 +142,7 @@ public class WorkgroupStats {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
     }
 
@@ -177,7 +167,7 @@ public class WorkgroupStats {
                 }
             }
             catch (SQLException sqle) {
-                Log.error(sqle.getMessage(), sqle);
+                Log.error(sqle);
             }
             finally {
                 DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -185,15 +175,15 @@ public class WorkgroupStats {
             if (transcriptXML != null) {
                 Document element = DocumentHelper.parseText(transcriptXML);
                 // Add the Messages and Presences contained in the retrieved transcript element
-                for (Iterator<Element> it = element.getRootElement().elementIterator(); it.hasNext();) {
-                    Element packet = it.next();
+                for (Iterator it = element.getRootElement().elementIterator(); it.hasNext();) {
+                    Element packet = (Element)it.next();
                     transcript.add(packet.createCopy());
                 }
             }
             workgroup.send(reply);
         }
         catch (Exception ex) {
-            Log.error(
+            ComponentManagerFactory.getComponentManager().getLog().error(
                     "There was an error retrieving the following transcript. SessionID = " +
                     sessionID + " Transcript=" + transcriptXML, ex);
 
@@ -230,7 +220,7 @@ public class WorkgroupStats {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

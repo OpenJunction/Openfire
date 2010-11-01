@@ -5,42 +5,18 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.spi;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.locks.Lock;
 
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.DocumentHelper;
 import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.PacketDeliverer;
-import org.jivesoftware.openfire.PresenceManager;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.component.InternalComponentManager;
 import org.jivesoftware.openfire.container.BasicModule;
@@ -57,14 +33,18 @@ import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError;
 import org.xmpp.packet.Presence;
+
+import java.sql.Connection;
+import java.sql.*;
+import java.util.*;
+import java.util.concurrent.locks.Lock;
 
 /**
  * Simple in memory implementation of the PresenceManager interface.
@@ -72,8 +52,6 @@ import org.xmpp.packet.Presence;
  * @author Iain Shigeoka
  */
 public class PresenceManagerImpl extends BasicModule implements PresenceManager, UserEventListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(PresenceManagerImpl.class);
 
     private static final String LOAD_OFFLINE_PRESENCE =
             "SELECT offlinePresence, offlineDate FROM ofPresence WHERE username=?";
@@ -229,7 +207,7 @@ public class PresenceManagerImpl extends BasicModule implements PresenceManager,
             pstmt.execute();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -504,8 +482,7 @@ public class PresenceManagerImpl extends BasicModule implements PresenceManager,
     // Module management
     // #####################################################################
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         this.server = server;
 
@@ -520,8 +497,7 @@ public class PresenceManagerImpl extends BasicModule implements PresenceManager,
         routingTable = server.getRoutingTable();
     }
 
-    @Override
-	public void start() throws IllegalStateException {
+    public void start() throws IllegalStateException {
         super.start();
         // Use component manager for Presence Updates.
         componentManager = InternalComponentManager.getInstance();
@@ -530,8 +506,7 @@ public class PresenceManagerImpl extends BasicModule implements PresenceManager,
 
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         // Clear the caches when stopping the module.
         offlinePresenceCache.clear();
         lastActivityCache.clear();
@@ -572,7 +547,7 @@ public class PresenceManagerImpl extends BasicModule implements PresenceManager,
             }
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

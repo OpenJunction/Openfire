@@ -4,44 +4,14 @@
  *
  * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.archive;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.io.Writer;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimerTask;
-import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
+import org.jivesoftware.openfire.reporting.util.TaskEngine;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -56,14 +26,25 @@ import org.dom4j.DocumentFactory;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
 import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.reporting.util.TaskEngine;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.XMLProperties;
 import org.picocontainer.Startable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.JID;
+
+import java.io.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Indexes archived conversations. If conversation archiving is not enabled,
@@ -77,8 +58,6 @@ import org.xmpp.packet.JID;
  * @author Matt Tucker
  */
 public class ArchiveIndexer implements Startable {
-
-	private static final Logger Log = LoggerFactory.getLogger(ArchiveIndexer.class);
 
     private static final String ALL_CONVERSATIONS =
             "SELECT conversationID, isExternal FROM ofConversation";
@@ -137,7 +116,7 @@ public class ArchiveIndexer implements Startable {
             }
         }
         catch (IOException ioe) {
-            Log.error(ioe.getMessage(), ioe);
+            Log.error(ioe);
         }
         writerLock = new ReentrantLock(true);
 
@@ -151,7 +130,7 @@ public class ArchiveIndexer implements Startable {
             }
         }
         catch (IOException ioe) {
-            Log.error(ioe.getMessage(), ioe);
+            Log.error(ioe);
         }
 
         String modified = indexProperties.getProperty("lastModified");
@@ -173,8 +152,7 @@ public class ArchiveIndexer implements Startable {
         }
 
         indexUpdater = new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 updateIndex();
             }
         };
@@ -191,7 +169,7 @@ public class ArchiveIndexer implements Startable {
                 searcher.close();
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
             searcher = null;
         }
@@ -199,7 +177,7 @@ public class ArchiveIndexer implements Startable {
             directory.close();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         directory = null;
         indexProperties = null;
@@ -265,7 +243,7 @@ public class ArchiveIndexer implements Startable {
                 }
             }
             catch (SQLException sqle) {
-                Log.error(sqle.getMessage(), sqle);
+                Log.error(sqle);
             }
             finally {
                 DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -290,7 +268,7 @@ public class ArchiveIndexer implements Startable {
                     }
                 }
                 catch (SQLException sqle) {
-                    Log.error(sqle.getMessage(), sqle);
+                    Log.error(sqle);
                 }
                 finally {
                     DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -309,7 +287,7 @@ public class ArchiveIndexer implements Startable {
             }
         }
         catch (IOException ioe) {
-            Log.error(ioe.getMessage(), ioe);
+            Log.error(ioe);
         }
         finally {
             if (writer != null) {
@@ -317,7 +295,7 @@ public class ArchiveIndexer implements Startable {
                     writer.close();
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
             writerLock.unlock();
@@ -372,7 +350,7 @@ public class ArchiveIndexer implements Startable {
                     }
                 }
                 catch (SQLException sqle) {
-                    Log.error(sqle.getMessage(), sqle);
+                    Log.error(sqle);
                 }
                 finally {
                     DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -395,7 +373,7 @@ public class ArchiveIndexer implements Startable {
                         }
                     }
                     catch (IOException ioe) {
-                        Log.error(ioe.getMessage(), ioe);
+                        Log.error(ioe);
                     }
                     finally {
                         if (writer != null) {
@@ -403,7 +381,7 @@ public class ArchiveIndexer implements Startable {
                                 writer.close();
                             }
                             catch (Exception e) {
-                                Log.error(e.getMessage(), e);
+                                Log.error(e);
                             }
                         }
                         writerLock.unlock();
@@ -532,7 +510,7 @@ public class ArchiveIndexer implements Startable {
                 }
             }
             catch (SQLException sqle) {
-                Log.error(sqle.getMessage(), sqle);
+                Log.error(sqle);
             }
             finally {
                 DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -612,7 +590,7 @@ public class ArchiveIndexer implements Startable {
                 outputter.flush();
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
             finally {
                 try {
@@ -631,7 +609,7 @@ public class ArchiveIndexer implements Startable {
     /**
      * A Future class to track the status of index rebuilding.
      */
-    private class RebuildFuture implements Future<Integer> {
+    private class RebuildFuture implements Future {
 
         private int percentageDone = 0;
 

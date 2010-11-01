@@ -5,29 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.privacy;
-
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import org.dom4j.DocumentFactory;
 import org.dom4j.Element;
@@ -36,15 +19,19 @@ import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.net.MXParser;
 import org.jivesoftware.openfire.roster.Roster;
 import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.CacheSizes;
 import org.jivesoftware.util.cache.Cacheable;
 import org.jivesoftware.util.cache.ExternalizableUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A privacy list contains a set of rules that define if communication with the list owner
@@ -59,8 +46,6 @@ import org.xmpp.packet.Packet;
  * @author Gaston Dombiak
  */
 public class PrivacyList implements Cacheable, Externalizable {
-
-	private static final Logger Log = LoggerFactory.getLogger(PrivacyList.class);
 
     /**
      * Reuse the same factory for all the connections.
@@ -78,8 +63,7 @@ public class PrivacyList implements Cacheable, Externalizable {
         }
         // Create xmpp parser to keep in each thread
         localParser = new ThreadLocal<XMPPPacketReader>() {
-            @Override
-			protected XMPPPacketReader initialValue() {
+            protected XMPPPacketReader initialValue() {
                 XMPPPacketReader parser = new XMPPPacketReader();
                 factory.setNamespaceAware(true);
                 parser.setXPPFactory(factory);
@@ -259,13 +243,11 @@ public class PrivacyList implements Cacheable, Externalizable {
         return size;
     }
 
-    @Override
-	public int hashCode() {
+    public int hashCode() {
         return name.hashCode();
     }
 
-    @Override
-	public boolean equals(Object object) {
+    public boolean equals(Object object) {
         if (this == object) {
             return true;
         }

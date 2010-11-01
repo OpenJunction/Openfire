@@ -5,37 +5,28 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.spi.dispatcher;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.NotFoundException;
 import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
 import org.jivesoftware.xmpp.workgroup.UserAlreadyExistsException;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.dispatcher.BasicDispatcherInfo;
 import org.jivesoftware.xmpp.workgroup.dispatcher.DispatcherInfo;
 import org.jivesoftware.xmpp.workgroup.dispatcher.DispatcherInfoProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.NotFoundException;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * <p>The Jive default implementation of dispatch info provider relying on any standard
@@ -45,8 +36,6 @@ import org.slf4j.LoggerFactory;
  */
 public class DbDispatcherInfoProvider implements DispatcherInfoProvider {
 
-	private static final Logger Log = LoggerFactory.getLogger(DbDispatcherInfoProvider.class);
-	
     private static final String INSERT_DISPATCHER =
             "INSERT INTO fpDispatcher (name, description, offerTimeout, requestTimeout, queueID) VALUES (?,?,?,?,?)";
     private static final String LOAD_DISPATCHER_BY_ID =

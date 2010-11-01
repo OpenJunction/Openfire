@@ -257,12 +257,6 @@ public class MINAStatCollector {
             super( "StatCollectorWorker-"+id );
         }
 
-        /*
-		 * (non-Javadoc)
-		 * 
-		 * @see java.lang.Thread#run()
-		 */
-        @Override 
         public void run()
         {
             while ( !stop )

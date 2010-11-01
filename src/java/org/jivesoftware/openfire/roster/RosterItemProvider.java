@@ -5,31 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.roster;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
 import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.database.SequenceManager;
@@ -37,9 +18,14 @@ import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveConstants;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.JID;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
 
 /**
  * Defines the provider methods required for creating, reading, updating and deleting roster
@@ -54,8 +40,6 @@ import org.xmpp.packet.JID;
  * @author Iain Shigeoka
  */
 public class RosterItemProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(RosterItemProvider.class);
 
     private static final String CREATE_ROSTER_ITEM =
             "INSERT INTO ofRoster (username, rosterID, jid, sub, ask, recv, nick) " +
@@ -155,7 +139,7 @@ public class RosterItemProvider {
             pstmt.setLong(5, rosterID);
             pstmt.executeUpdate();
             // Close now the statement (do not wait to be GC'ed)
-            DbConnectionManager.fastcloseStmt(pstmt);
+            pstmt.close();
 
             // Delete old group list
             pstmt = con.prepareStatement(DELETE_ROSTER_ITEM_GROUPS);
@@ -193,7 +177,7 @@ public class RosterItemProvider {
             pstmt.setLong(1, rosterItemID);
             pstmt.executeUpdate();
             // Close now the statement (do not wait to be GC'ed)
-            DbConnectionManager.fastcloseStmt(pstmt);
+            pstmt.close();
 
             // Remove roster
             pstmt = con.prepareStatement(DELETE_ROSTER_ITEM);
@@ -282,7 +266,7 @@ public class RosterItemProvider {
         Map<Long, RosterItem> itemsByID = new HashMap<Long, RosterItem>();
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
+        ResultSet rs;
         try {
             // Load all the contacts in the roster
             con = DbConnectionManager.getConnection();
@@ -303,11 +287,10 @@ public class RosterItemProvider {
                 itemsByID.put(item.getID(), item);
             }
             // Close the statement and result set
-            DbConnectionManager.fastcloseStmt(rs, pstmt);
+            rs.close();
+            pstmt.close();
             // Set null to pstmt to be sure that it's not closed twice. It seems that
             // Sybase driver is raising an error when trying to close an already closed statement.
-            // it2000 comment: TODO interesting, that's the only place with the sybase fix
-            // it2000 comment: one should move this in closeStatement()
             pstmt = null;
 
             // Load the groups for the loaded contact
@@ -324,13 +307,14 @@ public class RosterItemProvider {
                 while (rs.next()) {
                     itemsByID.get(rs.getLong(1)).getGroups().add(rs.getString(2));
                 }
+                rs.close();
             }
         }
         catch (SQLException e) {
             Log.error(LocaleUtils.getLocalizedString("admin.error"), e);
         }
         finally {
-            DbConnectionManager.closeConnection(rs, pstmt, con);
+            DbConnectionManager.closeConnection(pstmt, con);
         }
         return itemList.iterator();
     }
@@ -357,7 +341,7 @@ public class RosterItemProvider {
                     pstmt.executeUpdate();
                 }
                 catch (SQLException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }

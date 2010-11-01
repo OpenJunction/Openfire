@@ -5,37 +5,12 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc.spi;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.TimeZone;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -43,41 +18,32 @@ import org.jivesoftware.openfire.PacketRouter;
 import org.jivesoftware.openfire.RoutingTable;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.cluster.ClusterManager;
-import org.jivesoftware.openfire.disco.DiscoInfoProvider;
-import org.jivesoftware.openfire.disco.DiscoItem;
-import org.jivesoftware.openfire.disco.DiscoItemsProvider;
-import org.jivesoftware.openfire.disco.DiscoServerItem;
-import org.jivesoftware.openfire.disco.ServerItemsProvider;
-import org.jivesoftware.openfire.muc.HistoryStrategy;
-import org.jivesoftware.openfire.muc.MUCEventDelegate;
-import org.jivesoftware.openfire.muc.MUCEventDispatcher;
-import org.jivesoftware.openfire.muc.MUCRole;
-import org.jivesoftware.openfire.muc.MUCRoom;
-import org.jivesoftware.openfire.muc.MUCUser;
-import org.jivesoftware.openfire.muc.MultiUserChatService;
-import org.jivesoftware.openfire.muc.NotAllowedException;
+import org.jivesoftware.openfire.disco.*;
+import org.jivesoftware.openfire.forms.DataForm;
+import org.jivesoftware.openfire.forms.FormField;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
+import org.jivesoftware.openfire.forms.spi.XFormFieldImpl;
+import org.jivesoftware.openfire.muc.*;
 import org.jivesoftware.openfire.muc.cluster.GetNumberConnectedUsers;
 import org.jivesoftware.openfire.muc.cluster.OccupantAddedEvent;
 import org.jivesoftware.openfire.muc.cluster.RoomAvailableEvent;
 import org.jivesoftware.openfire.muc.cluster.RoomRemovedEvent;
+import org.jivesoftware.openfire.resultsetmanager.ResultSet;
 import org.jivesoftware.util.FastDateFormat;
 import org.jivesoftware.util.JiveConstants;
-import org.jivesoftware.util.JiveProperties;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.component.Component;
 import org.xmpp.component.ComponentManager;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
-import org.xmpp.forms.DataForm.Type;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.Presence;
-import org.xmpp.resultsetmanagement.ResultSet;
+import org.xmpp.packet.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Implements the chat server as a cached memory resident chat server. The server is also
@@ -97,8 +63,6 @@ import org.xmpp.resultsetmanagement.ResultSet;
  */
 public class MultiUserChatServiceImpl implements Component, MultiUserChatService,
         ServerItemsProvider, DiscoInfoProvider, DiscoItemsProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(MultiUserChatServiceImpl.class);
 
     private static final FastDateFormat dateFormatter = FastDateFormat
             .getInstance(JiveConstants.XMPP_DELAY_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
@@ -132,7 +96,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
     /**
      * the chat service's hostname (subdomain)
      */
-    private final String chatServiceName;
+    private String chatServiceName = null;
     /**
      * the chat service's description
      */
@@ -209,7 +173,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
     /**
      * Queue that holds the messages to log for the rooms that need to log their conversations.
      */
-    private Queue<ConversationLogEntry> logQueue = new LinkedBlockingQueue<ConversationLogEntry>(100000);
+    private Queue<ConversationLogEntry> logQueue = new LinkedBlockingQueue<ConversationLogEntry>();
 
     /**
      * Max number of hours that a persistent room may be empty before the service removes the
@@ -264,24 +228,13 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
     private List<Element> extraDiscoIdentities = new ArrayList<Element>();
 
     /**
-	 * Create a new group chat server.
-	 * 
-	 * @param subdomain
-	 *            Subdomain portion of the conference services (for example,
-	 *            conference for conference.example.org)
-	 * @param description
-	 *            Short description of service for disco and such. If
-	 *            <tt>null</tt> or empty, a default value will be used.
-	 * @param isHidden
-	 *            True if this service should be hidden from services views.
-	 * @throws IllegalArgumentException
-	 *             if the provided subdomain is an invalid, according to the JID
-	 *             domain definition.
-	 */
+     * Create a new group chat server.
+     *
+     * @param subdomain Subdomain portion of the conference services (for example, conference for conference.example.org)
+     * @param description Short description of service for disco and such.
+     * @param isHidden True if this service should be hidden from services views.
+     */
     public MultiUserChatServiceImpl(String subdomain, String description, Boolean isHidden) {
-        // Check subdomain and throw an IllegalArgumentException if its invalid
-        new JID(null,subdomain + "." + XMPPServer.getInstance().getServerInfo().getXMPPDomain(), null);
-
         this.chatServiceName = subdomain;
         if (description != null && description.trim().length() > 0) {
             this.chatDescription = description;
@@ -291,6 +244,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
         }
         this.isHidden = isHidden;
         historyStrategy = new HistoryStrategy(null);
+        initialize(XMPPServer.getInstance());
     }
 
     public String getDescription() {
@@ -373,7 +327,6 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
     }
 
     public void initialize(JID jid, ComponentManager componentManager) {
-        initialize(XMPPServer.getInstance());
 
     }
 
@@ -396,8 +349,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
         /**
          * Remove any user that has been idle for longer than the user timeout time.
          */
-        @Override
-		public void run() {
+        public void run() {
             checkForTimedOutUsers();
         }
     }
@@ -444,8 +396,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
      * Logs the conversation of the rooms that have this feature enabled.
      */
     private class LogConversationTask extends TimerTask {
-        @Override
-		public void run() {
+        public void run() {
             try {
                 logConversation();
             }
@@ -488,8 +439,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
      * considered without activity when no occupants are present in the room for a while.
      */
     private class CleanupTask extends TimerTask {
-        @Override
-		public void run() {
+        public void run() {
             if (ClusterManager.isClusteringStarted() && !ClusterManager.isSeniorClusterMember()) {
                 // Do nothing if we are in a cluster and this JVM is not the senior cluster member
                 return;
@@ -682,7 +632,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
                     role.getChatRoom().leaveRoom(role);
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }
@@ -904,8 +854,7 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
     }
 
     public void initializeSettings() {
-        serviceEnabled = JiveProperties.getInstance().getBooleanProperty("xmpp.muc.enabled", true);
-        serviceEnabled = MUCPersistenceManager.getBooleanProperty(chatServiceName, "enabled", serviceEnabled);
+        serviceEnabled = MUCPersistenceManager.getBooleanProperty(chatServiceName, "enabled", true);
         // Trigger the strategy to load itself from the context
         historyStrategy.setContext(chatServiceName, "history");
         // Load the list of JIDs that are sysadmins of the MUC service
@@ -1268,42 +1217,42 @@ public class MultiUserChatServiceImpl implements Component, MultiUserChatService
         return features.iterator();
     }
 
-    public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+    public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
         if (name != null && node == null) {
             // Answer the extended info of a given room
             MUCRoom room = getChatRoom(name);
             if (room != null && canDiscoverRoom(room)) {
-                final DataForm dataForm = new DataForm(Type.result);
+                XDataFormImpl dataForm = new XDataFormImpl(DataForm.TYPE_RESULT);
 
-                final FormField fieldType = dataForm.addField();
-                fieldType.setVariable("FORM_TYPE");
-                fieldType.setType(FormField.Type.hidden);
-                fieldType.addValue("http://jabber.org/protocol/muc#roominfo");
+                XFormFieldImpl field = new XFormFieldImpl("FORM_TYPE");
+                field.setType(FormField.TYPE_HIDDEN);
+                field.addValue("http://jabber.org/protocol/muc#roominfo");
+                dataForm.addField(field);
 
-                final FormField fieldDescr = dataForm.addField();
-                fieldDescr.setVariable("muc#roominfo_description");
-                fieldDescr.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.desc"));
-                fieldDescr.addValue(room.getDescription());
+                field = new XFormFieldImpl("muc#roominfo_description");
+                field.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.desc"));
+                field.addValue(room.getDescription());
+                dataForm.addField(field);
 
-                final FormField fieldSubj = dataForm.addField();
-                fieldSubj.setVariable("muc#roominfo_subject");
-                fieldSubj.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.subject"));
-                fieldSubj.addValue(room.getSubject());
+                field = new XFormFieldImpl("muc#roominfo_subject");
+                field.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.subject"));
+                field.addValue(room.getSubject());
+                dataForm.addField(field);
 
-                /*final FormField fieldOcc =*/ dataForm.addField();
-                fieldSubj.setVariable("muc#roominfo_occupants");
-                fieldSubj.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.occupants"));
-                fieldSubj.addValue(Integer.toString(room.getOccupantsCount()));
+                field = new XFormFieldImpl("muc#roominfo_occupants");
+                field.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.occupants"));
+                field.addValue(Integer.toString(room.getOccupantsCount()));
+                dataForm.addField(field);
 
                 /*field = new XFormFieldImpl("muc#roominfo_lang");
                 field.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.language"));
                 field.addValue(room.getLanguage());
                 dataForm.addField(field);*/
 
-                final FormField fieldDate = dataForm.addField();
-                fieldDate.setVariable("x-muc#roominfo_creationdate");
-                fieldDate.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.creationdate"));
-                fieldDate.addValue(dateFormatter.format(room.getCreationDate()));
+                field = new XFormFieldImpl("x-muc#roominfo_creationdate");
+                field.setLabel(LocaleUtils.getLocalizedString("muc.extended.info.creationdate"));
+                field.addValue(dateFormatter.format(room.getCreationDate()));
+                dataForm.addField(field);
 
                 return dataForm;
             }

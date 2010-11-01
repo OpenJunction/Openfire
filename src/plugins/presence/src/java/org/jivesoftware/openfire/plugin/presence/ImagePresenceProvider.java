@@ -5,21 +5,19 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin.presence;
 
+import org.jivesoftware.util.Log;
+import org.xmpp.packet.Presence;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,14 +25,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.Presence;
 
 /**
  * The ImagePresenceProvider provides information about the users presence by returning
@@ -61,8 +51,6 @@ import org.xmpp.packet.Presence;
  */
 class ImagePresenceProvider extends PresenceInfoProvider {
 
-	private static final Logger Log = LoggerFactory.getLogger(ImagePresenceProvider.class);
-	
     private PresenceStatusServlet servlet;
     private Map<String, byte[]> imageCache = new HashMap<String, byte[]>();
     private Map<String, String> imageTypeCache = new HashMap<String, String>();
@@ -71,8 +59,7 @@ class ImagePresenceProvider extends PresenceInfoProvider {
         this.servlet = servlet;
     }
 
-    @Override
-	public void sendInfo(HttpServletRequest request,
+    public void sendInfo(HttpServletRequest request,
             HttpServletResponse response, Presence presence) throws IOException {
         if (presence == null) {
             writeImageContent(request, response, "offline", servlet.offline);
@@ -94,8 +81,7 @@ class ImagePresenceProvider extends PresenceInfoProvider {
         }
     }
 
-    @Override
-	public void sendUserNotFound(HttpServletRequest request, HttpServletResponse response)
+    public void sendUserNotFound(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         writeImageContent(request, response, "forbidden", servlet.offline);
     }
@@ -142,7 +128,7 @@ class ImagePresenceProvider extends PresenceInfoProvider {
                 }
             }
             catch (IOException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         response.setContentType(contentType);

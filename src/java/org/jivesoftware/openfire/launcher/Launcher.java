@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.launcher;
@@ -99,8 +91,7 @@ public class Launcher {
         configFile = new File(new File(binDir.getParent(), "conf"), "openfire.xml");
 
         frame = new DroppableFrame() {
-            @Override
-			public void fileDropped(File file) {
+            public void fileDropped(File file) {
                 String fileName = file.getName();
                 if (fileName.endsWith(".jar") || fileName.endsWith(".war")) {
                     installPlugin(file);
@@ -207,8 +198,7 @@ public class Launcher {
 
                     // Start a thread to enable the admin button after 8 seconds.
                     Thread thread = new Thread() {
-                        @Override
-						public void run() {
+                        public void run() {
                             try {
                                 sleep(8000);
                             }
@@ -287,14 +277,12 @@ public class Launcher {
         }
 
         frame.addWindowListener(new WindowAdapter() {
-            @Override
-			public void windowClosing(WindowEvent e) {
+            public void windowClosing(WindowEvent e) {
                 stopApplication();
                 System.exit(0);
             }
 
-            @Override
-			public void windowIconified(WindowEvent e) {
+            public void windowIconified(WindowEvent e) {
                 // Make the window disappear when minimized
                 frame.setVisible(false);
                 showMenuItem.setText("Show");
@@ -315,8 +303,7 @@ public class Launcher {
         // Setup command area
         final ImageIcon icon = new ImageIcon(getClass().getClassLoader().getResource("splash2.gif"));
         pane = new DroppableTextPane() {
-            @Override
-			public void paintComponent(Graphics g) {
+            public void paintComponent(Graphics g) {
                 final Dimension size = pane.getSize();
 
                 int x = (size.width - icon.getIconWidth()) / 2;
@@ -331,8 +318,7 @@ public class Launcher {
                 super.paintComponent(g);
             }
 
-            @Override
-			public void fileDropped(File file) {
+            public void fileDropped(File file) {
                 String fileName = file.getName();
                 if (fileName.endsWith(".jar") || fileName.endsWith(".war")) {
                     installPlugin(file);
@@ -393,8 +379,7 @@ public class Launcher {
 
             final SimpleAttributeSet styles = new SimpleAttributeSet();
             SwingWorker inputWorker = new SwingWorker() {
-                @Override
-				public Object construct() {
+                public Object construct() {
                     if (openfired != null) {
                         try {
                             // Get the input stream and read from it
@@ -423,8 +408,7 @@ public class Launcher {
 
 
             SwingWorker errorWorker = new SwingWorker() {
-                @Override
-				public Object construct() {
+                public Object construct() {
                     if (openfired != null) {
                         try {
                             // Get the input stream and read from it
@@ -528,8 +512,7 @@ public class Launcher {
         dialog.setSize(225, 55);
 
         final SwingWorker installerThread = new SwingWorker() {
-            @Override
-			public Object construct() {
+            public Object construct() {
                 File pluginsDir = new File(binDir.getParentFile(), "plugins");
                 String tempName = plugin.getName() + ".part";
                 File tempPluginsFile = new File(pluginsDir, tempName);
@@ -552,8 +535,7 @@ public class Launcher {
                 return realPluginsFile;
             }
 
-            @Override
-			public void finished() {
+            public void finished() {
                 dialog.setVisible(false);
             }
         };

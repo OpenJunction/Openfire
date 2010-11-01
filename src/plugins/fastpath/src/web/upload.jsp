@@ -1,4 +1,4 @@
-<%@ page import="org.jivesoftware.util.Log,
+<%@ page import="
                  org.jivesoftware.xmpp.workgroup.Workgroup,
                  org.jivesoftware.xmpp.workgroup.WorkgroupManager,
                  org.xmpp.component.ComponentManagerFactory,
@@ -55,7 +55,7 @@
         response.sendRedirect("workgroup-image-settings.jsp?wgID=" + workgroup + "&updated=true");
     }
     catch (Exception ex) {
-        Log.error(ex);
+        ComponentManagerFactory.getComponentManager().getLog().error(ex);
     }
 %>
 
@@ -66,7 +66,7 @@
              return encodedFile;
          }
          catch (Exception ex) {
-             Log.error(ex);
+             ComponentManagerFactory.getComponentManager().getLog().error(ex);
          }
          return null;
      }
@@ -79,7 +79,7 @@
              workgroup = WorkgroupManager.getInstance().getWorkgroup(workgroupJID);
          }
          catch (UserNotFoundException e) {
-             Log.error(e);
+             ComponentManagerFactory.getComponentManager().getLog().error(e);
              return;
          }
          ChatSetting set = chatSettingsManager.getChatSetting(workgroup, setting);

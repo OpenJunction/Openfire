@@ -1,59 +1,39 @@
 /**
  * $RCSfile$
- * $Revision: 11388 $
- * $Date: 2009-11-08 16:26:55 -0800 (Sun, 08 Nov 2009) $
+ * $Revision: 10241 $
+ * $Date: 2008-04-21 00:53:41 -0700 (Mon, 21 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import org.jivesoftware.openfire.*;
+import org.jivesoftware.openfire.security.SecurityAuditManager;
+import org.jivesoftware.openfire.lockout.LockOutManager;
+import org.jivesoftware.openfire.auth.AuthToken;
+import org.jivesoftware.openfire.group.GroupManager;
+import org.jivesoftware.openfire.muc.MultiUserChatManager;
+import org.jivesoftware.openfire.roster.RosterManager;
+import org.jivesoftware.openfire.user.User;
+import org.jivesoftware.openfire.user.UserManager;
+import org.jivesoftware.util.cache.Cache;
+import org.jivesoftware.util.cache.CacheFactory;
+
+import java.io.*;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.StringTokenizer;
 
-import org.jivesoftware.openfire.PresenceManager;
-import org.jivesoftware.openfire.PrivateStorage;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.XMPPServerInfo;
-import org.jivesoftware.openfire.auth.AuthToken;
-import org.jivesoftware.openfire.group.GroupManager;
-import org.jivesoftware.openfire.lockout.LockOutManager;
-import org.jivesoftware.openfire.muc.MultiUserChatManager;
-import org.jivesoftware.openfire.roster.RosterManager;
-import org.jivesoftware.openfire.security.SecurityAuditManager;
-import org.jivesoftware.openfire.user.User;
-import org.jivesoftware.openfire.user.UserManager;
-import org.jivesoftware.util.cache.Cache;
-import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * A utility bean for Openfire admin console pages.
  */
 public class WebManager extends WebBean {
-
-	private static final Logger Log = LoggerFactory.getLogger(WebManager.class);
 
     private int start = 0;
     private int range = 15;
@@ -173,7 +153,7 @@ public class WebManager extends WebBean {
             getXMPPServer().restart();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         sleep();
     }
@@ -186,7 +166,7 @@ public class WebManager extends WebBean {
             getXMPPServer().stop();
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         sleep();
     }

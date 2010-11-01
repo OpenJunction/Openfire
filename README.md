@@ -1,1 +1,0 @@
-A fork of Openfire to support Junction research. 

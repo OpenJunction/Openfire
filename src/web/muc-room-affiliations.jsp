@@ -1,21 +1,12 @@
 <%--
-  -	$Revision: 11592 $
-  -	$Date: 2010-02-01 07:46:59 -0800 (Mon, 01 Feb 2010) $
+  -	$Revision: 10721 $
+  -	$Date: 2008-08-03 12:34:01 -0700 (Sun, 03 Aug 2008) $
   -
   - Copyright (C) 2004-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
-
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="org.dom4j.Element,
@@ -66,20 +57,16 @@
         if (userJID == null) {
             errors.put("userJID","userJID");
         }
+        else if (userJID.indexOf('@') == -1) {
+            userJID = webManager.getXMPPServer().createJID(userJID, null).toBareJID();
+        }
 
         if (errors.size() == 0) {
             try {
                 // Escape username
-                if (userJID.indexOf('@') == -1) {
-                    String username = JID.escapeNode(userJID);
-                    String domain = webManager.getXMPPServer().getServerInfo().getXMPPDomain();
-                    userJID = username + '@' + domain;
-                }
-                else {
-                    String username = JID.escapeNode(userJID.substring(0, userJID.indexOf('@')));
-                    String rest = userJID.substring(userJID.indexOf('@'), userJID.length());
-                    userJID = username + rest.trim();
-                }
+                String username = JID.escapeNode(userJID.substring(0, userJID.indexOf('@')));
+                String rest = userJID.substring(userJID.indexOf('@'), userJID.length());
+                userJID = username + rest;
                 IQ iq = new IQ(IQ.Type.set);
                 if ("owner".equals(affiliation) || "admin".equals(affiliation)) {
                     Element frag = iq.setChildElement("query", "http://jabber.org/protocol/muc#owner");
@@ -244,15 +231,9 @@
                 ArrayList<String> owners = new ArrayList<String>(room.getOwners());
                 Collections.sort(owners);
                 for (String user : owners) {
-                    String userDisplay;
-                    if (user.indexOf('@') > 0) {
-                        String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
-                        String rest = user.substring(user.indexOf('@'), user.length());
-                        userDisplay = username + rest;
-                    }
-                    else {
-                        userDisplay = user;
-                    }
+                    String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
+                    String rest = user.substring(user.indexOf('@'), user.length());
+                    String userDisplay = username + rest;
 
         %>
             <tr>
@@ -284,15 +265,9 @@
                 ArrayList<String> admins = new ArrayList<String>(room.getAdmins());
                 Collections.sort(admins);
                 for (String user : admins) {
-                    String userDisplay;
-                    if (user.indexOf('@') > 0) {
-                        String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
-                        String rest = user.substring(user.indexOf('@'), user.length());
-                        userDisplay = username + rest;
-                    }
-                    else {
-                        userDisplay = user;
-                    }
+                    String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
+                    String rest = user.substring(user.indexOf('@'), user.length());
+                    String userDisplay = username + rest;
         %>
             <tr>
                 <td>&nbsp;</td>
@@ -323,15 +298,9 @@
                 ArrayList<String> members = new ArrayList<String>(room.getMembers());
                 Collections.sort(members);
                 for (String user : members) {
-                    String userDisplay;
-                    if (user.indexOf('@') > 0) {
-                        String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
-                        String rest = user.substring(user.indexOf('@'), user.length());
-                        userDisplay = username + rest;
-                    }
-                    else {
-                        userDisplay = user;
-                    }
+                    String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
+                    String rest = user.substring(user.indexOf('@'), user.length());
+                    String userDisplay = username + rest;
 
                     String nickname = room.getReservedNickname(user);
                     nickname = (nickname == null ? "" : " (" + nickname + ")");
@@ -365,15 +334,9 @@
                 ArrayList<String> outcasts = new ArrayList<String>(room.getOutcasts());
                 Collections.sort(outcasts);
                 for (String user : outcasts) {
-                    String userDisplay;
-                    if (user.indexOf('@') > 0) {
-                        String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
-                        String rest = user.substring(user.indexOf('@'), user.length());
-                        userDisplay = username + rest;
-                    }
-                    else {
-                        userDisplay = user;
-                    }
+                    String username = JID.unescapeNode(user.substring(0, user.indexOf('@')));
+                    String rest = user.substring(user.indexOf('@'), user.length());
+                    String userDisplay = username + rest;
         %>
             <tr>
                 <td>&nbsp;</td>

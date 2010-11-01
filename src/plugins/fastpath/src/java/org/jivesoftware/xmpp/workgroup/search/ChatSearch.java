@@ -5,30 +5,25 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.search;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.apache.lucene.document.DateField;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.*;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
+
+import java.util.*;
 
 /**
  * Encapsulates a search for transcripts in a workgroup. Use the public constructor
@@ -69,7 +64,7 @@ import org.xmpp.packet.JID;
  */
 public class ChatSearch {
 
-    // private static final int MAX_RESULTS_SIZE;
+    private static final int MAX_RESULTS_SIZE;
     /**
      * Indicates whether wildcards should be enabled or ignored in searches.
      */
@@ -86,19 +81,19 @@ public class ChatSearch {
     private transient List<QueryResult> results = new ArrayList<QueryResult>();
 
     static {
-//        // Load a custom max results size value from the Jive property file or
-//        // default to 500.
-//        int maxSize = 500;
-//        String maxResultsSize = JiveGlobals.getProperty("workgroup.search.maxResultsSize");
-//        if (maxResultsSize != null) {
-//            try {
-//                maxSize = Integer.parseInt(maxResultsSize);
-//            }
-//            catch (NumberFormatException nfe) {
-//                // Ignore.
-//            }
-//        }
-//        MAX_RESULTS_SIZE = maxSize;
+        // Load a custom max results size value from the Jive property file or
+        // default to 500.
+        int maxSize = 500;
+        String maxResultsSize = JiveGlobals.getProperty("workgroup.search.maxResultsSize");
+        if (maxResultsSize != null) {
+            try {
+                maxSize = Integer.parseInt(maxResultsSize);
+            }
+            catch (NumberFormatException nfe) {
+                // Ignore.
+            }
+        }
+        MAX_RESULTS_SIZE = maxSize;
         // Determine if wildcards should be ignored
         wildcardIgnored = JiveGlobals.getBooleanProperty("workgroup.search.wildcardIgnored");
     }
@@ -317,19 +312,19 @@ public class ChatSearch {
                     results.add(result);
                 }
                 catch (NumberFormatException e) {
-                    Log.error(e.getMessage(), e);
+                    ComponentManagerFactory.getComponentManager().getLog().error(e);
                 }
             }
 
             hits = null;
         }
         catch (ParseException e) {
-            Log.error("Search failure - " +
+            ComponentManagerFactory.getComponentManager().getLog().error("Search failure - " +
                     "lucene error parsing query: " + queryString, e);
             results.clear();
         }
         catch(Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
             results.clear();
         }
         finally {
@@ -348,9 +343,9 @@ public class ChatSearch {
         return string.indexOf('?') != -1 || string.indexOf('*') != -1 || string.indexOf('~') != -1;
     }
 
-//    private String escapeBadCharacters(String queryString) {
-//        return StringUtils.replace(queryString, ":", "\\:");
-//    }
+    private String escapeBadCharacters(String queryString) {
+        return StringUtils.replace(queryString, ":", "\\:");
+    }
 
     private String lowerCaseQueryString(String queryString) {
         char[] chars = queryString.toCharArray();

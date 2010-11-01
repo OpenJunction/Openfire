@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
@@ -143,7 +135,7 @@ public class ServerTrafficCounter {
 
             public double sample() {
                 // Divide result by 1024 so that we return the result in Kb.
-                return incomingCounter.getAndSet(0)/1024d;
+                return incomingCounter.getAndSet(0)/1024;
             }
 
             public boolean isPartialSample() {
@@ -174,7 +166,7 @@ public class ServerTrafficCounter {
             }
 
             public double sample() {
-                return outgoingCounter.getAndSet(0)/1024d;
+                return outgoingCounter.getAndSet(0)/1024;
             }
 
             public boolean isPartialSample() {
@@ -198,8 +190,7 @@ public class ServerTrafficCounter {
             this.originalStream = originalStream;
         }
 
-        @Override
-		public int read() throws IOException {
+        public int read() throws IOException {
             int readByte = originalStream.read();
             if (readByte > -1) {
                 incrementIncomingCounter(1);
@@ -207,8 +198,7 @@ public class ServerTrafficCounter {
             return readByte;
         }
 
-        @Override
-		public int read(byte b[]) throws IOException {
+        public int read(byte b[]) throws IOException {
             int bytes = originalStream.read(b);
             if (bytes > -1) {
                 incrementIncomingCounter(bytes);
@@ -216,8 +206,7 @@ public class ServerTrafficCounter {
             return bytes;
         }
 
-        @Override
-		public int read(byte b[], int off, int len) throws IOException {
+        public int read(byte b[], int off, int len) throws IOException {
             int bytes = originalStream.read(b, off, len);
             if (bytes > -1) {
                 incrementIncomingCounter(bytes);
@@ -225,33 +214,27 @@ public class ServerTrafficCounter {
             return bytes;
         }
 
-        @Override
-		public int available() throws IOException {
+        public int available() throws IOException {
             return originalStream.available();
         }
 
-        @Override
-		public void close() throws IOException {
+        public void close() throws IOException {
             originalStream.close();
         }
 
-        @Override
-		public synchronized void mark(int readlimit) {
+        public synchronized void mark(int readlimit) {
             originalStream.mark(readlimit);
         }
 
-        @Override
-		public boolean markSupported() {
+        public boolean markSupported() {
             return originalStream.markSupported();
         }
 
-        @Override
-		public synchronized void reset() throws IOException {
+        public synchronized void reset() throws IOException {
             originalStream.reset();
         }
 
-        @Override
-		public long skip(long n) throws IOException {
+        public long skip(long n) throws IOException {
             return originalStream.skip(n);
         }
     }
@@ -269,37 +252,32 @@ public class ServerTrafficCounter {
             this.originalStream = originalStream;
         }
 
-        @Override
-		public void write(int b) throws IOException {
+        public void write(int b) throws IOException {
             // forward request to wrapped stream
             originalStream.write(b);
             // update outgoingCounter
             incrementOutgoingCounter(1);
         }
 
-        @Override
-		public void write(byte b[]) throws IOException {
+        public void write(byte b[]) throws IOException {
             // forward request to wrapped stream
             originalStream.write(b);
             // update outgoingCounter
             incrementOutgoingCounter(b.length);
         }
 
-        @Override
-		public void write(byte b[], int off, int len) throws IOException {
+        public void write(byte b[], int off, int len) throws IOException {
             // forward request to wrapped stream
             originalStream.write(b, off, len);
             // update outgoingCounter
             incrementOutgoingCounter(b.length);
         }
 
-        @Override
-		public void close() throws IOException {
+        public void close() throws IOException {
             originalStream.close();
         }
 
-        @Override
-		public void flush() throws IOException {
+        public void flush() throws IOException {
             originalStream.flush();
         }
     }

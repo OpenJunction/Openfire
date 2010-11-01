@@ -1,17 +1,9 @@
 /**
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.net;
 
@@ -37,9 +29,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-
 import javax.security.auth.x500.X500Principal;
-
 import org.bouncycastle.ocsp.BasicOCSPResp;
 import org.bouncycastle.ocsp.CertificateID;
 import org.bouncycastle.ocsp.CertificateStatus;
@@ -48,8 +38,7 @@ import org.bouncycastle.ocsp.OCSPReqGenerator;
 import org.bouncycastle.ocsp.OCSPResp;
 import org.bouncycastle.ocsp.SingleResp;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 
 /**
  * A <code>PKIXCertPathChecker</code> that uses 
@@ -60,8 +49,6 @@ import org.slf4j.LoggerFactory;
  * @author Jay Kline
  */
 public class OCSPChecker extends PKIXCertPathChecker {
-
-	private static final Logger Log = LoggerFactory.getLogger(OCSPChecker.class);
 
     private static String ocspServerUrl = JiveGlobals.getProperty("ocsp.responderURL");
     private static String ocspServerSubject = JiveGlobals.getProperty("ocsp.responderCertSubjectName");
@@ -82,8 +69,7 @@ public class OCSPChecker extends PKIXCertPathChecker {
         init(false);
     }
 
-    @Override
-	public void init(boolean forward) throws CertPathValidatorException {
+    public void init(boolean forward) throws CertPathValidatorException {
         if (!forward) {
             certIndex = certs.length - 1;
         } else {
@@ -92,18 +78,15 @@ public class OCSPChecker extends PKIXCertPathChecker {
         }
     }
 
-    @Override
-	public boolean isForwardCheckingSupported() {
+    public boolean isForwardCheckingSupported() {
         return false;
     }
 
-    @Override
-	public Set<String> getSupportedExtensions() {
+    public Set<String> getSupportedExtensions() {
         return Collections.<String>emptySet();
     }
 
-    @Override
-	public void check(Certificate cert, Collection<String> unresolvedCritExts)
+    public void check(Certificate cert, Collection<String> unresolvedCritExts)
             throws CertPathValidatorException {
         Log.debug("OCSPChecker: check called");
         InputStream in = null;

@@ -3,6 +3,8 @@ package org.jivesoftware.openfire.plugin.rules;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.xmpp.packet.Packet;
 
+import java.util.List;
+
 
 public abstract class AbstractRule implements Rule {
 
@@ -136,8 +138,7 @@ public abstract class AbstractRule implements Rule {
     }
 
 
-    @Override
-	public String toString() {
+    public String toString() {
         StringBuffer sb = new StringBuffer();
         if (packetAction != null)
         sb.append("Type : "+packetAction.toString()+'\n');

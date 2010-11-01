@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.clearspace;
@@ -27,17 +19,16 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.UnknownHostException;
 
-import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-
 import org.apache.commons.httpclient.ConnectTimeoutException;
 import org.apache.commons.httpclient.HttpClientError;
 import org.apache.commons.httpclient.params.HttpConnectionParams;
 import org.apache.commons.httpclient.protocol.SecureProtocolSocketFactory;
 import org.jivesoftware.openfire.net.SSLConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
+
+import javax.net.SocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 
 /**
  * Implementation of SecureProtocolSocketFactory that will use a custom trust manager for
@@ -46,8 +37,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 public class SSLProtocolSocketFactory implements SecureProtocolSocketFactory {
-
-	private static final Logger Log = LoggerFactory.getLogger(SSLProtocolSocketFactory.class);
 
     private SSLContext sslcontext = null;
     private ClearspaceManager manager;
@@ -171,13 +160,11 @@ public class SSLProtocolSocketFactory implements SecureProtocolSocketFactory {
         );
     }
 
-    @Override
-	public boolean equals(Object obj) {
+    public boolean equals(Object obj) {
         return ((obj != null) && obj.getClass().equals(SSLProtocolSocketFactory.class));
     }
 
-    @Override
-	public int hashCode() {
+    public int hashCode() {
         return SSLProtocolSocketFactory.class.hashCode();
     }
 

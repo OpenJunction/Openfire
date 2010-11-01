@@ -1,24 +1,19 @@
 /**
  * $RCSfile$
- * $Revision: 11691 $
- * $Date: 2010-05-01 09:42:07 -0700 (Sat, 01 May 2010) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.database;
+
+import org.jivesoftware.util.JiveConstants;
+import org.jivesoftware.util.Log;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,10 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.jivesoftware.util.JiveConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Manages sequences of unique ID's that get stored in the database. Database support for sequences
@@ -54,8 +45,6 @@ import org.slf4j.LoggerFactory;
  * @author Bruce Ritchie
  */
 public class SequenceManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(SequenceManager.class);
 
     private static final String CREATE_ID =
             "INSERT INTO ofID (id, idType) VALUES (1, ?)";
@@ -190,7 +179,6 @@ public class SequenceManager {
 
         Connection con = null;
         PreparedStatement pstmt = null;
-        ResultSet rs = null;
         boolean abortTransaction = false;
         boolean success = false;
 
@@ -199,16 +187,20 @@ public class SequenceManager {
             // Get the current ID from the database.
             pstmt = con.prepareStatement(LOAD_ID);
             pstmt.setInt(1, type);
-            rs = pstmt.executeQuery();
+            ResultSet rs = pstmt.executeQuery();
 
             long currentID = 1;
-            if (rs.next()) {
-                currentID = rs.getLong(1);
-            }
-            else {
+            if (!rs.next()) {
+                rs.close();
+                pstmt.close();
+
                 createNewID(con, type);
             }
-            DbConnectionManager.fastcloseStmt(rs, pstmt);
+            else {
+                currentID = rs.getLong(1);
+                rs.close();
+                pstmt.close();
+            }
 
             // Increment the id to define our block.
             long newID = currentID + blockSize;
@@ -229,11 +221,18 @@ public class SequenceManager {
             }
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
             abortTransaction = true;
         }
         finally {
-            DbConnectionManager.closeStatement(rs, pstmt);
+            try {
+                if (pstmt != null) {
+                    pstmt.close();
+                }
+            }
+            catch (Exception e) {
+                Log.error(e);
+            }
             DbConnectionManager.closeTransactionConnection(con, abortTransaction);
         }
 

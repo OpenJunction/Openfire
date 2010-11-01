@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin;
@@ -47,8 +39,7 @@ public class RawPrintFilter extends IoFilterAdapter {
         this.enabled = JiveGlobals.getBooleanProperty("plugin.xmldebugger." + prefix.toLowerCase(), true);
     }
 
-    @Override
-	public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
+    public void messageReceived(NextFilter nextFilter, IoSession session, Object message) throws Exception {
         // Decode the bytebuffer and print it to the stdout
         if (enabled && message instanceof ByteBuffer) {
             ByteBuffer byteBuffer = (ByteBuffer) message;
@@ -66,8 +57,7 @@ public class RawPrintFilter extends IoFilterAdapter {
         super.messageReceived(nextFilter, session, message);
     }
 
-    @Override
-	public void messageSent(NextFilter nextFilter, IoSession session, Object message) throws Exception {
+    public void messageSent(NextFilter nextFilter, IoSession session, Object message) throws Exception {
         if (enabled) {
             System.out.println(prefix + " - SENT (" + session.hashCode() + "): " +
                     Charset.forName("UTF-8").decode(((ByteBuffer) message).buf()));
@@ -94,16 +84,14 @@ public class RawPrintFilter extends IoFilterAdapter {
         sessions = null;
     }
 
-    @Override
-	public void sessionCreated(NextFilter nextFilter, IoSession session) throws Exception {
+    public void sessionCreated(NextFilter nextFilter, IoSession session) throws Exception {
         // Keep track of sessions using this filter
         sessions.add(session);
 
         super.sessionCreated(nextFilter, session);
     }
 
-    @Override
-	public void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
+    public void sessionClosed(NextFilter nextFilter, IoSession session) throws Exception {
         // Update list of sessions using this filter
         sessions.remove(session);
         if (enabled) {

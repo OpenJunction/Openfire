@@ -1,7 +1,6 @@
 package org.jivesoftware.openfire.plugin;
 
-import java.io.File;
-
+import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.container.Plugin;
 import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.interceptor.InterceptorManager;
@@ -11,14 +10,13 @@ import org.jivesoftware.openfire.plugin.rules.Rule;
 import org.jivesoftware.openfire.plugin.rules.RuleManager;
 import org.jivesoftware.openfire.plugin.rules.RuleManagerProxy;
 import org.jivesoftware.openfire.session.Session;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.Packet;
+
+import java.io.File;
 
 public class PacketFilterPlugin implements Plugin, PacketInterceptor {
 
-	private static final Logger Log = LoggerFactory.getLogger(PacketFilterPlugin.class);
-	
     private static PluginManager pluginManager;
 
     public PacketFilterPlugin() {
@@ -36,7 +34,7 @@ public class PacketFilterPlugin implements Plugin, PacketInterceptor {
         // register with interceptor manager
         Log.info("Packet Filter loaded...");
         interceptorManager.addInterceptor(this);
-        pluginManager = manager;
+        this.pluginManager = manager;
         pf = PacketFilter.getInstance();
         RuleManager ruleManager = new RuleManagerProxy();
         pf.setRuleManager(ruleManager);

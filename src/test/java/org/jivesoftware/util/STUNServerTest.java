@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.util;
 
@@ -31,7 +23,7 @@ public class STUNServerTest extends TestCase {
 
         StunServerAddress addr0 = new StunServerAddress("apollo", "10000");
         StunServerAddress addr1 = new StunServerAddress("apollo", "10000");
-        StunServerAddress addr2 = new StunServerAddress("70.98.39.225", "10002");
+        StunServerAddress addr2 = new StunServerAddress("63.246.20.124", "10002");
         StunServerAddress addr3 = new StunServerAddress("jivesoftware.com", "10002");
         StunServerAddress addr4 = new StunServerAddress("jivesoftware.com", "10003");
 

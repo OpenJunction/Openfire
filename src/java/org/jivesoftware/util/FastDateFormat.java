@@ -1082,13 +1082,11 @@ public class FastDateFormat {
             mLocale = locale;
         }
 
-        @Override
-		public int hashCode() {
+        public int hashCode() {
             return mStyle * 31 + mLocale.hashCode();
         }
 
-        @Override
-		public boolean equals(Object obj) {
+        public boolean equals(Object obj) {
             if (this == obj) {
                 return true;
             }
@@ -1162,8 +1160,7 @@ public class FastDateFormat {
             return ((Comparable)a).compareTo(b);
         }
 
-        @Override
-		public boolean equals(Object obj) {
+        public boolean equals(Object obj) {
             if (this == obj) {
                 return true;
             }
@@ -1181,15 +1178,13 @@ public class FastDateFormat {
                  key.mObj2 == null : mObj2.equals(key.mObj2));
         }
 
-        @Override
-		public int hashCode() {
+        public int hashCode() {
             return
                 (mObj1 == null ? 0 : mObj1.hashCode()) +
                 (mObj2 == null ? 0 : mObj2.hashCode());
         }
 
-        @Override
-		public String toString() {
+        public String toString() {
             return "[" + mObj1 + ':' + mObj2 + ']';
         }
     }

@@ -5,20 +5,17 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.privacy;
+
+import org.dom4j.Element;
+import org.dom4j.io.SAXReader;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.Log;
 
 import java.io.StringReader;
 import java.sql.Connection;
@@ -31,12 +28,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.dom4j.Element;
-import org.dom4j.io.SAXReader;
-import org.jivesoftware.database.DbConnectionManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Provider for the privacy lists system. Privacy lists are read and written
  * from the <tt>ofPrivacyList</tt> database table.
@@ -44,8 +35,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 public class PrivacyListProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(PrivacyListProvider.class);
 
     private static final String PRIVACY_LIST_COUNT =
             "SELECT count(*) from ofPrivacyList";
@@ -64,11 +53,10 @@ public class PrivacyListProvider {
     private static final String INSERT_PRIVACY_LIST =
             "INSERT INTO ofPrivacyList (username, name, isDefault, list) VALUES (?, ?, ?, ?)";
 
-    private static final int POOL_SIZE = 50;
     /**
      * Pool of SAX Readers. SAXReader is not thread safe so we need to have a pool of readers.
      */
-    private BlockingQueue<SAXReader> xmlReaders = new LinkedBlockingQueue<SAXReader>(POOL_SIZE);
+    private BlockingQueue<SAXReader> xmlReaders = new LinkedBlockingQueue<SAXReader>();
 
     /**
      * Stores the total number of privacy lists.
@@ -78,7 +66,7 @@ public class PrivacyListProvider {
     public PrivacyListProvider() {
         super();
         // Initialize the pool of sax readers
-        for (int i=0; i<POOL_SIZE; i++) {
+        for (int i=0; i<50; i++) {
             SAXReader xmlReader = new SAXReader();
             xmlReader.setEncoding("UTF-8");
             xmlReaders.add(xmlReader);
@@ -181,7 +169,7 @@ public class PrivacyListProvider {
             privacyList = new PrivacyList(username, listName, isDefault, listElement);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             // Return the sax reader to the pool
@@ -243,7 +231,7 @@ public class PrivacyListProvider {
             privacyList = new PrivacyList(username, listName, true, listElement);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             // Return the sax reader to the pool
@@ -387,7 +375,7 @@ public class PrivacyListProvider {
             privacyListCount.set(rs.getInt(1));
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

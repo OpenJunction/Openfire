@@ -1,20 +1,12 @@
 <%--
-  -	$Revision: 11592 $
-  -	$Date: 2010-02-01 07:46:59 -0800 (Mon, 01 Feb 2010) $
+  -	$Revision: 10535 $
+  -	$Date: 2008-06-16 10:47:21 -0700 (Mon, 16 Jun 2008) $
   -
   - Copyright (C) 2004-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="org.jivesoftware.util.ParamUtils,
@@ -27,8 +19,8 @@
                  org.xmpp.packet.IQ,
                  org.xmpp.packet.Message,
                  org.xmpp.packet.JID,
-                 gnu.inet.encoding.Stringprep,
-                 gnu.inet.encoding.StringprepException,
+                 org.jivesoftware.stringprep.Stringprep,
+                 org.jivesoftware.stringprep.StringprepException,
                  java.net.URLEncoder"
     errorPage="error.jsp"
 %>
@@ -76,7 +68,7 @@
     String reservedNick = ParamUtils.getParameter(request, "roomconfig_reservednick");
     String canChangeNick = ParamUtils.getParameter(request, "roomconfig_canchangenick");
     String registrationEnabled = ParamUtils.getParameter(request, "roomconfig_registration");
-    String roomSubject = ParamUtils.getParameter(request, "room_topic", true);
+    String roomSubject = ParamUtils.getParameter(request, "room_topic");
 
     if (webManager.getMultiUserChatManager().getMultiUserChatServicesCount() < 1) {
         // No services exist, so redirect to where one can configure the services
@@ -459,7 +451,7 @@
                         @<select name="mucName">
                         <% for (MultiUserChatService service : webManager.getMultiUserChatManager().getMultiUserChatServices()) { %>
                         <%      if (service.isHidden()) continue; %>
-                        <option value="<%= service.getServiceDomain() %>"<%= service.getServiceDomain().equals(mucName) ? " selected='selected'" : "" %>><%= service.getServiceDomain() %></option>
+                        <option value="<%= service.getServiceName() %>"<%= service.getServiceDomain().equals(mucName) ? " selected='selected'" : "" %>><%= service.getServiceDomain() %></option>
                         <% } %>
                         </select>
                         <% } else { %>

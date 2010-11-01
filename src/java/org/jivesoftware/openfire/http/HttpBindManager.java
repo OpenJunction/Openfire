@@ -5,59 +5,38 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.http;
 
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.net.SSLConfig;
+import org.jivesoftware.util.*;
+import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.Handler;
+import org.mortbay.jetty.Server;
+import org.mortbay.jetty.handler.ContextHandler;
+import org.mortbay.jetty.handler.ContextHandlerCollection;
+import org.mortbay.jetty.handler.DefaultHandler;
+import org.mortbay.jetty.nio.SelectChannelConnector;
+import org.mortbay.jetty.security.SslSelectChannelConnector;
+import org.mortbay.jetty.servlet.ServletHandler;
+import org.mortbay.jetty.webapp.WebAppContext;
+
+import javax.net.ssl.SSLContext;
 import java.io.File;
 import java.security.KeyStore;
 import java.security.cert.X509Certificate;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.SSLContext;
-
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.net.SSLConfig;
-import org.jivesoftware.util.CertificateEventListener;
-import org.jivesoftware.util.CertificateManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.server.handler.DefaultHandler;
-import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.server.nio.SelectChannelConnector;
-import org.eclipse.jetty.server.ssl.SslSelectChannelConnector;
-import org.eclipse.jetty.servlet.ServletHandler;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.webapp.WebAppContext;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  *
  */
 public final class HttpBindManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(HttpBindManager.class);
 
     public static final String HTTP_BIND_ENABLED = "httpbind.enabled";
 
@@ -94,7 +73,7 @@ public final class HttpBindManager {
 
     private HttpBindManager() {
         // Configure Jetty logging to a more reasonable default.
-        System.setProperty("org.eclipse.jetty.util.log.class", "org.jivesoftware.util.log.util.JettyLog");
+        System.setProperty("org.mortbay.log.class", "org.jivesoftware.util.log.util.JettyLog");
         // JSP 2.0 uses commons-logging, so also override that implementation.
         System.setProperty("org.apache.commons.logging.LogFactory", "org.jivesoftware.util.log.util.CommonsLogFactory");
 
@@ -308,10 +287,6 @@ public final class HttpBindManager {
      */
     private synchronized void configureHttpBindServer(int port, int securePort) {
         httpBindServer = new Server();
-        final QueuedThreadPool tp = new QueuedThreadPool(254);
-        tp.setName("Jetty-QTP-BOSH");
-        httpBindServer.setThreadPool(tp);
-        
         createConnector(port);
         createSSLConnector(securePort);
         if (httpConnector == null && httpsConnector == null) {
@@ -329,16 +304,13 @@ public final class HttpBindManager {
         createCrossDomainHandler(contexts, "/");
         loadStaticDirectory(contexts);
 
-        HandlerCollection collection = new HandlerCollection();
-        httpBindServer.setHandler(collection);
-        collection.setHandlers(new Handler[] { contexts, new DefaultHandler() });
+        httpBindServer.setHandlers(new Handler[]{contexts, new DefaultHandler()});
     }
 
     private void createBoshHandler(ContextHandlerCollection contexts, String boshPath) {
         ServletHandler handler = new ServletHandler();
         handler.addServletWithMapping(HttpBindServlet.class, "/");
 
-        handler.addFilterWithMapping(org.eclipse.jetty.continuation.ContinuationFilter.class,"/*",0);
         ContextHandler boshContextHandler = new ContextHandler(contexts, boshPath);
         boshContextHandler.setHandler(handler);
     }
@@ -484,7 +456,7 @@ public final class HttpBindManager {
     /** Listens for changes to Jive properties that affect the HTTP server manager. */
     private class HttpServerPropertyListener implements PropertyEventListener {
 
-        public void propertySet(String property, Map<String, Object> params) {
+        public void propertySet(String property, Map params) {
             if (property.equalsIgnoreCase(HTTP_BIND_ENABLED)) {
                 doEnableHttpBind(Boolean.valueOf(params.get("value").toString()));
             }
@@ -512,7 +484,7 @@ public final class HttpBindManager {
             }
         }
 
-        public void propertyDeleted(String property, Map<String, Object> params) {
+        public void propertyDeleted(String property, Map params) {
             if (property.equalsIgnoreCase(HTTP_BIND_ENABLED)) {
                 doEnableHttpBind(HTTP_BIND_ENABLED_DEFAULT);
             }
@@ -524,10 +496,10 @@ public final class HttpBindManager {
             }
         }
 
-        public void xmlPropertySet(String property, Map<String, Object> params) {
+        public void xmlPropertySet(String property, Map params) {
         }
 
-        public void xmlPropertyDeleted(String property, Map<String, Object> params) {
+        public void xmlPropertyDeleted(String property, Map params) {
         }
     }
 

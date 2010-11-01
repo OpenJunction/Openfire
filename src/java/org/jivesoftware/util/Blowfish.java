@@ -17,9 +17,6 @@ package org.jivesoftware.util;
 import java.security.MessageDigest;
 import java.util.Random;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * A class that provides easy Blowfish encryption.<p>
  *
@@ -27,8 +24,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 public class Blowfish {
-
-	private static final Logger Log = LoggerFactory.getLogger(Blowfish.class);
 
     private BlowfishCBC m_bfish;
     private static Random m_rndGen = new Random();
@@ -47,7 +42,7 @@ public class Blowfish {
             digest.update(password.getBytes());
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         // setup the encryptor (use a dummy IV)
@@ -962,8 +957,7 @@ public class Blowfish {
          * cleans up all critical internals,
          * call this if you don't need an instance anymore
          */
-        @Override
-		public void cleanUp()
+        public void cleanUp()
         {
             m_lCBCIV = 0;
             super.cleanUp();
@@ -1011,8 +1005,7 @@ public class Blowfish {
          * @param inbuffer buffer with plaintext data
          * @param outbuffer buffer to get the ciphertext data
          */
-        @Override
-		public void encrypt(byte[] inbuffer,
+        public void encrypt(byte[] inbuffer,
                             byte[] outbuffer)
         {
             int nLen = inbuffer.length;
@@ -1032,8 +1025,7 @@ public class Blowfish {
          * encrypts a byte buffer (should be aligned to an 8 byte border) to itself
          * @param buffer buffer to encrypt
          */
-        @Override
-		public void encrypt(byte[] buffer)
+        public void encrypt(byte[] buffer)
         {
 
             int nLen = buffer.length;
@@ -1057,8 +1049,7 @@ public class Blowfish {
          * @param inbuffer buffer with plaintext data
          * @param outbuffer buffer to get the ciphertext data
          */
-        @Override
-		public void encrypt(int[] inbuffer,
+        public void encrypt(int[] inbuffer,
                             int[] outbuffer)
         {
             int nLen = inbuffer.length;
@@ -1077,8 +1068,7 @@ public class Blowfish {
          * encrypts an integer buffer (should be aligned to an
          * @param buffer buffer to encrypt
          */
-        @Override
-		public void encrypt(int[] buffer)
+        public void encrypt(int[] buffer)
         {
             int nLen = buffer.length;
             long lTemp;
@@ -1098,8 +1088,7 @@ public class Blowfish {
          * @param inbuffer buffer with plaintext data
          * @param outbuffer buffer to get the ciphertext data
          */
-        @Override
-		public void encrypt(long[] inbuffer,
+        public void encrypt(long[] inbuffer,
                             long[] outbuffer)
         {
             int nLen = inbuffer.length;
@@ -1115,8 +1104,7 @@ public class Blowfish {
          * encrypts a long buffer to itself
          * @param buffer buffer to encrypt
          */
-        @Override
-		public void encrypt(long[] buffer)
+        public void encrypt(long[] buffer)
         {
             int nLen = buffer.length;
             for (int nI = 0; nI < nLen; nI++)
@@ -1133,8 +1121,7 @@ public class Blowfish {
          * @param inbuffer buffer with ciphertext data
          * @param outbuffer buffer to get the plaintext data
          */
-        @Override
-		public void decrypt(byte[] inbuffer,
+        public void decrypt(byte[] inbuffer,
                             byte[] outbuffer)
         {
             int nLen = inbuffer.length;
@@ -1154,8 +1141,7 @@ public class Blowfish {
          * decrypts a byte buffer (should be aligned to an 8 byte border) to itself
          * @param buffer buffer to decrypt
          */
-        @Override
-		public void  decrypt(byte[] buffer)
+        public void  decrypt(byte[] buffer)
         {
             int nLen = buffer.length;
             long lTemp;
@@ -1177,8 +1163,7 @@ public class Blowfish {
          * @param inbuffer buffer with ciphertext data
          * @param outbuffer buffer to get the plaintext data
          */
-        @Override
-		public void decrypt(int[] inbuffer,
+        public void decrypt(int[] inbuffer,
                             int[] outbuffer)
         {
 
@@ -1199,8 +1184,7 @@ public class Blowfish {
          * two integer border)
          * @param buffer buffer to decrypt
          */
-        @Override
-		public void decrypt(int[] buffer)
+        public void decrypt(int[] buffer)
         {
             int nLen = buffer.length;
             long lTemp;
@@ -1220,8 +1204,7 @@ public class Blowfish {
          * @param inbuffer buffer with ciphertext data
          * @param outbuffer buffer to get the plaintext data
          */
-        @Override
-		public void decrypt(long[] inbuffer,
+        public void decrypt(long[] inbuffer,
                             long[] outbuffer)
         {
             int nLen = inbuffer.length;
@@ -1237,8 +1220,7 @@ public class Blowfish {
          * decrypts a long buffer to itself
          * @param buffer buffer to decrypt
          */
-        @Override
-		public void decrypt(long[] buffer)
+        public void decrypt(long[] buffer)
         {
             int nLen = buffer.length;
             for (int nI = 0; nI < nLen; nI++)

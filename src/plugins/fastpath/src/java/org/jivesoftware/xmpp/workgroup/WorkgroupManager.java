@@ -5,40 +5,26 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
+import org.jivesoftware.openfire.fastpath.util.TaskEngine;
+import org.jivesoftware.openfire.fastpath.commands.CreateWorkgroup;
+import org.jivesoftware.openfire.fastpath.commands.DeleteWorkgroup;
+import org.jivesoftware.openfire.fastpath.events.EmailTranscriptEvent;
+import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager;
+import org.jivesoftware.openfire.fastpath.util.WorkgroupUtils;
+import org.jivesoftware.xmpp.workgroup.disco.IQDiscoInfoHandler;
+import org.jivesoftware.xmpp.workgroup.disco.IQDiscoItemsHandler;
+import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventDispatcher;
+import org.jivesoftware.xmpp.workgroup.routing.RoutingManager;
+import org.jivesoftware.xmpp.workgroup.search.ChatSearchManager;
+import org.jivesoftware.xmpp.workgroup.search.IQChatSearchHandler;
+import org.jivesoftware.xmpp.workgroup.utils.FastpathConstants;
 import org.dom4j.Element;
 import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.database.SequenceManager;
@@ -47,37 +33,26 @@ import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.commands.AdHocCommandManager;
 import org.jivesoftware.openfire.event.GroupEventDispatcher;
 import org.jivesoftware.openfire.event.GroupEventListener;
-import org.jivesoftware.openfire.fastpath.commands.CreateWorkgroup;
-import org.jivesoftware.openfire.fastpath.commands.DeleteWorkgroup;
-import org.jivesoftware.openfire.fastpath.events.EmailTranscriptEvent;
-import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager;
-import org.jivesoftware.openfire.fastpath.util.TaskEngine;
-import org.jivesoftware.openfire.fastpath.util.WorkgroupUtils;
 import org.jivesoftware.openfire.group.Group;
 import org.jivesoftware.openfire.net.SASLAuthentication;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveGlobals;
 import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.xmpp.workgroup.disco.IQDiscoInfoHandler;
-import org.jivesoftware.xmpp.workgroup.disco.IQDiscoItemsHandler;
-import org.jivesoftware.xmpp.workgroup.event.WorkgroupEventDispatcher;
-import org.jivesoftware.xmpp.workgroup.routing.RoutingManager;
-import org.jivesoftware.xmpp.workgroup.search.ChatSearchManager;
-import org.jivesoftware.xmpp.workgroup.search.IQChatSearchHandler;
-import org.jivesoftware.xmpp.workgroup.utils.FastpathConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.component.Component;
 import org.xmpp.component.ComponentException;
 import org.xmpp.component.ComponentManager;
 import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.xmpp.packet.*;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Manages workgroups in the system. This manager primarily defers to the workgroups
@@ -87,8 +62,6 @@ import org.xmpp.packet.Presence;
  */
 public class WorkgroupManager implements Component {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupManager.class);
-	
     private static final String LOAD_WORKGROUPS =
         "SELECT workgroupID FROM fpWorkgroup";
     private static final String ADD_WORKGROUP =
@@ -199,8 +172,7 @@ public class WorkgroupManager implements Component {
         iqDiscoItemsHandler = new IQDiscoItemsHandler(this, commandManager);
 
         presenceCheckTask = new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 handleOutdatePresence();
             }
         };
@@ -344,7 +316,7 @@ public class WorkgroupManager implements Component {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
             if (id != -1) {
                 try {
                     if (workgroup != null) {
@@ -354,7 +326,7 @@ public class WorkgroupManager implements Component {
                     }
                 }
                 catch (Exception e1) {
-                    Log.error(e1.getMessage(), e1);
+                    ComponentManagerFactory.getComponentManager().getLog().error(e1);
                 }
             }
             if (e instanceof UserAlreadyExistsException) {
@@ -457,11 +429,11 @@ public class WorkgroupManager implements Component {
         return Collections.unmodifiableCollection(copy);
     }
 
-    public Iterator<Workgroup> getWorkgroups(WorkgroupResultFilter filter) {
+    public Iterator getWorkgroups(WorkgroupResultFilter filter) {
         final List<Workgroup> wgroups = new ArrayList<Workgroup>(workgroups.values());
         Collections.sort(wgroups, workgroupComparator);
 
-        Iterator<Workgroup> groups = filter.filter(wgroups.iterator());
+        Iterator groups = filter.filter(wgroups.iterator());
         if (groups == null) {
             groups = Collections.EMPTY_LIST.iterator();
         }
@@ -493,8 +465,7 @@ public class WorkgroupManager implements Component {
     private void startTimer() {
         TaskEngine taskEngine = TaskEngine.getInstance();
         taskEngine.schedule(new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 workgroupLock.readLock().lock();
                 try {
                     for (Workgroup group : workgroups.values()) {
@@ -523,8 +494,7 @@ public class WorkgroupManager implements Component {
         // Every 5 minutes let the workgroups clean up dead requests or dead rooms. This may occur
         // if the connections were lost or the invitations were lost or whatever
         taskEngine.schedule(new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 workgroupLock.readLock().lock();
                 try {
                     for (Workgroup group : workgroups.values()) {
@@ -539,8 +509,7 @@ public class WorkgroupManager implements Component {
 
         // Every 15 seconds check for not answered room invitations
         taskEngine.schedule(new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 workgroupLock.readLock().lock();
                 try {
                     for (Workgroup group : workgroups.values()) {
@@ -555,8 +524,7 @@ public class WorkgroupManager implements Component {
 
         // Every 30 seconds check if the search index of the workgroups should be updated
         taskEngine.schedule(new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 workgroupLock.readLock().lock();
                 try {
                     for (Workgroup group : workgroups.values()) {
@@ -564,7 +532,7 @@ public class WorkgroupManager implements Component {
                             ChatSearchManager.getInstanceFor(group).updateIndex(false);
                         }
                         catch (IOException e) {
-                            Log.error(e.getMessage(), e);
+                            ComponentManagerFactory.getComponentManager().getLog().error(e);
                         }
                     }
                 }
@@ -615,7 +583,7 @@ public class WorkgroupManager implements Component {
             return true;
         }
         catch (SQLException ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -633,7 +601,7 @@ public class WorkgroupManager implements Component {
             pstmt.executeUpdate();
         }
         catch (SQLException ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -658,7 +626,7 @@ public class WorkgroupManager implements Component {
             }
         }
         catch (SQLException ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             workgroupLock.writeLock().unlock();
@@ -727,7 +695,7 @@ public class WorkgroupManager implements Component {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 
@@ -863,7 +831,7 @@ public class WorkgroupManager implements Component {
         }
         catch (ComponentException e) {
             // Do nothing. This error should never happen
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 
@@ -941,7 +909,7 @@ public class WorkgroupManager implements Component {
             return true;
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
         return false;
     }
@@ -959,7 +927,7 @@ public class WorkgroupManager implements Component {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
             return false;
         }
         return true;

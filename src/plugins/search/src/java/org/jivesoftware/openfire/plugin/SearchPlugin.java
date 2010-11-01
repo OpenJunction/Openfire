@@ -1,35 +1,12 @@
 /**
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.plugin;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -39,29 +16,30 @@ import org.jivesoftware.openfire.container.Plugin;
 import org.jivesoftware.openfire.container.PluginManager;
 import org.jivesoftware.openfire.disco.IQDiscoInfoHandler;
 import org.jivesoftware.openfire.disco.IQDiscoItemsHandler;
+import org.jivesoftware.openfire.forms.DataForm;
+import org.jivesoftware.openfire.forms.FormField;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
+import org.jivesoftware.openfire.forms.spi.XFormFieldImpl;
+import org.jivesoftware.openfire.resultsetmanager.ResultSet;
+import org.jivesoftware.openfire.resultsetmanager.ResultSetImpl;
 import org.jivesoftware.openfire.user.User;
 import org.jivesoftware.openfire.user.UserManager;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.util.*;
 import org.xmpp.component.Component;
 import org.xmpp.component.ComponentException;
 import org.xmpp.component.ComponentManager;
 import org.xmpp.component.ComponentManagerFactory;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
 import org.xmpp.packet.IQ;
+import org.xmpp.packet.IQ.Type;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
-import org.xmpp.packet.IQ.Type;
 import org.xmpp.packet.PacketError.Condition;
-import org.xmpp.resultsetmanagement.ResultSet;
-import org.xmpp.resultsetmanagement.ResultSetImpl;
+
+import java.io.File;
+import java.util.*;
+import java.util.Map.Entry;
 
 /** 
  * Provides support for Jabber Search
@@ -77,9 +55,6 @@ import org.xmpp.resultsetmanagement.ResultSetImpl;
  * @author <a href="mailto:ryan@version2software.com">Ryan Graham</a>
  */
 public class SearchPlugin implements Component, Plugin, PropertyEventListener {
-	
-	private static final Logger Log = LoggerFactory.getLogger(SearchPlugin.class);
-	
 	public static final String NAMESPACE_JABBER_IQ_SEARCH = "jabber:iq:search";
     public static final String SERVICENAME = "plugin.search.serviceName";
     public static final String SERVICEENABLED = "plugin.search.serviceEnabled";
@@ -164,7 +139,7 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
             componentManager.addComponent(serviceName, this);
         }
         catch (ComponentException e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
         PropertyEventDispatcher.addListener(this);
     }
@@ -200,7 +175,7 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
         }
         catch (Exception e) {
             if (componentManager != null) {
-                Log.error(e.getMessage(), e);
+                componentManager.getLog().error(e);
             }
         }
         serviceName = null;
@@ -242,7 +217,7 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
         try {
             componentManager.sendPacket(this, replyPacket);
         } catch (ComponentException e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
 
     }
@@ -375,12 +350,12 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
         IQ replyPacket = IQ.createResultIQ(packet);
         Element reply = replyPacket.setChildElement("query",
                 NAMESPACE_JABBER_IQ_SEARCH);
-        final DataForm unavailableForm = new DataForm(DataForm.Type.cancel);
+        XDataFormImpl unavailableForm = new XDataFormImpl(DataForm.TYPE_CANCEL);
         unavailableForm.setTitle(LocaleUtils.getLocalizedString(
                 "advance.user.search.title", "search"));
         unavailableForm.addInstruction(LocaleUtils.getLocalizedString(
                 "search.service_unavailable", "search"));
-        reply.add(unavailableForm.getElement());
+        reply.add(unavailableForm.asXMLElement());
 
         return replyPacket;
     }
@@ -413,31 +388,34 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
         queryResult.addElement("nick");
         queryResult.addElement("email");
 
-        DataForm searchForm = new DataForm(DataForm.Type.form);
+        XDataFormImpl searchForm = new XDataFormImpl(DataForm.TYPE_FORM);
         searchForm.setTitle(LocaleUtils.getLocalizedString(
                 "advance.user.search.title", "search"));
         searchForm.addInstruction(instructions);
 
-        searchForm.addField("FORM_TYPE", null, FormField.Type.hidden)
-        		.addValue(NAMESPACE_JABBER_IQ_SEARCH);
+        XFormFieldImpl field = new XFormFieldImpl("FORM_TYPE");
+        field.setType(FormField.TYPE_HIDDEN);
+        field.addValue(NAMESPACE_JABBER_IQ_SEARCH);
+        searchForm.addField(field);
 
-        searchForm.addField("search", 
-        		LocaleUtils.getLocalizedString("advance.user.search.search", "search"), 
-        		FormField.Type.text_single)
-        		.setRequired(true);
-        
+        field = new XFormFieldImpl("search");
+        field.setType(FormField.TYPE_TEXT_SINGLE);
+        field.setLabel(LocaleUtils.getLocalizedString(
+                "advance.user.search.search", "search"));
+        field.setRequired(true);
+        searchForm.addField(field);
 
         for (String searchField : getFilteredSearchFields()) {
-        	final FormField field = searchForm.addField();
-            field.setVariable(searchField);
-            field.setType(FormField.Type.boolean_type);
+            field = new XFormFieldImpl(searchField);
+            field.setType(FormField.TYPE_BOOLEAN);
             field.addValue("1");
             field.setLabel(LocaleUtils.getLocalizedString(
                 "advance.user.search." + searchField.toLowerCase(), "search"));
             field.setRequired(false);
+            searchForm.addField(field);
         }
 
-        queryResult.add(searchForm.getElement());
+        queryResult.add(searchForm.asXMLElement());
         replyPacket.setChildElement(queryResult);
 
         return replyPacket;
@@ -537,8 +515,7 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
      * @return ''true'' if the supplied IQ stanza is a spec compliant search
      *         request, ''false'' otherwise.
      */
-    @SuppressWarnings("unchecked")
-	public static boolean isValidSearchRequest(IQ iq) {
+    public static boolean isValidSearchRequest(IQ iq) {
 
         if (iq == null) {
             throw new IllegalArgumentException("Argument 'iq' cannot be null.");
@@ -643,8 +620,7 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
      *            The form from which to extract the query
      * @return The search query for a particular user search request.
      */
-    @SuppressWarnings("unchecked")
-	private Hashtable<String, String> extractSearchQuery(Element incomingForm) {
+    private Hashtable<String, String> extractSearchQuery(Element incomingForm) {
         if (incomingForm.element(QName.get("x", "jabber:x:data")) != null) {
             // forward the request.
             return extractExtendedSearchQuery(incomingForm);
@@ -681,8 +657,7 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
      * @return The search query for a particular user search request.
      * @see #extractSearchQuery(Element)
      */
-    @SuppressWarnings("unchecked")
-	private Hashtable<String, String> extractExtendedSearchQuery(
+    private Hashtable<String, String> extractExtendedSearchQuery(
             Element incomingForm) {
         final Element dataform = incomingForm.element(QName.get("x",
                 "jabber:x:data"));
@@ -722,41 +697,51 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
      * @return the iq packet that contains the search results
      */
     private IQ replyDataFormResult(Collection<User> users, IQ packet) {
-        final DataForm searchResults = new DataForm(DataForm.Type.result);
+        XDataFormImpl searchResults = new XDataFormImpl(DataForm.TYPE_RESULT);
 
-        searchResults.addField("FORM_TYPE", null, FormField.Type.hidden);
+        XFormFieldImpl field = new XFormFieldImpl("FORM_TYPE");
+        field.setType(FormField.TYPE_HIDDEN);
+        searchResults.addField(field);
 
-        searchResults.addReportedField("jid", "JID", FormField.Type.jid_single);
+        field = new XFormFieldImpl("jid");
+        field.setLabel("JID");
+        searchResults.addReportedField(field);
 
-        for (final String fieldName : getFilteredSearchFields()) {
-            searchResults.addReportedField(fieldName, 
-            		LocaleUtils.getLocalizedString("advance.user.search." + fieldName.toLowerCase(), "search"), 
-            		FormField.Type.text_single);
+        for (String fieldName : getFilteredSearchFields()) {
+            field = new XFormFieldImpl(fieldName);
+            field.setLabel(LocaleUtils.getLocalizedString(
+                "advance.user.search." + fieldName.toLowerCase(), "search"));
+            searchResults.addReportedField(field);
         }
 
-        for (final User user : users) {
-            final String username = JID.unescapeNode(user.getUsername());
+        for (User user : users) {
+            String username = JID.unescapeNode(user.getUsername());
 
-            final Map<String, Object> item = new HashMap<String, Object>();
-            item.put("jid", 
-            		username + "@" + serverName);
-            
-            item.put(LocaleUtils.getLocalizedString("advance.user.search.username", "search"), 
-            		username);
-            
-            item.put(LocaleUtils.getLocalizedString("advance.user.search.name", "search"), 
-            		(user.isNameVisible() ? removeNull(user.getName()) : ""));
+            ArrayList<XFormFieldImpl> items = new ArrayList<XFormFieldImpl>();
 
-            item.put(LocaleUtils.getLocalizedString("advance.user.search.email", "search"), 
-            		(user.isEmailVisible() ? removeNull(user.getEmail()) : ""));
+            XFormFieldImpl fieldJID = new XFormFieldImpl("jid");
+            fieldJID.addValue(username + "@" + serverName);
+            items.add(fieldJID);
 
-            searchResults.addItemFields(item);
+            XFormFieldImpl fieldUsername = new XFormFieldImpl(LocaleUtils.getLocalizedString("advance.user.search.username", "search"));
+            fieldUsername.addValue(username);
+            items.add(fieldUsername);
+
+            XFormFieldImpl fieldName = new XFormFieldImpl(LocaleUtils.getLocalizedString("advance.user.search.name", "search"));
+            fieldName.addValue((user.isNameVisible() ? removeNull(user.getName()) : ""));
+            items.add(fieldName);
+
+            XFormFieldImpl fieldEmail = new XFormFieldImpl(LocaleUtils.getLocalizedString("advance.user.search.email", "search"));
+            fieldEmail.addValue((user.isEmailVisible() ? removeNull(user.getEmail()) : ""));
+            items.add(fieldEmail);
+
+            searchResults.addItemFields(items);
         }
 
         IQ replyPacket = IQ.createResultIQ(packet);
         Element reply = replyPacket.setChildElement("query",
                 NAMESPACE_JABBER_IQ_SEARCH);
-        reply.add(searchResults.getElement());
+        reply.add(searchResults.asXMLElement());
 
         return replyPacket;
     }
@@ -951,14 +936,14 @@ public class SearchPlugin implements Component, Plugin, PropertyEventListener {
             componentManager.removeComponent(this.serviceName);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
         
         try {
             componentManager.addComponent(serviceName, this);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            componentManager.getLog().error(e);
         }
         
         this.serviceName = serviceName;

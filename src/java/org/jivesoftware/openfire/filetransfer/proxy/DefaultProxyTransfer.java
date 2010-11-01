@@ -5,36 +5,25 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.openfire.filetransfer.proxy;
 
+import org.jivesoftware.util.cache.CacheSizes;
+import org.jivesoftware.util.Log;
+
+import java.util.concurrent.Future;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.concurrent.Future;
-
-import org.jivesoftware.util.cache.CacheSizes;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tracks the different connections related to a file transfer. There are two connections, the
  * initiator and the target and when both connections are completed the transfer can begin.
  */
 public class DefaultProxyTransfer implements ProxyTransfer {
-
-	private static final Logger Log = LoggerFactory.getLogger(DefaultProxyTransfer.class);
 
     private String initiator;
 
@@ -152,7 +141,7 @@ public class DefaultProxyTransfer implements ProxyTransfer {
                     in.close();
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
             if (out != null) {
@@ -160,7 +149,7 @@ public class DefaultProxyTransfer implements ProxyTransfer {
                     out.close();
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
             }
         }

@@ -1,26 +1,17 @@
 <%--
   - Copyright (C) 2005-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 
 <%@ page import="org.jivesoftware.openfire.user.*,
                  org.jivesoftware.openfire.plugin.RegistrationPlugin,
                  org.jivesoftware.util.*,
-                 gnu.inet.encoding.Stringprep,
-                 gnu.inet.encoding.StringprepException,
-                 org.xmpp.packet.JID,
-                 net.tanesha.recaptcha.*"
+                 org.jivesoftware.stringprep.Stringprep,
+                 org.jivesoftware.stringprep.StringprepException,
+                 org.xmpp.packet.JID"
 %>
 
 <%@ taglib uri="http://java.sun.com/jstl/core_rt" prefix="c" %>
@@ -40,28 +31,17 @@
     </style>
     <meta name="decorator" content="none"/>
 </head>
-
+    
 <jsp:useBean id="webManager" class="org.jivesoftware.util.WebManager"  />
 <jsp:useBean id="errors" class="java.util.HashMap" />
 <%  webManager.init(request, response, session, application, out);
-
+ 
     boolean create = request.getParameter("create") != null;
     String username = ParamUtils.getParameter(request,"username");
     String name = ParamUtils.getParameter(request,"name");
     String email = ParamUtils.getParameter(request,"email");
     String password = ParamUtils.getParameter(request,"password");
     String passwordConfirm = ParamUtils.getParameter(request,"passwordConfirm");
-    String reCaptchaChallenge = ParamUtils.getParameter(request,"recaptcha_challenge_field");
-    String reCaptchaResponse = ParamUtils.getParameter(request,"recaptcha_response_field");
-
-    RegistrationPlugin plugin = (RegistrationPlugin) webManager.getXMPPServer().getPluginManager().getPlugin("registration");
-    ReCaptcha reCaptcha = null;
-    if (plugin.reCaptchaEnabled()) {
-        reCaptcha = ReCaptchaFactory.newReCaptcha(
-                plugin.getReCaptchaPublicKey(),
-                plugin.getReCaptchaPrivateKey(),
-                plugin.reCaptchaNoScript());
-    }
 
     // Handle a request to create a user:
     if (create) {
@@ -88,20 +68,6 @@
         if (password != null && passwordConfirm != null && !password.equals(passwordConfirm)) {
             errors.put("passwordMatch","");
         }
-        if (plugin.reCaptchaEnabled()) {
-            ReCaptchaResponse captchaResponse = null;
-            try {
-                captchaResponse = reCaptcha.checkAnswer(
-                        request.getRemoteAddr(),
-                        reCaptchaChallenge,
-                        reCaptchaResponse);
-            }
-            catch (Exception e) {
-            }
-            if (captchaResponse == null || !captchaResponse.isValid()) {
-                errors.put("reCaptchaFail","");
-            }
-        }
 
         // do a create if there were no errors
         if (errors.size() == 0) {
@@ -120,6 +86,8 @@
             }
         }
     }
+    
+    RegistrationPlugin plugin = (RegistrationPlugin) webManager.getXMPPServer().getPluginManager().getPlugin("registration");
 %>
 
 <body>
@@ -170,8 +138,6 @@
                 <fmt:message key="registration.sign.up.invalid_match_password" />
             <% } else if (errors.get("passwordConfirm") != null) { %>
                 <fmt:message key="registration.sign.up.invalid_password_confirm" />
-            <% } else if (errors.get("reCaptchaFail") != null) { %>
-                <fmt:message key="registration.sign.up.recaptcha_fail" />
             <% } %>
             </td>
         </tr>
@@ -253,11 +219,7 @@
     </div>
 </div>
 
-<%  if (reCaptcha != null) { %>
-<%= reCaptcha.createRecaptchaHtml(null, null, 0) %>
-<%  } %>
 <input type="submit" name="create" value="<fmt:message key="registration.sign.up.create_account" />">
-
 </form>
 
 <script language="JavaScript" type="text/javascript">

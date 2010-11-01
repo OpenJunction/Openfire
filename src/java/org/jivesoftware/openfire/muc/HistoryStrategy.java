@@ -5,34 +5,21 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.ListIterator;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
 import org.jivesoftware.openfire.muc.cluster.UpdateHistoryStrategy;
 import org.jivesoftware.openfire.muc.spi.MUCPersistenceManager;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.cache.CacheFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.packet.Message;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * <p>Multi-User Chat rooms may cache history of the conversations in the room in order to
@@ -45,8 +32,6 @@ import org.xmpp.packet.Message;
  * @author Derek DeMoro
  */
 public class HistoryStrategy {
-
-	private static final Logger Log = LoggerFactory.getLogger(HistoryStrategy.class);
 
     /**
      * The type of strategy being used.
@@ -310,16 +295,6 @@ public class HistoryStrategy {
      */
     public boolean hasChangedSubject() {
         return roomSubject != null;
-    }
-
-    /**
-     * Returns the message within the history of the room that has changed the
-     * room's subject.
-     * 
-     * @return the latest room subject change or null if none exists yet.
-     */
-    public Message getChangedSubject() {
-        return roomSubject;
     }
 
     private static class MessageComparator implements Comparator<Message> {

@@ -5,40 +5,23 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.dom4j.Element;
 import org.jivesoftware.util.LocaleUtils;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmpp.forms.DataForm;
 import org.xmpp.forms.FormField;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
+
+import java.util.*;
 
 /**
  * A type of node that contains published items only. It is NOT a container for
@@ -47,8 +30,6 @@ import org.xmpp.packet.Message;
  * @author Matt Tucker
  */
 public class LeafNode extends Node {
-
-	private static final Logger Log = LoggerFactory.getLogger(LeafNode.class);
 
     /**
      * Flag that indicates whether to persist items to storage. Note that when the
@@ -91,8 +72,7 @@ public class LeafNode extends Node {
         this.sendItemSubscribe = defaultConfiguration.isSendItemSubscribe();
     }
 
-    @Override
-	void configure(FormField field) {
+    void configure(FormField field) {
         List<String> values;
         String booleanValue;
         if ("pubsub#persist_items".equals(field.getVariable())) {
@@ -111,8 +91,7 @@ public class LeafNode extends Node {
         }
     }
 
-    @Override
-	void postConfigure(DataForm completedForm) {
+    void postConfigure(DataForm completedForm) {
         List<String> values;
         if (!persistPublishedItems) {
             // Always save the last published item when not configured to use persistent items
@@ -127,15 +106,17 @@ public class LeafNode extends Node {
         }
         synchronized (publishedItems) {
             // Remove stored published items based on the new max items
-            while (!publishedItems.isEmpty() && isMaxItemsReached())
-            {
-                removeItem(0);
+            while (!publishedItems.isEmpty() && publishedItems.size() > maxPublishedItems) {
+                PublishedItem removedItem = publishedItems.remove(0);
+                itemsByID.remove(removedItem.getID());
+                // Add the removed item to the queue of items to delete from the database. The
+                // queue is going to be processed by another thread
+                service.queueItemToRemove(removedItem);
             }
         }
     }
 
-    @Override
-	protected void addFormFields(DataForm form, boolean isEditing) {
+    protected void addFormFields(DataForm form, boolean isEditing) {
         super.addFormFields(form, isEditing);
 
         FormField formField = form.addField();
@@ -173,12 +154,15 @@ public class LeafNode extends Node {
 
     }
 
-    @Override
-	protected void deletingNode() {
+    protected void deletingNode() {
         synchronized (publishedItems) {
             // Remove stored published items
             while (!publishedItems.isEmpty()) {
-                removeItem(0);
+                PublishedItem removedItem = publishedItems.remove(0);
+                itemsByID.remove(removedItem.getID());
+                // Add the removed item to the queue of items to delete from the database. The
+                // queue is going to be processed by another thread
+                service.queueItemToRemove(removedItem);
             }
         }
     }
@@ -252,12 +236,12 @@ public class LeafNode extends Node {
                 payload = entries.isEmpty() ? null : (Element) entries.get(0);
                 // Create a published item from the published data and add it to the node and the db
                 synchronized (publishedItems) {
-                    // Make sure that the published item has a unique ID if NOT assigned by publisher
+                    // Make sure that the published item has an ID and that it's unique in the node
                     if (itemID == null) {
-                    	do {
-                    		itemID = StringUtils.randomString(15);
-                    	}
-                        while (itemsByID.containsKey(itemID));
+                        itemID = StringUtils.randomString(15);
+                    }
+                    while (itemsByID.get(itemID) != null) {
+                        itemID = StringUtils.randomString(15);
                     }
 
                     // Create a new published item
@@ -266,22 +250,16 @@ public class LeafNode extends Node {
                     // Add the new item to the list of published items
                     newPublishedItems.add(newItem);
 
-                    // Check and remove any existing items that have the matching ID,
-                    // generated ID's won't match since we already checked.
-                    PublishedItem duplicate = itemsByID.get(newItem.getID());
-                    
-                    if (duplicate != null)
-                    {
-                    	removeItem(findIndexById(duplicate.getID()));
-                    }
-
                     // Add the published item to the list of items to persist (using another thread)
                     // but check that we don't exceed the limit. Remove oldest items if required.
-                    while (!publishedItems.isEmpty() && isMaxItemsReached())
+                    while (!publishedItems.isEmpty() && publishedItems.size() >= maxPublishedItems)
                     {
-                        removeItem(0);
+                        PublishedItem removedItem = publishedItems.remove(0);
+                        itemsByID.remove(removedItem.getID());
+                        // Add the removed item to the queue of items to delete from the database. The
+                        // queue is going to be processed by another thread
+                        service.queueItemToRemove(removedItem);
                     }
-                    
                     addPublishedItem(newItem);
                     // Add the new published item to the queue of items to add to the database. The
                     // queue is going to be processed by another thread
@@ -306,31 +284,6 @@ public class LeafNode extends Node {
             affiliate.sendPublishedNotifications(message, event, this, newPublishedItems);
         }
     }
-
-	/**
-     * Must be called from code synchronized on publishedItems
-     */
-    private int findIndexById(String id) {
-    	for (int i=0; i<publishedItems.size(); i++)
-    	{
-    		PublishedItem item = publishedItems.get(i);
-    		
-			if (item.getID().equals(id))
-				return i;
-		}
-		return -1;
-	}
-
-	/**
-     * Must be called from code synchronized on publishedItems
-     */
-	private void removeItem(int index) {
-        PublishedItem removedItem = publishedItems.remove(index);
-		itemsByID.remove(removedItem.getID());
-		// Add the removed item to the queue of items to delete from the database. The
-		// queue is going to be processed by another thread
-		service.queueItemToRemove(removedItem);
-	}
 
     /**
      * Deletes the list of published items from the node. Event notifications may be sent to
@@ -391,10 +344,9 @@ public class LeafNode extends Node {
     void sendPublishedItems(IQ originalRequest, List<PublishedItem> publishedItems,
             boolean forceToIncludePayload) {
         IQ result = IQ.createResultIQ(originalRequest);
-        Element pubsubElem = result.setChildElement("pubsub", "http://jabber.org/protocol/pubsub");
-        Element items = pubsubElem.addElement("items");
-        items.addAttribute("node", getNodeID());
-        
+        Element childElement = originalRequest.getChildElement().createCopy();
+        result.setChildElement(childElement);
+        Element items = childElement.element("items");
         for (PublishedItem publishedItem : publishedItems) {
             Element item = items.addElement("item");
             if (isItemRequired()) {
@@ -409,8 +361,7 @@ public class LeafNode extends Node {
         service.send(result);
     }
 
-    @Override
-	public PublishedItem getPublishedItem(String itemID) {
+    public PublishedItem getPublishedItem(String itemID) {
         if (!isItemRequired()) {
             return null;
         }
@@ -419,15 +370,13 @@ public class LeafNode extends Node {
         }
     }
 
-    @Override
-	public List<PublishedItem> getPublishedItems() {
+    public List<PublishedItem> getPublishedItems() {
         synchronized (publishedItems) {
             return Collections.unmodifiableList(publishedItems);
         }
     }
 
-    @Override
-	public List<PublishedItem> getPublishedItems(int recentItems) {
+    public List<PublishedItem> getPublishedItems(int recentItems) {
         synchronized (publishedItems) {
             int size = publishedItems.size();
             if (recentItems > size) {
@@ -442,8 +391,7 @@ public class LeafNode extends Node {
         }
     }
 
-    @Override
-	public PublishedItem getLastPublishedItem() {
+    public PublishedItem getLastPublishedItem() {
         synchronized (publishedItems) {
             if (publishedItems.isEmpty()) {
                 return null;
@@ -457,8 +405,7 @@ public class LeafNode extends Node {
      *
      * @return true if the last published item is going to be sent to new subscribers.
      */
-    @Override
-	public boolean isSendItemSubscribe() {
+    public boolean isSendItemSubscribe() {
         return sendItemSubscribe;
     }
 
@@ -512,10 +459,5 @@ public class LeafNode extends Node {
             // Send notification that the node configuration has changed
             broadcastNodeEvent(message, false);
         }
-    }
-    
-    private boolean isMaxItemsReached()
-    {
-    	return (maxPublishedItems > -1 ) && (publishedItems.size() >= maxPublishedItems);
     }
 }

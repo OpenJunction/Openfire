@@ -1,21 +1,13 @@
 /**
  * $RCSfile$
- * $Revision: 11691 $
- * $Date: 2010-05-01 09:42:07 -0700 (Sat, 01 May 2010) $
+ * $Revision: 10269 $
+ * $Date: 2008-04-24 10:37:21 -0700 (Thu, 24 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.database;
@@ -26,7 +18,6 @@ import org.jivesoftware.util.Log;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.DriverManager;
@@ -97,24 +88,24 @@ public class EmbeddedConnectionProvider implements ConnectionProvider {
     public void destroy() {
         // Shutdown the database.
         Connection con = null;
-        PreparedStatement pstmt = null;
         try {
             con = getConnection();
-            pstmt = con.prepareStatement("SHUTDOWN");
-            pstmt.execute();
+            Statement stmt = con.createStatement();
+            stmt.execute("SHUTDOWN");
+            stmt.close();
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            try { if (con != null) { con.close(); } }
+            catch (Exception e) { Log.error(e); }
         }
         // Blank out the settings
         settings = null;
     }
 
-    @Override
-	public void finalize() throws Throwable {
+    public void finalize() throws Throwable {
         super.finalize();
         destroy();
     }

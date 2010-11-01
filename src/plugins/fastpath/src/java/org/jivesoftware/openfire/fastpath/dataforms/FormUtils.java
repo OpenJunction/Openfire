@@ -5,21 +5,14 @@
  *
  * Copyright (C) 1999-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.dataforms;
 
+import java.util.Iterator;
 import java.util.List;
 
 public class FormUtils {
@@ -38,7 +31,7 @@ public class FormUtils {
     }
 
 
-    public static String createAnswers(String name, WorkgroupForm.FormEnum answerType, List<String> items) {
+    public static String createAnswers(String name, WorkgroupForm.FormEnum answerType, List items) {
         final StringBuilder builder = new StringBuilder();
         if (WorkgroupForm.FormEnum.textfield == answerType) {
             builder.append("<input type=\"text\" size=\"30\" name=\"").append(name).append("\">");
@@ -50,7 +43,9 @@ public class FormUtils {
         else if (WorkgroupForm.FormEnum.dropdown_box == answerType) {
             builder.append("<select name=\"").append(name).append("\">");
             if (items != null) {
-            	for(String item : items) {
+                Iterator iterator = items.iterator();
+                while (iterator.hasNext()) {
+                    String item = (String)iterator.next();
                     builder.append("<option value=\"").append(item).append("\">").append(item)
                             .append("</option>");
                 }
@@ -62,8 +57,10 @@ public class FormUtils {
                 return null;
             }
 
+            Iterator iter = items.iterator();
             int counter = 0;
-            for(String value : items) {
+            while(iter.hasNext()){
+                String value = (String)iter.next();
                 builder.append("<input type=\"checkbox\" value=\"").append(value)
                         .append("\" name=\"").append(name).append(counter).append("\">");
                 builder.append("&nbsp;");
@@ -77,7 +74,9 @@ public class FormUtils {
                 return null;
             }
 
-              for(String value : items) {
+            Iterator iter = items.iterator();
+            while(iter.hasNext()){
+                String value = (String)iter.next();
                 builder.append("<input type=\"radio\" value=\"").append(value).append("\" name=\"")
                         .append(name).append("\">");
                 builder.append("&nbsp;");

@@ -5,32 +5,24 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.ldap;
 
-import javax.naming.NamingEnumeration;
+import org.jivesoftware.openfire.ldap.LdapManager;
+import org.jivesoftware.openfire.auth.AuthorizationMapping;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.JiveGlobals;
+
 import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.DirContext;
+import javax.naming.NamingEnumeration;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
-
-import org.jivesoftware.openfire.auth.AuthorizationMapping;
-import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 
@@ -60,8 +52,6 @@ import org.slf4j.LoggerFactory;
  * @author Jay Kline
  */
 public class LdapAuthorizationMapping implements AuthorizationMapping {
-
-	private static final Logger Log = LoggerFactory.getLogger(LdapAuthorizationMapping.class);
 
     private LdapManager manager;
     private String usernameField;
@@ -93,7 +83,7 @@ public class LdapAuthorizationMapping implements AuthorizationMapping {
         try {
             Log.debug("LdapAuthorizationMapping: Starting LDAP search...");
             String usernameField = manager.getUsernameField();
-            //String baseDN = manager.getBaseDN();
+            String baseDN = manager.getBaseDN();
             boolean subTreeSearch = manager.isSubTreeSearch();
             ctx = manager.getContext();
             SearchControls constraints = new SearchControls();

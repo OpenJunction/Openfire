@@ -5,79 +5,29 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.clearspace;
 
-import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.GET;
-import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.POST;
-
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MalformedURLException;
-import java.net.NetworkInterface;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.URL;
-import java.net.UnknownHostException;
-import java.security.KeyStore;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.TimerTask;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-import org.apache.commons.httpclient.Credentials;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.HttpMethod;
-import org.apache.commons.httpclient.UsernamePasswordCredentials;
+import org.apache.commons.httpclient.*;
 import org.apache.commons.httpclient.auth.AuthScope;
-import org.apache.commons.httpclient.methods.DeleteMethod;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.PutMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
+import org.apache.commons.httpclient.methods.*;
 import org.apache.commons.httpclient.protocol.Protocol;
 import org.apache.commons.httpclient.protocol.ProtocolSocketFactory;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.Node;
+import org.dom4j.*;
 import org.dom4j.io.XMPPPacketReader;
+import org.jivesoftware.openfire.IQResultListener;
 import org.jivesoftware.openfire.IQRouter;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.XMPPServerInfo;
 import org.jivesoftware.openfire.auth.AuthFactory;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
-import org.jivesoftware.openfire.component.ComponentEventListener;
-import org.jivesoftware.openfire.component.ExternalComponentConfiguration;
-import org.jivesoftware.openfire.component.ExternalComponentManager;
-import org.jivesoftware.openfire.component.ExternalComponentManagerListener;
-import org.jivesoftware.openfire.component.InternalComponentManager;
+import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.GET;
+import static org.jivesoftware.openfire.clearspace.ClearspaceManager.HttpType.POST;
+import org.jivesoftware.openfire.component.*;
 import org.jivesoftware.openfire.container.BasicModule;
 import org.jivesoftware.openfire.group.GroupNotFoundException;
 import org.jivesoftware.openfire.http.HttpBindManager;
@@ -86,27 +36,23 @@ import org.jivesoftware.openfire.net.MXParser;
 import org.jivesoftware.openfire.session.ComponentSession;
 import org.jivesoftware.openfire.session.LocalClientSession;
 import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.AlreadyExistsException;
-import org.jivesoftware.util.CertificateEventListener;
-import org.jivesoftware.util.CertificateManager;
-import org.jivesoftware.util.HTTPConnectionException;
-import org.jivesoftware.util.JiveConstants;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.ModificationNotAllowedException;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-import org.jivesoftware.util.StringUtils;
-import org.jivesoftware.util.TaskEngine;
+import org.jivesoftware.util.*;
 import org.jivesoftware.util.cache.Cache;
 import org.jivesoftware.util.cache.CacheFactory;
 import org.jivesoftware.util.cache.DefaultCache;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
-import org.xmpp.component.IQResultListener;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
+
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.net.*;
+import java.security.KeyStore;
+import java.security.cert.X509Certificate;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -121,9 +67,6 @@ import org.xmpp.packet.JID;
  * @author Daniel Henninger
  */
 public class ClearspaceManager extends BasicModule implements ExternalComponentManagerListener, ComponentEventListener, PropertyEventListener, CertificateEventListener {
-	
-	private static final Logger Log = LoggerFactory.getLogger(ClearspaceManager.class);
-
     /**
      * This is the username of the user that Openfires uses to connect
      * to Clearspace. It is fixed a well known by Openfire and Clearspace.
@@ -155,8 +98,7 @@ public class ClearspaceManager extends BasicModule implements ExternalComponentM
         }
         // Create xmpp parser to keep in each thread
         localParser = new ThreadLocal<XMPPPacketReader>() {
-            @Override
-			protected XMPPPacketReader initialValue() {
+            protected XMPPPacketReader initialValue() {
                 XMPPPacketReader parser = new XMPPPacketReader();
                 factory.setNamespaceAware(true);
                 parser.setXPPFactory(factory);
@@ -530,8 +472,7 @@ public class ClearspaceManager extends BasicModule implements ExternalComponentM
         return AuthFactory.getAuthProvider() instanceof ClearspaceAuthProvider;
     }
 
-    @Override
-	public void start() throws IllegalStateException {
+    public void start() throws IllegalStateException {
         super.start();
         if (isEnabled()) {
             // Before starting up service make sure there is a default secret
@@ -589,8 +530,7 @@ public class ClearspaceManager extends BasicModule implements ExternalComponentM
         }
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
 
         // Stops the Clearspace MUC transcript manager
@@ -1334,8 +1274,7 @@ public class ClearspaceManager extends BasicModule implements ExternalComponentM
 
     private class ConfigClearspaceTask extends TimerTask {
 
-        @Override
-		public void run() {
+        public void run() {
             try {
                 Log.debug("Trying to configure Clearspace.");
                 doConfigClearspace();

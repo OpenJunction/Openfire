@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.multiplex;
@@ -68,12 +60,11 @@ public class ClientSessionConnection extends VirtualConnection {
      * @param packet the packet to send to the user.
      */
     public void deliver(Packet packet) {
-        String streamID = session.getStreamID().getID();
         ConnectionMultiplexerSession multiplexerSession =
-                multiplexerManager.getMultiplexerSession(connectionManagerName,streamID);
+                multiplexerManager.getMultiplexerSession(connectionManagerName);
         if (multiplexerSession != null) {
             // Wrap packet so that the connection manager can figure out the target session
-            Route wrapper = new Route(streamID);
+            Route wrapper = new Route(session.getStreamID().getID());
             wrapper.setFrom(serverName);
             wrapper.setTo(connectionManagerName);
             wrapper.setChildElement(packet.getElement().createCopy());
@@ -95,15 +86,14 @@ public class ClientSessionConnection extends VirtualConnection {
      * @param text the stanza to send to the user.
      */
     public void deliverRawText(String text) {
-        String streamID = session.getStreamID().getID();
         ConnectionMultiplexerSession multiplexerSession =
-                multiplexerManager.getMultiplexerSession(connectionManagerName,streamID);
+                multiplexerManager.getMultiplexerSession(connectionManagerName);
         if (multiplexerSession != null) {
             // Wrap packet so that the connection manager can figure out the target session
             StringBuilder sb = new StringBuilder(200 + text.length());
             sb.append("<route from=\"").append(serverName);
             sb.append("\" to=\"").append(connectionManagerName);
-            sb.append("\" streamid=\"").append(streamID).append("\">");
+            sb.append("\" streamid=\"").append(session.getStreamID().getID()).append("\">");
             sb.append(text);
             sb.append("</route>");
             // Deliver the wrapped stanza
@@ -156,8 +146,7 @@ public class ClientSessionConnection extends VirtualConnection {
      * to send to the Connection Manager a packet letting him know that the Client Session needs
      * to be terminated.
      */
-    @Override
-	public void closeVirtualConnection() {
+    public void closeVirtualConnection() {
         // Figure out who requested the connection to be closed
         String streamID = session.getStreamID().getID();
         if (multiplexerManager.getClientSession(connectionManagerName, streamID) == null) {
@@ -166,7 +155,7 @@ public class ClientSessionConnection extends VirtualConnection {
         }
         else {
             ConnectionMultiplexerSession multiplexerSession =
-                    multiplexerManager.getMultiplexerSession(connectionManagerName,streamID);
+                    multiplexerManager.getMultiplexerSession(connectionManagerName);
             if (multiplexerSession != null) {
                 // Server requested to close the client session so let the connection manager
                 // know that he has to finish the client session

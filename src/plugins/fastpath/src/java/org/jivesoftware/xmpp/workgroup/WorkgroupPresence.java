@@ -5,20 +5,26 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
+
+import org.jivesoftware.openfire.fastpath.util.TaskEngine;
+import org.jivesoftware.xmpp.workgroup.interceptor.AgentInterceptorManager;
+import org.jivesoftware.xmpp.workgroup.interceptor.InterceptorManager;
+import org.jivesoftware.xmpp.workgroup.interceptor.PacketRejectedException;
+import org.dom4j.Element;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.util.ConcurrentHashSet;
+import org.jivesoftware.util.FastDateFormat;
+import org.jivesoftware.util.JiveConstants;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.packet.JID;
+import org.xmpp.packet.PacketError;
+import org.xmpp.packet.Presence;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -29,21 +35,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.dom4j.Element;
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.fastpath.util.TaskEngine;
-import org.jivesoftware.util.ConcurrentHashSet;
-import org.jivesoftware.util.FastDateFormat;
-import org.jivesoftware.util.JiveConstants;
-import org.jivesoftware.xmpp.workgroup.interceptor.AgentInterceptorManager;
-import org.jivesoftware.xmpp.workgroup.interceptor.InterceptorManager;
-import org.jivesoftware.xmpp.workgroup.interceptor.PacketRejectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
 
 /**
  * <p>The Workgroup's presence handler processes all incoming
@@ -62,8 +53,6 @@ import org.xmpp.packet.Presence;
  */
 public class WorkgroupPresence {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupPresence.class);
-	
     private static final FastDateFormat UTC_FORMAT = FastDateFormat
             .getInstance(JiveConstants.XMPP_DELAY_DATETIME_FORMAT, TimeZone.getTimeZone("UTC"));
 
@@ -162,13 +151,13 @@ public class WorkgroupPresence {
                     errorMessage.append(packet.getFrom().toString());
                     errorMessage.append(" Workgroup: ");
                     errorMessage.append(workgroup.getJID().toString());
-                    Log.debug(errorMessage.toString(), e);
+                    ComponentManagerFactory.getComponentManager().getLog().debug(errorMessage.toString(), e);
                 }
             }
 
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
             Presence reply = new Presence();
             reply.setError(new PacketError(PacketError.Condition.internal_server_error));
             reply.setTo(packet.getFrom());
@@ -226,7 +215,7 @@ public class WorkgroupPresence {
                     }
                 }
                 catch (Exception e) {
-                    Log.error(
+                    ComponentManagerFactory.getComponentManager().getLog().error(
                             "Error broadcasting available presence", e);
                 }
             }
@@ -252,7 +241,7 @@ public class WorkgroupPresence {
                     deleteRosterItems();
                 }
                 catch (Exception e) {
-                    Log.error(
+                    ComponentManagerFactory.getComponentManager().getLog().error(
                             "Error broadcasting available presence", e);
                 }
             }
@@ -362,7 +351,7 @@ public class WorkgroupPresence {
             presenceSubscribers.addAll(jids);
         }
         catch (SQLException e) {
-            Log.error(
+            ComponentManagerFactory.getComponentManager().getLog().error(
                     "Error loading workgroup roster items ", e);
         }
         finally {
@@ -422,12 +411,12 @@ public class WorkgroupPresence {
         }
     }
 
-//    private int getNumberOfAgentsOnline() {
-//        int onlineAgents = 0;
-//        WorkgroupManager workgroupManager = WorkgroupManager.getInstance();
-//        for (Workgroup workgroup : workgroupManager.getWorkgroups()) {
-//            onlineAgents += workgroup.getAgentSessions().size();
-//        }
-//        return onlineAgents;
-//    }
+    private int getNumberOfAgentsOnline() {
+        int onlineAgents = 0;
+        WorkgroupManager workgroupManager = WorkgroupManager.getInstance();
+        for (Workgroup workgroup : workgroupManager.getWorkgroups()) {
+            onlineAgents += workgroup.getAgentSessions().size();
+        }
+        return onlineAgents;
+    }
 }

@@ -4,53 +4,31 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.mediaproxy;
 
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-
 import org.dom4j.Attribute;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.jivesoftware.openfire.PacketException;
-import org.jivesoftware.openfire.PacketRouter;
-import org.jivesoftware.openfire.RoutableChannelHandler;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.container.BasicModule;
-import org.jivesoftware.openfire.disco.DiscoInfoProvider;
-import org.jivesoftware.openfire.disco.DiscoItem;
-import org.jivesoftware.openfire.disco.DiscoItemsProvider;
-import org.jivesoftware.openfire.disco.DiscoServerItem;
-import org.jivesoftware.openfire.disco.ServerItemsProvider;
+import org.jivesoftware.openfire.disco.*;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
 import org.jivesoftware.util.JiveGlobals;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.forms.DataForm;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
+
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * A proxy service for UDP traffic such as RTP. It provides Jingle transport candidates
@@ -61,8 +39,6 @@ import org.xmpp.packet.PacketError;
  */
 public class MediaProxyService extends BasicModule
         implements ServerItemsProvider, RoutableChannelHandler, DiscoInfoProvider, DiscoItemsProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(MediaProxyService.class);
 
     private String serviceName;
     private RoutingTable routingTable;
@@ -83,8 +59,7 @@ public class MediaProxyService extends BasicModule
         super("Media Proxy Service");
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
 
         sessionManager = server.getSessionManager();
@@ -106,8 +81,7 @@ public class MediaProxyService extends BasicModule
         initMediaProxy();
     }
 
-    @Override
-	public void start() {
+    public void start() {
         if (isEnabled()) {
 
             try {
@@ -128,8 +102,7 @@ public class MediaProxyService extends BasicModule
         }
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
         mediaProxy.stopProxy();
         XMPPServer.getInstance().getIQDiscoItemsHandler().removeComponentItem(getAddress().toString());
@@ -139,8 +112,7 @@ public class MediaProxyService extends BasicModule
 
     // Component Interface
 
-    @Override
-	public String getName() {
+    public String getName() {
         // Get the name from the plugin.xml file.
         return serviceName;
     }
@@ -218,7 +190,7 @@ public class MediaProxyService extends BasicModule
                                 }
                             }
                             catch (Exception e) {
-                                Log.error(e.getMessage(), e);
+                                Log.error(e);
                             }
 
                         } else {
@@ -237,7 +209,7 @@ public class MediaProxyService extends BasicModule
                                 publicIp.addAttribute("ip", ip);
                             }
                         } catch (UnknownHostException e) {
-                            Log.error(e.getMessage(), e);
+                            Log.error(e);
                         }
 
                     } else {
@@ -259,7 +231,7 @@ public class MediaProxyService extends BasicModule
             router.route(reply);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -347,7 +319,7 @@ public class MediaProxyService extends BasicModule
                 "http://jabber.org/protocol/disco#info").iterator();
     }
 
-    public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+    public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
         return null;
     }
 

@@ -5,53 +5,32 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.handler;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TimeZone;
-
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.jivesoftware.openfire.IQHandlerInfo;
-import org.jivesoftware.openfire.OfflineMessage;
-import org.jivesoftware.openfire.OfflineMessageStore;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
-import org.jivesoftware.openfire.disco.DiscoInfoProvider;
-import org.jivesoftware.openfire.disco.DiscoItem;
-import org.jivesoftware.openfire.disco.DiscoItemsProvider;
-import org.jivesoftware.openfire.disco.IQDiscoInfoHandler;
-import org.jivesoftware.openfire.disco.IQDiscoItemsHandler;
-import org.jivesoftware.openfire.disco.ServerFeaturesProvider;
+import org.jivesoftware.openfire.disco.*;
+import org.jivesoftware.openfire.forms.DataForm;
+import org.jivesoftware.openfire.forms.FormField;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
+import org.jivesoftware.openfire.forms.spi.XFormFieldImpl;
 import org.jivesoftware.openfire.session.LocalClientSession;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.util.JiveConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Implements JEP-0013: Flexible Offline Message Retrieval. Allows users to request number of
@@ -62,8 +41,6 @@ import org.xmpp.packet.JID;
  */
 public class IQOfflineMessagesHandler extends IQHandler implements ServerFeaturesProvider,
         DiscoInfoProvider, DiscoItemsProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(IQOfflineMessagesHandler.class);
 
     private static final String NAMESPACE = "http://jabber.org/protocol/offline";
 
@@ -83,8 +60,7 @@ public class IQOfflineMessagesHandler extends IQHandler implements ServerFeature
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
-    @Override
-	public IQ handleIQ(IQ packet) throws UnauthorizedException {
+    public IQ handleIQ(IQ packet) throws UnauthorizedException {
         IQ reply = IQ.createResultIQ(packet);
         Element offlineRequest = packet.getChildElement();
 
@@ -138,8 +114,7 @@ public class IQOfflineMessagesHandler extends IQHandler implements ServerFeature
         routingTable.routePacket(receipient, offlineMessage, true);
     }
 
-    @Override
-	public IQHandlerInfo getInfo() {
+    public IQHandlerInfo getInfo() {
         return info;
     }
 
@@ -162,20 +137,20 @@ public class IQOfflineMessagesHandler extends IQHandler implements ServerFeature
         return Arrays.asList(NAMESPACE).iterator();
     }
 
-    public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+    public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
         // Mark that offline messages shouldn't be sent when the user becomes available
         stopOfflineFlooding(senderJID);
 
-        final DataForm dataForm = new DataForm(DataForm.Type.result);
+        XDataFormImpl dataForm = new XDataFormImpl(DataForm.TYPE_RESULT);
 
-        final FormField field1 = dataForm.addField();
-        field1.setVariable("FORM_TYPE");
-        field1.setType(FormField.Type.hidden);
-        field1.addValue(NAMESPACE);
+        XFormFieldImpl field = new XFormFieldImpl("FORM_TYPE");
+        field.setType(FormField.TYPE_HIDDEN);
+        field.addValue(NAMESPACE);
+        dataForm.addField(field);
 
-        final FormField field2 = dataForm.addField();
-        field2.setVariable("number_of_messages");
-        field2.addValue(String.valueOf(messageStore.getMessages(senderJID.getNode(), false).size()));
+        field = new XFormFieldImpl("number_of_messages");
+        field.addValue(String.valueOf(messageStore.getMessages(senderJID.getNode(), false).size()));
+        dataForm.addField(field);
 
         return dataForm;
     }
@@ -197,8 +172,7 @@ public class IQOfflineMessagesHandler extends IQHandler implements ServerFeature
         return answer.iterator();
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         infoHandler = server.getIQDiscoInfoHandler();
         itemsHandler = server.getIQDiscoItemsHandler();
@@ -207,15 +181,13 @@ public class IQOfflineMessagesHandler extends IQHandler implements ServerFeature
         routingTable = server.getRoutingTable();
     }
 
-    @Override
-	public void start() throws IllegalStateException {
+    public void start() throws IllegalStateException {
         super.start();
         infoHandler.setServerNodeInfoProvider(NAMESPACE, this);
         itemsHandler.setServerNodeInfoProvider(NAMESPACE, this);
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
         infoHandler.removeServerNodeInfoProvider(NAMESPACE);
         itemsHandler.removeServerNodeInfoProvider(NAMESPACE);

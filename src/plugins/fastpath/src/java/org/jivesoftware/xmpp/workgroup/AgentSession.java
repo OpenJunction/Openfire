@@ -5,47 +5,30 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import org.dom4j.Element;
 import org.jivesoftware.openfire.fastpath.util.TaskEngine;
-import org.jivesoftware.util.FastDateFormat;
-import org.jivesoftware.util.LocaleUtils;
 import org.jivesoftware.xmpp.workgroup.interceptor.InterceptorManager;
 import org.jivesoftware.xmpp.workgroup.interceptor.OfferInterceptorManager;
 import org.jivesoftware.xmpp.workgroup.interceptor.PacketRejectedException;
 import org.jivesoftware.xmpp.workgroup.request.UserRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.dom4j.Element;
+import org.jivesoftware.util.FastDateFormat;
+import org.jivesoftware.util.LocaleUtils;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.Presence;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * <p>A 'live' agent session.</p>
@@ -55,8 +38,6 @@ import org.xmpp.packet.Presence;
  * @author Derek DeMoro
  */
 public class AgentSession {
-
-	private static final Logger Log = LoggerFactory.getLogger(AgentSession.class);
 
     private static final FastDateFormat UTC_FORMAT = FastDateFormat.getInstance("yyyyMMdd'T'HH:mm:ss", TimeZone.getTimeZone("GMT+0"));
 
@@ -119,9 +100,9 @@ public class AgentSession {
         // AgentSession based on the values sent within the presence (if any)
         Element elem = packet.getChildElement("agent-status", "http://jabber.org/protocol/workgroup");
         if (elem != null) {
-            Iterator<Element> metaIter = elem.elementIterator();
+            Iterator metaIter = elem.elementIterator();
             while (metaIter.hasNext()) {
-                Element agentStatusElement = metaIter.next();
+                Element agentStatusElement = (Element)metaIter.next();
                 if ("max-chats".equals(agentStatusElement.getName())) {
                     String maxChats = agentStatusElement.getText();
                     if (maxChats == null || maxChats.trim().length() == 0) {
@@ -231,7 +212,7 @@ public class AgentSession {
                     sendStatusOfAllAgents(workgroup);
                 }
                 catch (Exception e) {
-                    Log.error("Error sending status of all agents", e);
+                    ComponentManagerFactory.getComponentManager().getLog().error("Error sending status of all agents", e);
                 }
             }
         });
@@ -327,8 +308,7 @@ public class AgentSession {
         }
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return "AI-" + Integer.toHexString(hashCode()) +
             " JID " + address.toString() +
             " CC " + Integer.toString(chatInfos.size()) +
@@ -364,14 +344,14 @@ public class AgentSession {
                     offerPacket, false, true);
             }
             catch (PacketRejectedException e) {
-                Log.warn("Offer was not sent " +
+                ComponentManagerFactory.getComponentManager().getLog().warn("Offer was not sent " +
                     "due to interceptor REJECTION: " + offerPacket.toXML(), e);
             }
             return true;
 
         }
         catch (Exception e) {
-            Log.error(LocaleUtils.getLocalizedString("admin.error"), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(LocaleUtils.getLocalizedString("admin.error"), e);
             return false;
         }
     }
@@ -386,7 +366,7 @@ public class AgentSession {
             removeOffer(offer);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 
@@ -444,8 +424,7 @@ public class AgentSession {
         return jids;
     }
 
-    @Override
-	public boolean equals(Object o) {
+    public boolean equals(Object o) {
         boolean match = false;
         if (o instanceof AgentSession) {
             match = ((AgentSession)o).getJID().equals(address);
@@ -575,7 +554,7 @@ public class AgentSession {
             this.offer = null;
         }
         else {
-            Log.debug("Offer not removed. " +
+            ComponentManagerFactory.getComponentManager().getLog().debug("Offer not removed. " +
                 "To remove: " +
                 offer +
                 " existing " +
@@ -599,7 +578,7 @@ public class AgentSession {
      *
      * @author Gaston Dombiak
      */
-    public static class ChatInfo implements Comparable<ChatInfo> {
+    public static class ChatInfo implements Comparable {
 
         private String sessionID;
         private String userID;
@@ -619,18 +598,18 @@ public class AgentSession {
             this.workgroup = request.getWorkgroup();
             this.date = date;
 
-            Map<String, List<String>> metadata = request.getMetaData();
+            Map metadata = request.getMetaData();
 
             if (metadata.containsKey("email")) {
-                email = listToString(metadata.get("email"));
+                email = listToString((List)metadata.get("email"));
             }
 
             if (metadata.containsKey("username")) {
-                username = listToString(metadata.get("username"));
+                username = listToString((List)metadata.get("username"));
             }
 
             if (metadata.containsKey("question")) {
-                question = listToString(metadata.get("question"));
+                question = listToString((List)metadata.get("question"));
             }
         }
 
@@ -713,7 +692,8 @@ public class AgentSession {
             return workgroup.getTranscript(getSessionID());
         }
 
-        public int compareTo(ChatInfo otherInfo) {
+        public int compareTo(Object o) {
+            ChatInfo otherInfo = (ChatInfo)o;
             return date.compareTo(otherInfo.getDate());
         }
     }
@@ -724,10 +704,10 @@ public class AgentSession {
      * @param list the list of strings.
      * @return a comma delimited list of strings.
      */
-    private static String listToString(List<String> list) {
+    private static String listToString(List list) {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < list.size(); i++) {
-            String entry = list.get(i);
+            String entry = (String)list.get(i);
             builder.append(entry);
             if (i != (list.size() - 1)) {
                 builder.append(",");

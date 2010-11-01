@@ -1,25 +1,29 @@
 /**
-
  * $RCSfile$
  * $Revision: 19360 $
  * $Date: 2005-07-21 10:04:49 -0700 (Thu, 21 Jul 2005) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.search;
+
+import org.jivesoftware.xmpp.workgroup.AgentNotFoundException;
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
+import org.dom4j.Element;
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.xmpp.component.ComponentManagerFactory;
+import org.xmpp.forms.DataForm;
+import org.xmpp.forms.FormField;
+import org.xmpp.packet.IQ;
+import org.xmpp.packet.JID;
+import org.xmpp.packet.PacketError;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -32,20 +36,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.dom4j.Element;
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.xmpp.workgroup.AgentNotFoundException;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.forms.DataForm;
-import org.xmpp.forms.FormField;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.PacketError;
-
 /**
  * This class is responsible for handling all the packets sent to the workgroup service whose
  * element name is transcript-search. If no data form is present inside the child element then
@@ -56,8 +46,6 @@ import org.xmpp.packet.PacketError;
  */
 public class IQChatSearchHandler {
 
-	private static final Logger Log = LoggerFactory.getLogger(IQChatSearchHandler.class);
-	
     private static final String LOAD_META_DATA =
             "SELECT metadataName, metadataValue FROM fpSessionMetadata WHERE sessionID=?";
 
@@ -102,7 +90,7 @@ public class IQChatSearchHandler {
                             startDate = DataForm.parseDate(field.getValues().get(0));
                         }
                         catch (ParseException e) {
-                            Log.debug("Invalid startDate " +
+                            ComponentManagerFactory.getComponentManager().getLog().debug("Invalid startDate " +
                                 field.getValues().get(0), e);
                         }
                     }
@@ -111,7 +99,7 @@ public class IQChatSearchHandler {
                             endDate = DataForm.parseDate(field.getValues().get(0));
                         }
                         catch (ParseException e) {
-                            Log.debug("Invalid endDate " +
+                            ComponentManagerFactory.getComponentManager().getLog().debug("Invalid endDate " +
                                 field.getValues().get(0), e);
                         }
                     }
@@ -125,7 +113,7 @@ public class IQChatSearchHandler {
                                             new JID(value)));
                                 }
                                 catch (UserNotFoundException e) {
-                                    Log.debug("Invalid workgroup JID " +
+                                    ComponentManagerFactory.getComponentManager().getLog().debug("Invalid workgroup JID " +
                                         value, e);
                                 }
                             }
@@ -158,7 +146,7 @@ public class IQChatSearchHandler {
                         fields.put("relevance", result.getRelevance());
 
                         // Add Metadata
-                        Map<String, String> metadata = getMetadataMap(result.getSessionID());
+                        Map metadata = getMetadataMap(result.getSessionID());
                         if (metadata.containsKey("question")) {
                             fields.put("question", metadata.get("question"));
                         }
@@ -245,7 +233,7 @@ public class IQChatSearchHandler {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

@@ -5,38 +5,27 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.macros;
-
-import java.util.HashMap;
-import java.util.Map;
 
 import org.jivesoftware.xmpp.workgroup.DbProperties;
 import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
 import org.jivesoftware.xmpp.workgroup.WorkgroupManager;
 import org.jivesoftware.xmpp.workgroup.utils.ModelUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.thoughtworks.xstream.XStream;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.xmpp.component.ComponentManagerFactory;
 
 public class WorkgroupMacros {
 
-	private static final Logger Log = LoggerFactory.getLogger(WorkgroupMacros.class);
-	
     private Map<Workgroup, MacroGroup> rootGroups = new HashMap<Workgroup, MacroGroup>();
 
     private static WorkgroupMacros singleton;
@@ -148,7 +137,7 @@ public class WorkgroupMacros {
             props.setProperty("jive.macro" + id, saveString);
         }
         catch (UnauthorizedException e) {
-           Log.error(e.getMessage(), e);
+           ComponentManagerFactory.getComponentManager().getLog().error(e);
         }
     }
 

@@ -1,7 +1,7 @@
 <%--
   -	$RCSfile$
-  -	$Revision: 11513 $
-  -	$Date: 2010-01-10 13:44:34 -0800 (Sun, 10 Jan 2010) $
+  -	$Revision: 10886 $
+  -	$Date: 2008-11-13 22:33:31 -0800 (Thu, 13 Nov 2008) $
 --%>
 
 <%@ page import="org.jivesoftware.admin.AdminConsole,
@@ -240,7 +240,7 @@
                             </tr>
                         <%  } %>
                         <tr>
-                            <td><input type="text" name="username" size="15" maxlength="50" id="u01" value="<%= (username != null ? StringUtils.removeXSSCharacters(username) : "") %>"></td>
+                            <td><input type="text" name="username" size="15" maxlength="50" id="u01" value="<%= (username != null ? username : "") %>"></td>
                             <td><input type="password" name="password" size="15" maxlength="50" id="p01"></td>
                             <td align="center"><input type="submit" value="&nbsp; <fmt:message key="login.login" /> &nbsp;"></td>
                         </tr>

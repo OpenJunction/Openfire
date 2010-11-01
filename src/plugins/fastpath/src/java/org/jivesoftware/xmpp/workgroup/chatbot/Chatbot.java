@@ -5,25 +5,12 @@
  *
  * Copyright (C) 2004-2006 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.chatbot;
-
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jivesoftware.openfire.fastpath.dataforms.FormElement;
 import org.jivesoftware.openfire.fastpath.dataforms.FormManager;
@@ -32,7 +19,6 @@ import org.jivesoftware.openfire.fastpath.history.ChatTranscriptManager;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettings;
 import org.jivesoftware.openfire.fastpath.settings.chat.ChatSettingsManager;
 import org.jivesoftware.openfire.fastpath.settings.chat.KeyEnum;
-import org.jivesoftware.util.NotFoundException;
 import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
 import org.jivesoftware.xmpp.workgroup.UserCommunicationMethod;
 import org.jivesoftware.xmpp.workgroup.Workgroup;
@@ -42,10 +28,15 @@ import org.jivesoftware.xmpp.workgroup.interceptor.PacketRejectedException;
 import org.jivesoftware.xmpp.workgroup.interceptor.QueueInterceptorManager;
 import org.jivesoftware.xmpp.workgroup.request.Request;
 import org.jivesoftware.xmpp.workgroup.request.UserRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.NotFoundException;
+import org.xmpp.component.ComponentManagerFactory;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
+
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A Chatbot holds a sequence of steps where each step represents an interaction with a
@@ -112,8 +103,6 @@ import org.xmpp.packet.Message;
  */
 public class Chatbot implements UserCommunicationMethod {
 
-	private static final Logger Log = LoggerFactory.getLogger(Chatbot.class);
-	
     /**
      * Holds the workgroup where the chatbot is working. This is a one-to-one relation so this
      * chatbot is the only chatbot that will be answering Messages sent to the workgroup.
@@ -657,7 +646,7 @@ public class Chatbot implements UserCommunicationMethod {
                     true);
         }
         catch (PacketRejectedException e) {
-            Log.warn("Packet was not sent " +
+            ComponentManagerFactory.getComponentManager().getLog().warn("Packet was not sent " +
                     "due to interceptor REJECTION: " + packet.toXML(), e);
         }
     }
@@ -1024,7 +1013,7 @@ public class Chatbot implements UserCommunicationMethod {
         for (ChatbotSession session : sessions.values()) {
             // Do not clean up sessions whose users are having a chat with an agent.
             if (!session.isStartedSupport() && session.getLastActiveDate().getTime() < deadline)  {
-                Log.debug("Removing idle chat " +
+                ComponentManagerFactory.getComponentManager().getLog().debug("Removing idle chat " +
                         "session for: " +
                         session.getUserJID());
                 removeSession(session.getUserJID());
@@ -1043,7 +1032,7 @@ public class Chatbot implements UserCommunicationMethod {
                     String.valueOf(timeout));
         }
         catch (UnauthorizedException e) {
-            Log.error("Error setting timeout",
+            ComponentManagerFactory.getComponentManager().getLog().error("Error setting timeout",
                     e);
         }
     }

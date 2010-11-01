@@ -5,24 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
-
-import java.security.cert.Certificate;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.jivesoftware.openfire.Connection;
 import org.jivesoftware.openfire.ConnectionCloseListener;
@@ -30,8 +18,11 @@ import org.jivesoftware.openfire.PacketDeliverer;
 import org.jivesoftware.openfire.session.LocalSession;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.util.LocaleUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
+
+import java.security.cert.Certificate;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Abstract implementation of the Connection interface that models abstract connections. Abstract
@@ -44,8 +35,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 public abstract class VirtualConnection implements Connection {
-
-	private static final Logger Log = LoggerFactory.getLogger(VirtualConnection.class);
 
     protected LocalSession session;
 

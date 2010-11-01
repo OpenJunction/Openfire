@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.sip.tester.stack;
@@ -77,7 +69,7 @@ public class SipManager implements SipListener {
     protected int registrarPort = -1;
     protected int registrationsExpiration = -1;
     protected String registrarTransport = null;
-    //private int registerRetries = 0;
+    private int registerRetries = 0;
     protected String stackAddress = null;
     protected String stackName = "JiveSIP";
     protected FromHeader fromHeader = null;
@@ -102,7 +94,7 @@ public class SipManager implements SipListener {
         this.localAddress = localAddress;
         registerProcessing = new RegisterProcessing(this);
         sipSecurityManager = new SipSecurityManager();
-        //registerRetries = 0;
+        registerRetries = 0;
     }
 
     /**
@@ -140,8 +132,8 @@ public class SipManager implements SipListener {
             Log.error("start", ex);
 
             throw new CommunicationsException(
-                    "Cannot connect!\n"
-                            + "Cannot reach proxy.\nCheck your connection."
+                    "Imposs�vel conectar!\n"
+                            + "O proxy pode n�o est� acess�vel.\nVerifique sua conex�o."
                             + "(Syntax:<proxy_address:port/transport>)", ex);
         }
 
@@ -258,8 +250,8 @@ public class SipManager implements SipListener {
 
         if (sipStack != null) {
 
-            for (Iterator<SipProvider> it = sipStack.getSipProviders(); it.hasNext();) {
-                SipProvider element = it.next();
+            for (Iterator it = sipStack.getSipProviders(); it.hasNext();) {
+                SipProvider element = (SipProvider) it.next();
                 try {
                     sipStack.deleteSipProvider(element);
                 }
@@ -580,7 +572,7 @@ public class SipManager implements SipListener {
      * @throws CommunicationsException if a ParseException is to occur while initializing the array
      *                                 list.
      */
-    public ArrayList<ViaHeader> getLocalViaHeaders() throws CommunicationsException {
+    public ArrayList getLocalViaHeaders() throws CommunicationsException {
         if (viaHeaders != null) {
             return viaHeaders;
         }
@@ -739,7 +731,7 @@ public class SipManager implements SipListener {
 
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 

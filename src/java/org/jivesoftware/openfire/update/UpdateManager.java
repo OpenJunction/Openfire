@@ -5,36 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.update;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.StringReader;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.httpclient.HostConfiguration;
 import org.apache.commons.httpclient.HttpClient;
@@ -51,14 +27,12 @@ import org.jivesoftware.openfire.MessageRouter;
 import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.container.BasicModule;
 import org.jivesoftware.openfire.container.Plugin;
-import org.jivesoftware.util.JiveConstants;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.XMLWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.*;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Message;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * Service that frequently checks for new server or plugins releases. By default the service
@@ -71,8 +45,6 @@ import org.xmpp.packet.Message;
  * @author Gaston Dombiak
  */
 public class UpdateManager extends BasicModule {
-
-	private static final Logger Log = LoggerFactory.getLogger(UpdateManager.class);
 
     protected static DocumentFactory docFactory = DocumentFactory.getInstance();
 
@@ -112,8 +84,7 @@ public class UpdateManager extends BasicModule {
         super("Update manager");
     }
 
-    @Override
-	public void start() throws IllegalStateException {
+    public void start() throws IllegalStateException {
         super.start();
         startService();
     }
@@ -124,8 +95,7 @@ public class UpdateManager extends BasicModule {
     private void startService() {
         // Thread that performs the periodic checks for updates
         thread = new Thread("Update Manager") {
-            @Override
-			public void run() {
+            public void run() {
                 try {
                     // Sleep for 5 seconds before starting to work. This is required because
                     // this module has a dependency on the PluginManager, which is loaded
@@ -162,7 +132,7 @@ public class UpdateManager extends BasicModule {
                     }
                 }
                 catch (InterruptedException e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
                 finally {
                     // Clean up reference to this thread
@@ -193,8 +163,7 @@ public class UpdateManager extends BasicModule {
         thread.start();
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         router = server.getMessageRouter();
         serverName = server.getServerInfo().getXMPPDomain();
@@ -667,7 +636,7 @@ public class UpdateManager extends BasicModule {
             xmlWriter.write(xmlResponse);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             if (writer != null) {
@@ -675,7 +644,7 @@ public class UpdateManager extends BasicModule {
                     writer.close();
                 }
                 catch (IOException e1) {
-                    Log.error(e1.getMessage(), e1);
+                    Log.error(e1);
                 }
             }
         }
@@ -723,7 +692,7 @@ public class UpdateManager extends BasicModule {
             xmlWriter.write(xml);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             if (writer != null) {
@@ -731,7 +700,7 @@ public class UpdateManager extends BasicModule {
                     writer.close();
                 }
                 catch (IOException e1) {
-                    Log.error(e1.getMessage(), e1);
+                    Log.error(e1);
                 }
             }
         }

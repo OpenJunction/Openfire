@@ -1,34 +1,13 @@
-/**
- * Copyright (C) 2004-2009 Jive Software. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.jivesoftware.openfire.mediaproxy;
+
+import org.jivesoftware.util.Log;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
-import java.util.Timer;
-import java.util.TimerTask;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.*;
 
 /**
  * A media proxy session enables two clients to exchange UDP traffic. Each client connects to
@@ -38,8 +17,6 @@ import org.slf4j.LoggerFactory;
  * @author Thiago Camargo
  */
 public abstract class MediaProxySession extends Thread implements ProxyCandidate, DatagramListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(MediaProxySession.class);
 
     private List<SessionListener> sessionListeners = new ArrayList<SessionListener>();
 
@@ -118,7 +95,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -146,7 +123,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
                     return freePort;
             }
             catch (IOException e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         try {
@@ -155,7 +132,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
             ss.close();
         }
         catch (IOException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         } finally {
             ss = null;
         }
@@ -201,8 +178,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
     /**
      * Thread override method
      */
-    @Override
-	public void run() {
+    public void run() {
         // Create channels for parties
         createChannels();
 
@@ -249,7 +225,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
                 idleTimer = null;
             }
         } catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         try {
@@ -259,7 +235,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
                 lifeTimer = null;
             }
         } catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         channelAtoB.removeListeners();
@@ -273,7 +249,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
             channelBtoA.cancel();
             channelBtoAControl.cancel();
         } catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
 
         socketA.close();
@@ -400,7 +376,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
             channelAtoBControl.setPort(port + 1);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -413,7 +389,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
             channelBtoAControl.setPort(port + 1);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -440,8 +416,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
         idleTimer.scheduleAtFixedRate(new TimerTask() {
             long lastTimeStamp = getTimestamp();
 
-            @Override
-			public void run() {
+            public void run() {
                 if (lastTimeStamp == getTimestamp()) {
                     stopAgent();
                     return;
@@ -463,8 +438,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
         if (lifeTimer != null) return;
         lifeTimer = new Timer();
         lifeTimer.scheduleAtFixedRate(new TimerTask() {
-            @Override
-			public void run() {
+            public void run() {
                 stopAgent();
             }
         }, lifetime, lifetime);
@@ -503,7 +477,7 @@ public abstract class MediaProxySession extends Thread implements ProxyCandidate
             try {
                 sessionListener.sessionClosed(this);
             } catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }

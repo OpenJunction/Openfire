@@ -1,21 +1,13 @@
 /**
  * $RCSfile$
- * $Revision: 11608 $
- * $Date: 2010-02-07 13:03:12 -0800 (Sun, 07 Feb 2010) $
+ * $Revision: 10241 $
+ * $Date: 2008-04-21 00:53:41 -0700 (Mon, 21 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.admin;
@@ -125,7 +117,6 @@ public class TabsTag extends BodyTagSupport {
     /**
      * Does nothing, returns {@link #EVAL_BODY_BUFFERED} always.
      */
-    @Override
     public int doStartTag() throws JspException {
         return EVAL_BODY_BUFFERED;
     }
@@ -138,7 +129,6 @@ public class TabsTag extends BodyTagSupport {
      * @return {@link #EVAL_PAGE} after rendering the tabs.
      * @throws JspException if an exception occurs while rendering the tabs.
      */
-    @Override
     public int doEndTag() throws JspException {
         HttpServletRequest request = (HttpServletRequest)pageContext.getRequest();
         // Get the page data bean from the request:

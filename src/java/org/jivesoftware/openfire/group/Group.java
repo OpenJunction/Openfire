@@ -5,20 +5,21 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.group;
+
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.event.GroupEventDispatcher;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.cache.CacheSizes;
+import org.jivesoftware.util.cache.Cacheable;
+import org.jivesoftware.util.cache.ExternalizableUtil;
+import org.xmpp.packet.JID;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -28,26 +29,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.AbstractCollection;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.event.GroupEventDispatcher;
-import org.jivesoftware.util.cache.CacheSizes;
-import org.jivesoftware.util.cache.Cacheable;
-import org.jivesoftware.util.cache.ExternalizableUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
 
 /**
  * Groups organize users into a single entity for easier management.<p>
@@ -61,8 +44,6 @@ import org.xmpp.packet.JID;
  * @author Matt Tucker
  */
 public class Group implements Cacheable, Externalizable {
-
-	private static final Logger Log = LoggerFactory.getLogger(Group.class);
 
     private static final String LOAD_PROPERTIES =
         "SELECT name, propValue FROM ofGroupProp WHERE groupName=?";
@@ -104,7 +85,7 @@ public class Group implements Cacheable, Externalizable {
             }
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -231,7 +212,7 @@ public class Group implements Cacheable, Externalizable {
                     params);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -271,12 +252,11 @@ public class Group implements Cacheable, Externalizable {
                     GroupEventDispatcher.EventType.group_modified, params);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         return name;
     }
 
@@ -366,13 +346,11 @@ public class Group implements Cacheable, Externalizable {
         return size;
     }
 
-    @Override
-	public int hashCode() {
+    public int hashCode() {
         return name.hashCode();
     }
 
-    @Override
-	public boolean equals(Object object) {
+    public boolean equals(Object object) {
         if (this == object) {
             return true;
         }
@@ -397,8 +375,7 @@ public class Group implements Cacheable, Externalizable {
             this.adminCollection = adminCollection;
         }
 
-        @Override
-		public Iterator<JID> iterator() {
+        public Iterator<JID> iterator() {
             return new Iterator<JID>() {
 
                 Iterator<JID> iter = users.iterator();
@@ -443,13 +420,11 @@ public class Group implements Cacheable, Externalizable {
             };
         }
 
-        @Override
-		public int size() {
+        public int size() {
             return users.size();
         }
 
-        @Override
-		public boolean add(Object member) {
+        public boolean add(Object member) {
             // Do nothing if the provider is read-only.
             if (provider.isReadOnly()) {
                 return false;
@@ -519,8 +494,7 @@ public class Group implements Cacheable, Externalizable {
      */
     private class PropertiesMap extends AbstractMap {
 
-        @Override
-		public Object put(Object key, Object value) {
+        public Object put(Object key, Object value) {
             if (key == null || value == null) {
                 throw new NullPointerException();
             }
@@ -556,8 +530,7 @@ public class Group implements Cacheable, Externalizable {
             return answer;
         }
 
-        @Override
-		public Set<Entry> entrySet() {
+        public Set<Entry> entrySet() {
             return new PropertiesEntrySet();
         }
     }
@@ -567,13 +540,11 @@ public class Group implements Cacheable, Externalizable {
      */
     private class PropertiesEntrySet extends AbstractSet {
 
-        @Override
-		public int size() {
+        public int size() {
             return properties.entrySet().size();
         }
 
-        @Override
-		public Iterator iterator() {
+        public Iterator iterator() {
             return new Iterator() {
 
                 Iterator iter = properties.entrySet().iterator();
@@ -631,7 +602,7 @@ public class Group implements Cacheable, Externalizable {
             }
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -650,7 +621,7 @@ public class Group implements Cacheable, Externalizable {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -669,7 +640,7 @@ public class Group implements Cacheable, Externalizable {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -687,7 +658,7 @@ public class Group implements Cacheable, Externalizable {
             pstmt.executeUpdate();
         }
         catch (SQLException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -700,8 +671,8 @@ public class Group implements Cacheable, Externalizable {
         if (description != null) {
             ExternalizableUtil.getInstance().writeSafeUTF(out, description);
         }
-        ExternalizableUtil.getInstance().writeSerializableCollection(out, members);
-        ExternalizableUtil.getInstance().writeSerializableCollection(out, administrators);
+        ExternalizableUtil.getInstance().writeExternalizableCollection(out, members);
+        ExternalizableUtil.getInstance().writeExternalizableCollection(out, administrators);
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -714,7 +685,7 @@ public class Group implements Cacheable, Externalizable {
         }
         members= new HashSet<JID>();
         administrators = new HashSet<JID>();
-        ExternalizableUtil.getInstance().readSerializableCollection(in, members, getClass().getClassLoader());
-        ExternalizableUtil.getInstance().readSerializableCollection(in, administrators, getClass().getClassLoader());
+        ExternalizableUtil.getInstance().readExternalizableCollection(in, members, getClass().getClassLoader());
+        ExternalizableUtil.getInstance().readExternalizableCollection(in, administrators, getClass().getClassLoader());
     }
 }

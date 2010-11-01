@@ -1,43 +1,31 @@
 /**
  * $RCSfile$
- * $Revision: 11608 $
- * $Date: 2010-02-07 13:03:12 -0800 (Sun, 07 Feb 2010) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateExpiredException;
-import java.security.cert.CertificateNotYetValidException;
-import java.security.cert.X509Certificate;
-
-import javax.net.SocketFactory;
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.net.SocketFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.KeyManagementException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.security.cert.CertificateExpiredException;
+import java.security.cert.CertificateNotYetValidException;
+import java.net.Socket;
+import java.net.InetAddress;
+import java.io.IOException;
 
 /**
  * SSLSocketFactory that accepts any certificate chain and also accepts expired
@@ -46,8 +34,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class SimpleSSLSocketFactory extends SSLSocketFactory {
-
-	private static final Logger Log = LoggerFactory.getLogger(SimpleSSLSocketFactory.class);
 
     private SSLSocketFactory factory;
 
@@ -61,10 +47,10 @@ public class SimpleSSLSocketFactory extends SSLSocketFactory {
             factory = sslcontent.getSocketFactory();
         }
         catch (NoSuchAlgorithmException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         catch (KeyManagementException e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
     }
 
@@ -72,53 +58,45 @@ public class SimpleSSLSocketFactory extends SSLSocketFactory {
         return new SimpleSSLSocketFactory();
     }
 
-    @Override
-	public Socket createSocket() throws IOException {
+    public Socket createSocket() throws IOException {
         return factory.createSocket();
     }
 
-    @Override
-	public Socket createSocket(Socket socket, String s, int i, boolean flag)
+    public Socket createSocket(Socket socket, String s, int i, boolean flag)
             throws IOException
     {
         return factory.createSocket(socket, s, i, flag);
     }
 
-    @Override
-	public Socket createSocket(InetAddress inaddr, int i, InetAddress inaddr2, int j)
+    public Socket createSocket(InetAddress inaddr, int i, InetAddress inaddr2, int j)
             throws IOException
     {
         return factory.createSocket(inaddr, i, inaddr2, j);
     }
 
-    @Override
-	public Socket createSocket(InetAddress inaddr, int i)
+    public Socket createSocket(InetAddress inaddr, int i)
             throws IOException
     {
         return factory.createSocket(inaddr, i);
     }
 
-    @Override
-	public Socket createSocket(String s, int i, InetAddress inaddr, int j)
+    public Socket createSocket(String s, int i, InetAddress inaddr, int j)
             throws IOException
     {
         return factory.createSocket(s, i, inaddr, j);
     }
 
-    @Override
-	public Socket createSocket(String s, int i)
+    public Socket createSocket(String s, int i)
             throws IOException
     {
         return factory.createSocket(s, i);
     }
 
-    @Override
-	public String[] getDefaultCipherSuites() {
+    public String[] getDefaultCipherSuites() {
         return factory.getSupportedCipherSuites();
     }
 
-    @Override
-	public String[] getSupportedCipherSuites() {
+    public String[] getSupportedCipherSuites() {
         return factory.getSupportedCipherSuites();
     }
 

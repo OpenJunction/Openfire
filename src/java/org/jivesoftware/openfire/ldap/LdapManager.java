@@ -5,33 +5,17 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.ldap;
 
-import java.net.URLEncoder;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Hashtable;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.openfire.group.GroupNotFoundException;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -40,21 +24,12 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
-import javax.naming.ldap.Control;
-import javax.naming.ldap.LdapContext;
-import javax.naming.ldap.PagedResultsControl;
-import javax.naming.ldap.PagedResultsResponseControl;
-import javax.naming.ldap.SortControl;
-import javax.naming.ldap.StartTlsRequest;
-import javax.naming.ldap.StartTlsResponse;
-import javax.net.ssl.SSLSession;
-
-import org.jivesoftware.openfire.group.GroupNotFoundException;
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.JiveInitialLdapContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.naming.ldap.*;
+import java.net.URLEncoder;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.text.MessageFormat;
 
 /**
  * Centralized administration of LDAP connections. The {@link #getInstance()} method
@@ -82,7 +57,6 @@ import org.slf4j.LoggerFactory;
  *      <li>ldap.groupSearchFilter</li>
  *      <li>ldap.debugEnabled</li>
  *      <li>ldap.sslEnabled</li>
- *      <li>ldap.startTlsEnabled</li>
  *      <li>ldap.autoFollowReferrals</li>
  *      <li>ldap.autoFollowAliasReferrals</li>
  *      <li>ldap.initialContextFactory --  if this value is not specified,
@@ -94,8 +68,6 @@ import org.slf4j.LoggerFactory;
  * @author Matt Tucker
  */
 public class LdapManager {
-
-	private static final Logger Log = LoggerFactory.getLogger(LdapManager.class);
 
     private static LdapManager instance;
     static {
@@ -181,7 +153,6 @@ public class LdapManager {
     private boolean subTreeSearch;
     private boolean encloseUserDN;
     private boolean encloseGroupDN;
-    private boolean startTlsEnabled = false;
 
     private String groupNameField;
     private String groupMemberField;
@@ -233,7 +204,6 @@ public class LdapManager {
         JiveGlobals.migrateProperty("ldap.adminPassword");
         JiveGlobals.migrateProperty("ldap.debugEnabled");
         JiveGlobals.migrateProperty("ldap.sslEnabled");
-        JiveGlobals.migrateProperty("ldap.startTlsEnabled");
         JiveGlobals.migrateProperty("ldap.autoFollowReferrals");
         JiveGlobals.migrateProperty("ldap.autoFollowAliasReferrals");
         JiveGlobals.migrateProperty("ldap.encloseUserDN");
@@ -260,7 +230,7 @@ public class LdapManager {
                 this.port = Integer.parseInt(portStr);
             }
             catch (NumberFormatException nfe) {
-                Log.error(nfe.getMessage(), nfe);
+                Log.error(nfe);
             }
         }
         String timeout = properties.get("ldap.readTimeout");
@@ -269,7 +239,7 @@ public class LdapManager {
                 this.readTimeout = Integer.parseInt(timeout);
             }
             catch (NumberFormatException nfe) {
-                Log.error(nfe.getMessage(), nfe);
+                Log.error(nfe);
             }
         }
 
@@ -359,11 +329,6 @@ public class LdapManager {
         if (sslEnabledStr != null) {
             sslEnabled = Boolean.valueOf(sslEnabledStr);
         }
-        startTlsEnabled = false;
-        String startTlsEnabledStr = properties.get("ldap.startTlsEnabled");
-        if (startTlsEnabledStr != null) {
-            startTlsEnabled = Boolean.valueOf(startTlsEnabledStr);
-        }
         followReferrals = false;
         String followReferralsStr = properties.get("ldap.autoFollowReferrals");
         if (followReferralsStr != null) {
@@ -417,7 +382,6 @@ public class LdapManager {
         buf.append("\t subTreeSearch:").append(subTreeSearch).append("\n");
         buf.append("\t ldapDebugEnabled: ").append(ldapDebugEnabled).append("\n");
         buf.append("\t sslEnabled: ").append(sslEnabled).append("\n");
-        buf.append("\t startTlsEnabled: ").append(startTlsEnabled).append("\n");
         buf.append("\t initialContextFactory: ").append(initialContextFactory).append("\n");
         buf.append("\t connectionPoolEnabled: ").append(connectionPoolEnabled).append("\n");
         buf.append("\t autoFollowReferrals: ").append(followReferrals).append("\n");
@@ -471,33 +435,25 @@ public class LdapManager {
         boolean debug = Log.isDebugEnabled();
         if (debug) {
             Log.debug("LdapManager: Creating a DirContext in LdapManager.getContext()...");
-        	if (!sslEnabled && !startTlsEnabled)
-        		Log.debug("LdapManager: Warning: Using unencrypted connection to LDAP service!");
         }
 
-        // Set up the environment for creating the initial context
+         // Set up the environment for creating the initial context
         Hashtable<String, Object> env = new Hashtable<String, Object>();
         env.put(Context.INITIAL_CONTEXT_FACTORY, initialContextFactory);
         env.put(Context.PROVIDER_URL, getProviderURL(baseDN));
-
-        // SSL
         if (sslEnabled) {
             env.put("java.naming.ldap.factory.socket",
                     "org.jivesoftware.util.SimpleSSLSocketFactory");
             env.put(Context.SECURITY_PROTOCOL, "ssl");
         }
-        
+
         // Use simple authentication to connect as the admin.
         if (adminDN != null) {
-            /* If startTLS is requested we MUST NOT bind() before
-             * the secure connection has been established. */
-			if (!(startTlsEnabled && !sslEnabled)) {
-				env.put(Context.SECURITY_AUTHENTICATION, "simple");
-				env.put(Context.SECURITY_PRINCIPAL, adminDN);
-				if (adminPassword != null) {
-					env.put(Context.SECURITY_CREDENTIALS, adminPassword);
-				}
-			}
+            env.put(Context.SECURITY_AUTHENTICATION, "simple");
+            env.put(Context.SECURITY_PRINCIPAL, adminDN);
+            if (adminPassword != null) {
+                env.put(Context.SECURITY_CREDENTIALS, adminPassword);
+            }
         }
         // No login information so attempt to use anonymous login.
         else {
@@ -507,20 +463,9 @@ public class LdapManager {
         if (ldapDebugEnabled) {
             env.put("com.sun.jndi.ldap.trace.ber", System.err);
         }
-        if (connectionPoolEnabled) { 
-        	if (!startTlsEnabled)
-        		env.put("com.sun.jndi.ldap.connect.pool", "true");
-        	else { 
-        		if (debug) {
-        			// See http://java.sun.com/products/jndi/tutorial/ldap/connect/pool.html
-        			// "When Not to Use Pooling" 
-        			Log.debug("LdapManager: connection pooling was requested but has been disabled because of StartTLS.");
-        		}
-        		env.put("com.sun.jndi.ldap.connect.pool", "false");
-        	}
-        } else
-        	env.put("com.sun.jndi.ldap.connect.pool", "false");
-
+        if (connectionPoolEnabled) {
+            env.put("com.sun.jndi.ldap.connect.pool", "true");
+        }
         if (followReferrals) {
             env.put(Context.REFERRAL, "follow");
         }
@@ -532,60 +477,10 @@ public class LdapManager {
             Log.debug("LdapManager: Created hashtable with context values, attempting to create context...");
         }
         // Create new initial context
-        JiveInitialLdapContext context = new JiveInitialLdapContext(env, null);
-        
-        // TLS http://www.ietf.org/rfc/rfc2830.txt ("1.3.6.1.4.1.1466.20037")
-		if (startTlsEnabled && !sslEnabled) {
-			if (debug) {
-				Log.debug("LdapManager: ... StartTlsRequest");
-			}
-			if (followReferrals)
-				Log.warn("\tConnections to referrals are unencrypted! If you do not want this, please turn off ldap.autoFollowReferrals");
-
-			// Perform a StartTLS extended operation
-			StartTlsResponse tls = (StartTlsResponse) 
-				context.extendedOperation(new StartTlsRequest());
-			
-
-			/* Open a TLS connection (over the existing LDAP association) and
-			   get details of the negotiated TLS session: cipher suite, 
-			   peer certificate, etc. */
-			try {
-				SSLSession session = tls.negotiate(new org.jivesoftware.util.SimpleSSLSocketFactory());
-				
-				context.setTlsResponse(tls);
-				context.setSslSession(session);
-				
-				if (debug) {
-					Log.debug("LdapManager: ... peer host: " 
-							+ session.getPeerHost() 
-							+ ", CipherSuite: " + session.getCipherSuite());
-				}
-				
-				/* Set login credentials only if SSL session has been
-				 * negotiated successfully - otherwise user/password
-				 * could be transmitted in clear text. */
-				if (adminDN != null) {
-					context.addToEnvironment(
-							Context.SECURITY_AUTHENTICATION,
-							"simple");
-					context.addToEnvironment(
-							Context.SECURITY_PRINCIPAL,
-							adminDN);
-					if (adminPassword != null)
-						context.addToEnvironment(
-								Context.SECURITY_CREDENTIALS,
-								adminPassword);
-				}
-			} catch (java.io.IOException ex) {
-				Log.error(ex.getMessage(), ex);
-			}
-		}
-        
+        LdapContext context = new InitialLdapContext(env, null);
         if (debug) {
             Log.debug("LdapManager: ... context created successfully, returning.");
         }
-
         return context;
     }
 
@@ -601,12 +496,9 @@ public class LdapManager {
         boolean debug = Log.isDebugEnabled();
         if (debug) {
             Log.debug("LdapManager: In LdapManager.checkAuthentication(userDN, password), userDN is: " + userDN + "...");
-
-           	if (!sslEnabled && !startTlsEnabled)
-           		Log.debug("LdapManager: Warning: Using unencrypted connection to LDAP service!");
         }
 
-        JiveInitialLdapContext ctx = null;
+        DirContext ctx = null;
         try {
             // See if the user authenticates.
             Hashtable<String, Object> env = new Hashtable<String, Object>();
@@ -617,20 +509,11 @@ public class LdapManager {
                         "org.jivesoftware.util.SimpleSSLSocketFactory");
                 env.put(Context.SECURITY_PROTOCOL, "ssl");
             }
-
-            /* If startTLS is requested we MUST NOT bind() before
-             * the secure connection has been established. */
-            if (!(startTlsEnabled && !sslEnabled)) {
-				env.put(Context.SECURITY_AUTHENTICATION, "simple");
-				env.put(Context.SECURITY_PRINCIPAL, userDN + "," + baseDN);
-				env.put(Context.SECURITY_CREDENTIALS, password);
-			} else {
-				if (followReferrals)
-					Log.warn("\tConnections to referrals are unencrypted! If you do not want this, please turn off ldap.autoFollowReferrals");
-			}
-
-			// Specify timeout to be 10 seconds, only on non SSL since SSL connections
-            // break with a timeout.
+            env.put(Context.SECURITY_AUTHENTICATION, "simple");
+            env.put(Context.SECURITY_PRINCIPAL, userDN + "," + baseDN);
+            env.put(Context.SECURITY_CREDENTIALS, password);
+            // Specify timeout to be 10 seconds, only on non SSL since SSL connections
+            // break with a timemout.
             if (!sslEnabled) {
                 env.put("com.sun.jndi.ldap.connect.timeout", "10000");
             }
@@ -650,49 +533,7 @@ public class LdapManager {
             if (debug) {
                 Log.debug("LdapManager: Created context values, attempting to create context...");
             }
-            ctx = new JiveInitialLdapContext(env, null);
-            
-            if (startTlsEnabled && !sslEnabled) {
-            	
-    			if (debug) {
-    				Log.debug("LdapManager: ... StartTlsRequest");
-    			}
-
-    			// Perform a StartTLS extended operation
-    			StartTlsResponse tls = (StartTlsResponse) 
-    				ctx.extendedOperation(new StartTlsRequest());
-
-    			/* Open a TLS connection (over the existing LDAP association) and
-    			   get details of the negotiated TLS session: cipher suite, 
-    			   peer certificate, etc. */
-    			try {
-    				SSLSession session = tls.negotiate(new org.jivesoftware.util.SimpleSSLSocketFactory());
-    				
-    				ctx.setTlsResponse(tls);
-    				ctx.setSslSession(session);
-    				
-    				if (debug) {
-    					Log.debug("LdapManager: ... peer host: " 
-    							+ session.getPeerHost() 
-    							+ ", CipherSuite: " + session.getCipherSuite());
-    				}
-
-    				ctx.addToEnvironment(Context.SECURITY_AUTHENTICATION, "simple");
-    				ctx.addToEnvironment(Context.SECURITY_PRINCIPAL, 
-    						userDN + "," + baseDN);
-    				ctx.addToEnvironment(Context.SECURITY_CREDENTIALS, password);
-    			
-    			} catch (java.io.IOException ex) {
-    				Log.error(ex.getMessage(), ex);
-    			}
-
-				// make at least one lookup to check authorization
-				lookupExistence(
-						ctx, 
-						userDN + "," + baseDN,
-						new String[] {usernameField});
-            }
-            
+            ctx = new InitialDirContext(env);
             if (debug) {
                 Log.debug("LdapManager: ... context created successfully, returning.");
             }
@@ -706,7 +547,7 @@ public class LdapManager {
                     }
                 }
                 catch (Exception e) {
-                    Log.error(e.getMessage(), e);
+                    Log.error(e);
                 }
                 try {
                     // See if the user authenticates.
@@ -718,14 +559,9 @@ public class LdapManager {
                         env.put("java.naming.ldap.factory.socket", "org.jivesoftware.util.SimpleSSLSocketFactory");
                         env.put(Context.SECURITY_PROTOCOL, "ssl");
                     }
-                    
-                    /* If startTLS is requested we MUST NOT bind() before
-                     * the secure connection has been established. */
-                    if (!(startTlsEnabled && !sslEnabled)) {
-                    	env.put(Context.SECURITY_AUTHENTICATION, "simple");
-                    	env.put(Context.SECURITY_PRINCIPAL, userDN + "," + alternateBaseDN);
-                    	env.put(Context.SECURITY_CREDENTIALS, password);
-                    }
+                    env.put(Context.SECURITY_AUTHENTICATION, "simple");
+                    env.put(Context.SECURITY_PRINCIPAL, userDN + "," + alternateBaseDN);
+                    env.put(Context.SECURITY_CREDENTIALS, password);
                     // Specify timeout to be 10 seconds, only on non SSL since SSL connections
                     // break with a timemout.
                     if (!sslEnabled) {
@@ -743,48 +579,7 @@ public class LdapManager {
                     if (debug) {
                         Log.debug("LdapManager: Created context values, attempting to create context...");
                     }
-                    ctx = new JiveInitialLdapContext(env, null);
-                    
-                    if (startTlsEnabled && !sslEnabled) {
-                    	
-            			if (debug) {
-            				Log.debug("LdapManager: ... StartTlsRequest");
-            			}
-
-            			// Perform a StartTLS extended operation
-            			StartTlsResponse tls = (StartTlsResponse) 
-            				ctx.extendedOperation(new StartTlsRequest());
-
-            			/* Open a TLS connection (over the existing LDAP association) and
-            			   get details of the negotiated TLS session: cipher suite, 
-            			   peer certificate, etc. */
-            			try {
-            				SSLSession session = tls.negotiate(new org.jivesoftware.util.SimpleSSLSocketFactory());
-            				
-            				ctx.setTlsResponse(tls);
-            				ctx.setSslSession(session);
-            				
-            				if (debug) {
-            					Log.debug("LdapManager: ... peer host: " 
-            							+ session.getPeerHost() 
-            							+ ", CipherSuite: " + session.getCipherSuite());
-            				}
-
-            				ctx.addToEnvironment(Context.SECURITY_AUTHENTICATION, "simple");
-            				ctx.addToEnvironment(Context.SECURITY_PRINCIPAL, 
-            						userDN + "," + alternateBaseDN);
-            				ctx.addToEnvironment(Context.SECURITY_CREDENTIALS, password);
-            			
-            			} catch (java.io.IOException ex) {
-            				Log.error(ex.getMessage(), ex);
-            			}
-        				
-        				// make at least one lookup to check user authorization
-        				lookupExistence(
-        						ctx, 
-        						userDN + "," + alternateBaseDN,
-        						new String[] {usernameField});
-                    }
+                    ctx = new InitialDirContext(env);
                 }
                 catch (NamingException e) {
                     if (debug) {
@@ -807,61 +602,12 @@ public class LdapManager {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
         return true;
     }
 
-    /** 
-     * Looks up an LDAP object by its DN and returns <tt>true</tt> if
-     * the search was successful.
-     * 
-     * @param ctx the Context to use for the lookup.
-     * @param dn the object's dn to lookup.
-     * @return true if the lookup was successful.
-     * @throws NamingException if login credentials were wrong.
-     */
-    private Boolean lookupExistence(InitialDirContext ctx, String dn, String[] returnattrs) throws NamingException {
-    	boolean debug = Log.isDebugEnabled();
-    	
-        if (debug) {
-            Log.debug("LdapManager: In lookupExistence(ctx, dn, returnattrs), searchdn is: " + dn); 
-        }
-        
-        // Bind to the object's DN
-        ctx.addToEnvironment(Context.PROVIDER_URL, getProviderURL(dn));
-
-    	String filter = "(&(objectClass=*))";
-		SearchControls srcnt = new SearchControls();
-		srcnt.setSearchScope(SearchControls.OBJECT_SCOPE);
-		srcnt.setReturningAttributes(returnattrs);
-		
-		NamingEnumeration<SearchResult> answer = null;
-		
-		try {
-			answer = ctx.search(
-					"",
-					filter,
-					srcnt);
-		} catch (javax.naming.NameNotFoundException nex) {
-			// DN not found
-		} catch (NamingException ex){
-			throw ex;
-		}
-    	
-		if (answer == null || !answer.hasMoreElements())
-		{
-            Log.debug("LdapManager: .... lookupExistence: DN not found.");
-			return false;
-		}
-		else
-		{
-			Log.debug("LdapManager: .... lookupExistence: DN found.");
-			return true;
-		}
-    }
-    
     /**
      * Finds a user's dn using their username. Normally, this search will
      * be performed using the field "uid", but this can be changed by setting
@@ -951,7 +697,7 @@ public class LdapManager {
             }
             constraints.setReturningAttributes(new String[] { usernameField });
 
-            NamingEnumeration<SearchResult> answer = ctx.search("", getSearchFilter(), new String[] {username},
+            NamingEnumeration answer = ctx.search("", getSearchFilter(), new String[] {username},
                     constraints);
 
             if (debug) {
@@ -964,7 +710,7 @@ public class LdapManager {
                 }
                 throw new UserNotFoundException("Username " + username + " not found");
             }
-            String userDN = answer.next().getName();
+            String userDN = ((SearchResult)answer.next()).getName();
             // Make sure there are no more search results. If there are, then
             // the username isn't unique on the LDAP server (a perfectly possible
             // scenario since only fully qualified dn's need to be unqiue).
@@ -1096,7 +842,7 @@ public class LdapManager {
             constraints.setReturningAttributes(new String[] { groupNameField });
 
             String filter = MessageFormat.format(getGroupSearchFilter(), groupname);
-            NamingEnumeration<SearchResult> answer = ctx.search("", filter, constraints);
+            NamingEnumeration answer = ctx.search("", filter, constraints);
 
             if (debug) {
                 Log.debug("LdapManager: ... search finished");
@@ -1108,7 +854,7 @@ public class LdapManager {
                 }
                 throw new GroupNotFoundException("Groupname " + groupname + " not found");
             }
-            String groupDN = answer.next().getName();
+            String groupDN = ((SearchResult)answer.next()).getName();
             // Make sure there are no more search results. If there are, then
             // the groupname isn't unique on the LDAP server (a perfectly possible
             // scenario since only fully qualified dn's need to be unqiue).
@@ -1277,26 +1023,6 @@ public class LdapManager {
         properties.put("ldap.sslEnabled", Boolean.toString(sslEnabled));
     }
 
-    /**
-     * Returns true if LDAP connection is via START or not. TLS is turned off by default.
-     *
-     * @return true if StartTLS connections are enabled or not.
-     */
-    public boolean isStartTlsEnabled() {
-        return startTlsEnabled;
-    }
-
-    /**
-     * Sets whether the connection to the LDAP server should be made via StartTLS or not.
-     *
-     * @param startTlsEnabled true if StartTLS should be used, false otherwise.
-     */
-    public void setStartTlsEnabled(boolean startTlsEnabled) {
-        this.startTlsEnabled = startTlsEnabled;
-        properties.put("ldap.startTlsEnabled", Boolean.toString(startTlsEnabled));
-    }
-
-    
     /**
      * Returns the LDAP field name that the username lookup will be performed
      * on. By default this is "uid".
@@ -1478,7 +1204,7 @@ public class LdapManager {
                 }
             }
             catch (Exception ex) {
-                Log.debug(ex.getMessage(), ex);
+                Log.debug(ex);
             }
         }
         return null;
@@ -1504,7 +1230,7 @@ public class LdapManager {
                 }
             }
             catch (Exception ex) {
-                Log.debug(ex.getMessage(), ex);
+                Log.debug(ex);
             }
         }
         return null;
@@ -1782,22 +1508,6 @@ public class LdapManager {
         this.groupSearchFilter = groupSearchFilter;
         properties.put("ldap.groupSearchFilter", groupSearchFilter);
     }
-    
-    public boolean isEnclosingDNs() {
-        String encloseStr = properties.get("ldap.encloseDNs");
-        if (encloseStr != null) {
-            encloseDNs = Boolean.valueOf(encloseStr);
-        } else {
-        	encloseDNs = true;
-        }
-        
-        return encloseDNs;
-    }
-    
-    public void setIsEnclosingDNs(boolean enable) {
-    	this.encloseDNs = enable;
-    	properties.put("ldap.encloseDNs", Boolean.toString(enable));
-    }
 
     /**
      * Generic routine for retrieving a list of results from the LDAP server.  It's meant to be very
@@ -1820,14 +1530,11 @@ public class LdapManager {
         List<String> results = new ArrayList<String>();
         int pageSize = -1;
         String pageSizeStr = properties.get("ldap.pagedResultsSize");
-        if (pageSizeStr != null)
-        {
-            try {
-                 pageSize = Integer.parseInt(pageSizeStr); /* radix -1 is invalid */
-            }
-            catch (NumberFormatException e) {
-                // poorly formatted number, ignoring
-            }
+        try {
+            if (pageSizeStr != null) pageSize = Integer.parseInt(pageSizeStr, -1);
+        }
+        catch (NumberFormatException e) {
+            // poorly formatted number, ignoring
         }
         Boolean clientSideSort = false;
         String clientSideSortStr = properties.get("ldap.clientSideSorting");
@@ -1876,7 +1583,7 @@ public class LdapManager {
             // Run through all pages of results (one page is also possible  ;)  )
             do {
                 cookie = null;
-                NamingEnumeration<SearchResult> answer = ctx.search("", searchFilter, searchControls);
+                NamingEnumeration answer = ctx.search("", searchFilter, searchControls);
 
                 // Examine all of the results on this page
                 while (answer.hasMoreElements()) {
@@ -1891,7 +1598,7 @@ public class LdapManager {
                     }
 
                     // Get the next result.
-                    String result = (String)answer.next().getAttributes().get(attribute).get();
+                    String result = (String)((SearchResult)answer.next()).getAttributes().get(attribute).get();
                     // Remove suffixToTrim if set
                     if (suffixToTrim != null && suffixToTrim.length() > 0 && result.endsWith(suffixToTrim)) {
                         result = result.substring(0,result.length()-suffixToTrim.length());
@@ -1933,7 +1640,7 @@ public class LdapManager {
                 // Run through all pages of results (one page is also possible  ;)  )
                 do {
                     cookie = null;
-                    NamingEnumeration<SearchResult> answer = ctx2.search("", searchFilter, searchControls);
+                    NamingEnumeration answer = ctx2.search("", searchFilter, searchControls);
 
                     // Examine all of the results on this page
                     while (answer.hasMoreElements()) {
@@ -1948,7 +1655,7 @@ public class LdapManager {
                         }
 
                         // Get the next result.
-                        String result = (String)answer.next().getAttributes().get(attribute).get();
+                        String result = (String)((SearchResult)answer.next()).getAttributes().get(attribute).get();
                         // Remove suffixToTrim if set
                         if (suffixToTrim != null && suffixToTrim.length() > 0 && result.endsWith(suffixToTrim)) {
                             result = result.substring(0,result.length()-suffixToTrim.length());
@@ -1999,7 +1706,7 @@ public class LdapManager {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             try {
@@ -2035,13 +1742,11 @@ public class LdapManager {
     public Integer retrieveListCount(String attribute, String searchFilter) {
         int pageSize = -1;
         String pageSizeStr = properties.get("ldap.pagedResultsSize");
-        if (pageSizeStr != null) {
-            try {
-                pageSize = Integer.parseInt(pageSizeStr); /* radix -1 is invalid */
-           }
-           catch (NumberFormatException e) {
-               // poorly formatted number, ignoring
-           }
+        try {
+            if (pageSizeStr != null) pageSize = Integer.parseInt(pageSizeStr, -1);
+        }
+        catch (NumberFormatException e) {
+            // poorly formatted number, ignoring
         }
         LdapContext ctx = null;
         LdapContext ctx2 = null;
@@ -2071,7 +1776,7 @@ public class LdapManager {
             // Run through all pages of results (one page is also possible  ;)  )
             do {
                 cookie = null;
-                NamingEnumeration<SearchResult> answer = ctx.search("", searchFilter, searchControls);
+                NamingEnumeration answer = ctx.search("", searchFilter, searchControls);
 
                 // Examine all of the results on this page
                 while (answer.hasMoreElements()) {
@@ -2108,7 +1813,7 @@ public class LdapManager {
                 // Run through all pages of results (one page is also possible  ;)  )
                 do {
                     cookie = null;
-                    NamingEnumeration<SearchResult> answer = ctx2.search("", searchFilter, searchControls);
+                    NamingEnumeration answer = ctx2.search("", searchFilter, searchControls);
 
                     // Examine all of the results on this page
                     while (answer.hasMoreElements()) {
@@ -2139,7 +1844,7 @@ public class LdapManager {
             }
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
         }
         finally {
             try {

@@ -5,29 +5,20 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.fastpath.settings.offline;
 
+import org.jivesoftware.xmpp.workgroup.Workgroup;
+import org.jivesoftware.database.DbConnectionManager;
+import org.xmpp.component.ComponentManagerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.xmpp.workgroup.Workgroup;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Retrieves and persists offline settings for a workgroup.
@@ -36,8 +27,6 @@ import org.slf4j.LoggerFactory;
  */
 public class OfflineSettingsManager {
 
-	private static final Logger Log = LoggerFactory.getLogger(OfflineSettingsManager.class);
-	
     private static final String GET_OFFLINE_SETTTINGS =
             "SELECT redirectPage, emailAddress, subject, offlineText FROM " +
             "fpOfflineSetting WHERE workgroupID=?";
@@ -85,7 +74,7 @@ public class OfflineSettingsManager {
             pstmt.executeUpdate();
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
             return null;
         }
         finally {
@@ -123,7 +112,7 @@ public class OfflineSettingsManager {
             pstmt.executeUpdate();
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
             return null;
         }
         finally {
@@ -165,7 +154,7 @@ public class OfflineSettingsManager {
             }
         }
         catch (Exception ex) {
-            Log.error(ex.getMessage(), ex);
+            ComponentManagerFactory.getComponentManager().getLog().error(ex);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

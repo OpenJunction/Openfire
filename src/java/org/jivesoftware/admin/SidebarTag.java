@@ -1,21 +1,13 @@
 /**
  * $RCSfile$
- * $Revision: 11685 $
- * $Date: 2010-04-21 10:37:53 -0700 (Wed, 21 Apr 2010) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.admin;
@@ -132,7 +124,6 @@ public class SidebarTag extends BodyTagSupport {
     /**
      * Does nothing, returns {@link #EVAL_BODY_BUFFERED} always.
      */
-    @Override
     public int doStartTag() throws JspException {
         return EVAL_BODY_BUFFERED;
     }
@@ -146,7 +137,6 @@ public class SidebarTag extends BodyTagSupport {
      * @return {@link #EVAL_PAGE} after rendering the tabs.
      * @throws JspException if an exception occurs while rendering the sidebar items.
      */
-    @Override
     public int doEndTag() throws JspException {
         // Start by getting the request from the page context
         HttpServletRequest request = (HttpServletRequest)pageContext.getRequest();
@@ -162,7 +152,7 @@ public class SidebarTag extends BodyTagSupport {
         // Get the initial subpage and page IDs
         String subPageID = (String)request.getAttribute("subPageID");
         String pageID = (String)request.getAttribute("pageID");
-        //String subnavID = (String)request.getAttribute("subnavID");
+        String subnavID = (String)request.getAttribute("subnavID");
 
         // If the pageID is null, use the subPageID to set it. If both the pageID and
         // subPageIDs are null, return because these are key to execution of the tag.
@@ -200,7 +190,7 @@ public class SidebarTag extends BodyTagSupport {
                 // Loop through all items in the root, print them out
                 if (currentTab != null && subnav != null) {
                     Element sidebar = subnav.getParent().getParent();
-                    //String header = sidebar.attributeValue("name");
+                    String header = sidebar.attributeValue("name");
                     String pluginName = sidebar.attributeValue("plugin");
                     // Print the header:
                     String hcss = getHeadercss();

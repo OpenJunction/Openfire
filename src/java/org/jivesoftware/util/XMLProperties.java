@@ -1,56 +1,27 @@
 /**
  * $RCSfile$
- * $Revision: 11674 $
- * $Date: 2010-04-10 02:22:05 -0700 (Sat, 10 Apr 2010) $
+ * $Revision: 10204 $
+ * $Date: 2008-04-11 15:44:25 -0700 (Fri, 11 Apr 2008) $
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.util;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.StringTokenizer;
-
-import org.apache.commons.lang.StringEscapeUtils;
 import org.dom4j.CDATA;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.lang.StringEscapeUtils;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * Provides the the ability to use simple XML property files. Each property is
@@ -71,8 +42,6 @@ import org.slf4j.LoggerFactory;
  * @author Iain Shigeoka
  */
 public class XMLProperties {
-
-	private static final Logger Log = LoggerFactory.getLogger(XMLProperties.class);
 
     private File file;
     private Document document;
@@ -101,7 +70,7 @@ public class XMLProperties {
      * @throws IOException if an exception occurs when reading the stream.
      */
     public XMLProperties(InputStream in) throws IOException {
-        Reader reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+        Reader reader = new BufferedReader(new InputStreamReader(in));
         buildDoc(reader);
     }
 
@@ -529,7 +498,7 @@ public class XMLProperties {
             xmlWriter.write(document);
         }
         catch (Exception e) {
-            Log.error(e.getMessage(), e);
+            Log.error(e);
             // There were errors so abort replacing the old property file.
             error = true;
         }
@@ -539,7 +508,7 @@ public class XMLProperties {
                     writer.close();
                 }
                 catch (IOException e1) {
-                    Log.error(e1.getMessage(), e1);
+                    Log.error(e1);
                     error = true;
                 }
             }
@@ -557,7 +526,7 @@ public class XMLProperties {
                 copy(tempFile, file);
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
                 // There were errors so abort replacing the old property file.
                 error = true;
             }

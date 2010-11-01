@@ -5,31 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Timer;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -42,27 +23,19 @@ import org.jivesoftware.openfire.cluster.ClusterManager;
 import org.jivesoftware.openfire.commands.AdHocCommandManager;
 import org.jivesoftware.openfire.component.InternalComponentManager;
 import org.jivesoftware.openfire.container.BasicModule;
-import org.jivesoftware.openfire.disco.DiscoInfoProvider;
-import org.jivesoftware.openfire.disco.DiscoItem;
-import org.jivesoftware.openfire.disco.DiscoItemsProvider;
-import org.jivesoftware.openfire.disco.DiscoServerItem;
-import org.jivesoftware.openfire.disco.ServerItemsProvider;
+import org.jivesoftware.openfire.disco.*;
+import org.jivesoftware.openfire.forms.DataForm;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
+import org.jivesoftware.openfire.forms.spi.XFormFieldImpl;
 import org.jivesoftware.openfire.pubsub.models.AccessModel;
 import org.jivesoftware.openfire.pubsub.models.PublisherModel;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.PropertyEventDispatcher;
-import org.jivesoftware.util.PropertyEventListener;
-import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.forms.DataForm;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.jivesoftware.util.*;
+import org.xmpp.packet.*;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Module that implements JEP-60: Publish-Subscribe. By default node collections and
@@ -72,8 +45,6 @@ import org.xmpp.packet.Presence;
  */
 public class PubSubModule extends BasicModule implements ServerItemsProvider, DiscoInfoProvider,
         DiscoItemsProvider, RoutableChannelHandler, PubSubService, ClusterEventListener, PropertyEventListener {
-
-	private static final Logger Log = LoggerFactory.getLogger(PubSubModule.class);
 
     /**
      * the chat service's hostname
@@ -103,11 +74,11 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
     /**
      * Queue that holds the items that need to be added to the database.
      */
-    private Queue<PublishedItem> itemsToAdd = new LinkedBlockingQueue<PublishedItem>(10000);
+    private Queue<PublishedItem> itemsToAdd = new LinkedBlockingQueue<PublishedItem>();
     /**
      * Queue that holds the items that need to be deleted from the database.
      */
-    private Queue<PublishedItem> itemsToDelete = new LinkedBlockingQueue<PublishedItem>(10000);
+    private Queue<PublishedItem> itemsToDelete = new LinkedBlockingQueue<PublishedItem>();
     
     /**
      * Manager that keeps the list of ad-hoc commands and processing command requests.
@@ -379,8 +350,7 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
         JiveGlobals.setProperty("xmpp.pubsub.create.jid", fromArray(jids));
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
 
         // Listen to property events so that the template is always up to date
@@ -483,8 +453,7 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
         ClusterManager.addListener(this);
     }
 
-    @Override
-	public void start() {
+    public void start() {
         // Check that the service is enabled
         if (!isServiceEnabled()) {
             return;
@@ -500,8 +469,7 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
         Log.info(LocaleUtils.getLocalizedString("startup.starting.pubsub", params));
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
         // Remove the route to this service
         routingTable.removeComponentRoute(getAddress());
@@ -686,13 +654,26 @@ public class PubSubModule extends BasicModule implements ServerItemsProvider, Di
         return features.iterator();
     }
 
-    public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+    public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
         if (name == null && node != null) {
             // Answer the extended info of a given node
             Node pubNode = getNode(node);
             if (canDiscoverNode(pubNode)) {
                 // Get the metadata data form
-                return pubNode.getMetadataForm();
+                org.xmpp.forms.DataForm metadataForm = pubNode.getMetadataForm();
+
+                // Convert Whack data form into old data form format (will go away someday)
+                XDataFormImpl dataForm = new XDataFormImpl(DataForm.TYPE_RESULT);
+                for (org.xmpp.forms.FormField formField : metadataForm.getFields()) {
+                    XFormFieldImpl field = new XFormFieldImpl(formField.getVariable());
+                    field.setLabel(formField.getLabel());
+                    for (String value : formField.getValues()) {
+                        field.addValue(value);
+                    }
+                    dataForm.addField(field);
+                }
+
+                return dataForm;
             }
         }
         return null;

@@ -4,17 +4,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
@@ -55,28 +47,23 @@ public class ClientStanzaHandler extends StanzaHandler {
      * @param doc the unknown DOM element that was received
      * @return always false.
      */
-    @Override
-	boolean processUnknowPacket(Element doc) {
+    boolean processUnknowPacket(Element doc) {
         return false;
     }
 
-    @Override
-	String getNamespace() {
+    String getNamespace() {
         return "jabber:client";
     }
 
-    @Override
-	boolean validateHost() {
+    boolean validateHost() {
         return JiveGlobals.getBooleanProperty("xmpp.client.validate.host",false);
     }
 
-    @Override
-	boolean validateJIDs() {
+    boolean validateJIDs() {
         return true;
     }
 
-    @Override
-	boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
+    boolean createSession(String namespace, String serverName, XmlPullParser xpp, Connection connection)
             throws XmlPullParserException {
         if ("jabber:client".equals(namespace)) {
             // The connected client is a regular client so create a ClientSession
@@ -86,29 +73,25 @@ public class ClientStanzaHandler extends StanzaHandler {
         return false;
     }
 
-    @Override
-	protected void processIQ(IQ packet) throws UnauthorizedException {
+    protected void processIQ(IQ packet) throws UnauthorizedException {
         // Overwrite the FROM attribute to avoid spoofing
         packet.setFrom(session.getAddress());
         super.processIQ(packet);
     }
 
-    @Override
-	protected void processPresence(Presence packet) throws UnauthorizedException {
+    protected void processPresence(Presence packet) throws UnauthorizedException {
         // Overwrite the FROM attribute to avoid spoofing
         packet.setFrom(session.getAddress());
         super.processPresence(packet);
     }
 
-    @Override
-	protected void processMessage(Message packet) throws UnauthorizedException {
+    protected void processMessage(Message packet) throws UnauthorizedException {
         // Overwrite the FROM attribute to avoid spoofing
         packet.setFrom(session.getAddress());
         super.processMessage(packet);
     }
 
-    @Override
-	void startTLS() throws Exception {
+    void startTLS() throws Exception {
         Connection.ClientAuth policy;
         try {
             policy = Connection.ClientAuth.valueOf(JiveGlobals.getProperty("xmpp.client.cert.policy", "disabled"));

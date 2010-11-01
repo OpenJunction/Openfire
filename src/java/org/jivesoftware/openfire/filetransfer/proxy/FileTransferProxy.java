@@ -5,55 +5,33 @@
  *
  * Copyright (C) 1999-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.filetransfer.proxy;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
-import org.jivesoftware.openfire.IQHandlerInfo;
-import org.jivesoftware.openfire.PacketException;
-import org.jivesoftware.openfire.PacketRouter;
-import org.jivesoftware.openfire.RoutableChannelHandler;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.container.BasicModule;
-import org.jivesoftware.openfire.disco.DiscoInfoProvider;
-import org.jivesoftware.openfire.disco.DiscoItem;
-import org.jivesoftware.openfire.disco.DiscoItemsProvider;
-import org.jivesoftware.openfire.disco.DiscoServerItem;
-import org.jivesoftware.openfire.disco.ServerItemsProvider;
+import org.jivesoftware.openfire.disco.*;
 import org.jivesoftware.openfire.filetransfer.FileTransferManager;
+import org.jivesoftware.openfire.forms.spi.XDataFormImpl;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.PropertyEventDispatcher;
 import org.jivesoftware.util.PropertyEventListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.forms.DataForm;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.JID;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * Manages the transfering of files between two remote entities on the jabber network.
@@ -65,9 +43,6 @@ import org.xmpp.packet.PacketError;
 public class FileTransferProxy extends BasicModule
         implements ServerItemsProvider, DiscoInfoProvider, DiscoItemsProvider,
         RoutableChannelHandler {
-	
-	private static final Logger Log = LoggerFactory.getLogger(FileTransferProxy.class);
-
     /**
      * The JiveProperty relating to whether or not the file treansfer proxy is enabled.
      */
@@ -169,8 +144,7 @@ public class FileTransferProxy extends BasicModule
         return info;
     }
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
 
         proxyServiceName = JiveGlobals.getProperty("xmpp.proxy.service", "proxy");
@@ -207,8 +181,7 @@ public class FileTransferProxy extends BasicModule
         return server.getFileTransferManager();
     }
 
-    @Override
-	public void start() {
+    public void start() {
         super.start();
 
         if (isEnabled()) {
@@ -227,8 +200,7 @@ public class FileTransferProxy extends BasicModule
         server.getIQDiscoItemsHandler().addServerItemsProvider(this);
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         super.stop();
 
         XMPPServer.getInstance().getIQDiscoItemsHandler()
@@ -237,8 +209,7 @@ public class FileTransferProxy extends BasicModule
         connectionManager.disable();
     }
 
-    @Override
-	public void destroy() {
+    public void destroy() {
         super.destroy();
 
         connectionManager.shutdown();
@@ -337,7 +308,7 @@ public class FileTransferProxy extends BasicModule
                 "http://jabber.org/protocol/disco#info").iterator();
     }
 
-    public DataForm getExtendedInfo(String name, String node, JID senderJID) {
+    public XDataFormImpl getExtendedInfo(String name, String node, JID senderJID) {
         return null;
     }
 

@@ -5,23 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.net;
-
-import java.io.IOException;
-import java.net.Socket;
 
 import org.dom4j.Element;
 import org.dom4j.io.XMPPPacketReader;
@@ -32,19 +21,15 @@ import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.session.LocalSession;
 import org.jivesoftware.openfire.session.Session;
 import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 import org.xmlpull.v1.XmlPullParserFactory;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
-import org.xmpp.packet.Roster;
-import org.xmpp.packet.StreamError;
+import org.xmpp.packet.*;
+
+import java.io.IOException;
+import java.net.Socket;
 
 /**
  * A SocketReader creates the appropriate {@link Session} based on the defined namespace in the
@@ -53,8 +38,6 @@ import org.xmpp.packet.StreamError;
  * @author Gaston Dombiak
  */
 public abstract class SocketReader implements Runnable {
-
-	private static final Logger Log = LoggerFactory.getLogger(SocketReader.class);
 
     /**
      * The utf-8 charset for decoding and encoding Jabber packet streams.

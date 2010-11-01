@@ -5,28 +5,19 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.event;
 
+import org.jivesoftware.util.Log;
+import org.jivesoftware.openfire.user.User;
+
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.jivesoftware.openfire.user.User;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Dispatches user events. Each event has a {@link EventType type}
@@ -86,8 +77,6 @@ import org.slf4j.LoggerFactory;
  */
 public class UserEventDispatcher {
 
-	private static final Logger Log = LoggerFactory.getLogger(UserEventDispatcher.class);
-
     private static List<UserEventListener> listeners =
             new CopyOnWriteArrayList<UserEventListener>();
 
@@ -144,7 +133,7 @@ public class UserEventDispatcher {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }

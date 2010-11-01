@@ -5,42 +5,19 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.session;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.regex.Pattern;
-
-import javax.net.ssl.SSLHandshakeException;
-
+import com.jcraft.jzlib.JZlib;
+import com.jcraft.jzlib.ZInputStream;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.XMPPPacketReader;
-import org.jivesoftware.openfire.Connection;
-import org.jivesoftware.openfire.RoutingTable;
-import org.jivesoftware.openfire.SessionManager;
-import org.jivesoftware.openfire.StreamID;
-import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.*;
 import org.jivesoftware.openfire.auth.UnauthorizedException;
 import org.jivesoftware.openfire.net.DNSUtil;
 import org.jivesoftware.openfire.net.MXParser;
@@ -51,20 +28,22 @@ import org.jivesoftware.openfire.server.RemoteServerManager;
 import org.jivesoftware.openfire.server.ServerDialback;
 import org.jivesoftware.openfire.spi.BasicStreamIDFactory;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
-import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
-import org.xmpp.packet.Message;
-import org.xmpp.packet.Packet;
-import org.xmpp.packet.PacketError;
-import org.xmpp.packet.Presence;
+import org.xmpp.packet.*;
 
-import com.jcraft.jzlib.JZlib;
-import com.jcraft.jzlib.ZInputStream;
+import javax.net.ssl.SSLHandshakeException;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.regex.Pattern;
 
 /**
  * Server-to-server communication is done using two TCP connections between the servers. One
@@ -89,8 +68,6 @@ import com.jcraft.jzlib.ZInputStream;
  */
 public class LocalOutgoingServerSession extends LocalSession implements OutgoingServerSession {
 
-	private static final Logger Log = LoggerFactory.getLogger(LocalOutgoingServerSession.class);
-
     /**
      * Regular expression to ensure that the hostname contains letters.
      */
@@ -100,7 +77,7 @@ public class LocalOutgoingServerSession extends LocalSession implements Outgoing
     private final Collection<String> hostnames = new HashSet<String>();
     private OutgoingServerSocketReader socketReader;
     /**
-     * Flag that indicates if the session was created using server-dialback.
+     * Flag that indicates if the session was created usign server-dialback.
      */
     private boolean usingServerDialback = true;
 
@@ -114,7 +91,7 @@ public class LocalOutgoingServerSession extends LocalSession implements Outgoing
      *
      * The Server Dialback method is currently the only implemented method for server-to-server
      * authentication. This implies that the remote server will ask the Authoritative Server
-     * to verify the domain to authenticate. Most probably this (local) server will act as the
+     * to verify the domain to authenticate. Most probably this server will act as the
      * Authoritative Server. See {@link IncomingServerSession} for more information.
      *
      * @param domain the local domain to authenticate with the remote server.
@@ -265,27 +242,21 @@ public class LocalOutgoingServerSession extends LocalSession implements Outgoing
         String realHostname = null;
         int realPort = port;
         Socket socket = new Socket();
-        // Get a list of real hostnames to connect to using DNS lookup of the specified hostname
-        List<DNSUtil.HostAddress> hosts = DNSUtil.resolveXMPPDomain(hostname, port);
-        for (Iterator<DNSUtil.HostAddress> it = hosts.iterator(); it.hasNext();) {
-            try {
-                DNSUtil.HostAddress address = it.next();
-                realHostname = address.getHost();
-                realPort = address.getPort();
-                Log.debug("LocalOutgoingServerSession: OS - Trying to connect to " + hostname + ":" + port +
-                        "(DNS lookup: " + realHostname + ":" + realPort + ")");
-                // Establish a TCP connection to the Receiving Server
-                socket.connect(new InetSocketAddress(realHostname, realPort),
-                        RemoteServerManager.getSocketTimeout());
-                Log.debug("LocalOutgoingServerSession: OS - Plain connection to " + hostname + ":" + port + " successful");
-                break;
-            }
-            catch (Exception e) {
-                Log.warn("Error trying to connect to remote server: " + hostname +
-                        "(DNS lookup: " + realHostname + ":" + realPort + ")", e);
-            }
+        try {
+            // Get the real hostname to connect to using DNS lookup of the specified hostname
+            DNSUtil.HostAddress address = DNSUtil.resolveXMPPServerDomain(hostname, port);
+            realHostname = address.getHost();
+            realPort = address.getPort();
+            Log.debug("LocalOutgoingServerSession: OS - Trying to connect to " + hostname + ":" + port +
+                    "(DNS lookup: " + realHostname + ":" + realPort + ")");
+            // Establish a TCP connection to the Receiving Server
+            socket.connect(new InetSocketAddress(realHostname, realPort),
+                    RemoteServerManager.getSocketTimeout());
+            Log.debug("LocalOutgoingServerSession: OS - Plain connection to " + hostname + ":" + port + " successful");
         }
-        if (!socket.isConnected()) {
+        catch (Exception e) {
+            Log.error("Error trying to connect to remote server: " + hostname +
+                    "(DNS lookup: " + realHostname + ":" + realPort + ")", e);
             return null;
         }
 
@@ -591,8 +562,7 @@ public class LocalOutgoingServerSession extends LocalSession implements Outgoing
         socketReader.setSession(this);
     }
 
-    @Override
-	boolean canProcess(Packet packet) {
+    boolean canProcess(Packet packet) {
         String senderDomain = packet.getFrom().getDomain();
         if (!getAuthenticatedDomains().contains(senderDomain)) {
             synchronized (senderDomain.intern()) {
@@ -607,8 +577,7 @@ public class LocalOutgoingServerSession extends LocalSession implements Outgoing
         return true;
     }
 
-    @Override
-	void deliver(Packet packet) throws UnauthorizedException {
+    void deliver(Packet packet) throws UnauthorizedException {
         if (conn != null && !conn.isClosed()) {
             conn.deliver(packet);
         }
@@ -694,8 +663,7 @@ public class LocalOutgoingServerSession extends LocalSession implements Outgoing
         XMPPServer.getInstance().getRoutingTable().addServerRoute(new JID(null, hostname, null, true), this);
     }
 
-    @Override
-	public String getAvailableStreamFeatures() {
+    public String getAvailableStreamFeatures() {
         // Nothing special to add
         return null;
     }

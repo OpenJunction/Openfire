@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.audit.spi;
@@ -200,9 +192,9 @@ public class AuditManagerImpl extends BasicModule implements AuditManager {
     }
 
     private void saveXPath() {
+        String[] filters = new String[xpath.size()];
+        filters = (String[]) xpath.toArray(filters);
         // TODO: save XPath values!
-        //String[] filters = new String[xpath.size()];
-        //filters = (String[]) xpath.toArray(filters); 
     }
 
     public Iterator getXPathFilters() {
@@ -235,8 +227,7 @@ public class AuditManagerImpl extends BasicModule implements AuditManager {
     // Basic module methods
     // #########################################################################
 
-    @Override
-	public void initialize(XMPPServer server) {
+    public void initialize(XMPPServer server) {
         super.initialize(server);
         enabled = JiveGlobals.getBooleanProperty("xmpp.audit.active");
         auditMessage = JiveGlobals.getBooleanProperty("xmpp.audit.message");
@@ -273,8 +264,7 @@ public class AuditManagerImpl extends BasicModule implements AuditManager {
         }
     }
 
-    @Override
-	public void stop() {
+    public void stop() {
         if (auditor != null) {
             auditor.stop();
         }

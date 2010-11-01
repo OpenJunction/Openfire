@@ -5,17 +5,9 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.pubsub;
@@ -69,8 +61,7 @@ public class CollectionNode extends Node {
     }
 
 
-    @Override
-	void configure(FormField field) {
+    void configure(FormField field) {
         List<String> values;
         if ("pubsub#leaf_node_association_policy".equals(field.getVariable())) {
             values = field.getValues();
@@ -96,13 +87,11 @@ public class CollectionNode extends Node {
         }
     }
 
-    @Override
-	void postConfigure(DataForm completedForm) {
+    void postConfigure(DataForm completedForm) {
         //Do nothing.
     }
 
-    @Override
-	protected void addFormFields(DataForm form, boolean isEditing) {
+    protected void addFormFields(DataForm form, boolean isEditing) {
         super.addFormFields(form, isEditing);
 
         FormField formField = form.addField();
@@ -194,8 +183,7 @@ public class CollectionNode extends Node {
         broadcastCollectionNodeEvent(child, message);
     }
 
-    @Override
-	protected void deletingNode() {
+    protected void deletingNode() {
         // Update child nodes to use the parent node of this node as the new parent node
         for (Node node : getNodes()) {
             node.changeParent(parent);
@@ -233,8 +221,7 @@ public class CollectionNode extends Node {
         return subscriptions;
     }
 
-    @Override
-	public boolean isCollectionNode() {
+    public boolean isCollectionNode() {
         return true;
     }
 
@@ -246,8 +233,7 @@ public class CollectionNode extends Node {
      * @return true if the specified node is a first-level children of this collection
      *         node.
      */
-    @Override
-	public boolean isChildNode(Node child) {
+    public boolean isChildNode(Node child) {
         return nodes.containsKey(child.getNodeID());
     }
 
@@ -259,8 +245,7 @@ public class CollectionNode extends Node {
      * @return true if the specified node is a direct child node of this collection node or
      *         a descendant of the children nodes.
      */
-    @Override
-	public boolean isDescendantNode(Node child) {
+    public boolean isDescendantNode(Node child) {
         if (isChildNode(child)) {
             return true;
         }
@@ -272,8 +257,7 @@ public class CollectionNode extends Node {
         return false;
     }
 
-    @Override
-	public Collection<Node> getNodes() {
+    public Collection<Node> getNodes() {
         return nodes.values();
     }
 

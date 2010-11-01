@@ -4,21 +4,29 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.http;
 
+import org.apache.commons.lang.StringEscapeUtils;
+import org.dom4j.*;
+import org.dom4j.io.XMPPPacketReader;
+import org.jivesoftware.openfire.auth.UnauthorizedException;
+import org.jivesoftware.openfire.net.MXParser;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
+import org.mortbay.util.ajax.ContinuationSupport;
+import org.xmlpull.v1.XmlPullParserException;
+import org.xmlpull.v1.XmlPullParserFactory;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,28 +34,6 @@ import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.security.cert.X509Certificate;
 import java.util.Date;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang.StringEscapeUtils;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.QName;
-import org.dom4j.io.XMPPPacketReader;
-import org.jivesoftware.openfire.auth.UnauthorizedException;
-import org.jivesoftware.openfire.net.MXParser;
-import org.jivesoftware.util.JiveGlobals;
-import org.eclipse.jetty.continuation.ContinuationSupport;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmlpull.v1.XmlPullParserException;
-import org.xmlpull.v1.XmlPullParserFactory;
 
 /**
  * Servlet which handles requests to the HTTP binding service. It determines if there is currently
@@ -58,9 +44,6 @@ import org.xmlpull.v1.XmlPullParserFactory;
  * @author Alexander Wenckus
  */
 public class HttpBindServlet extends HttpServlet {
-	
-	private static final Logger Log = LoggerFactory.getLogger(HttpBindServlet.class);
-
     private HttpSessionManager sessionManager;
     private HttpBindManager boshManager;
 
@@ -135,19 +118,6 @@ public class HttpBindServlet extends HttpServlet {
         }
 
         parseDocument(request, response, request.getInputStream());
-    }
-
-    @Override
-    protected void doOptions(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-
-        response.setStatus(HttpServletResponse.SC_OK);
-        response.setContentType("text/plain");
-        response.setCharacterEncoding("UTF-8");
-
-		response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
     }
 
     private void parseDocument(HttpServletRequest request, HttpServletResponse response,
@@ -291,7 +261,7 @@ public class HttpBindServlet extends HttpServlet {
             }
             else {
                 session.resetInactivityTimeout();
-                connection.setContinuation(ContinuationSupport.getContinuation(request));
+                connection.setContinuation(ContinuationSupport.getContinuation(request, connection));
                 request.setAttribute("request-session", connection.getSession());
                 request.setAttribute("request", connection.getRequestId());
                 try {
@@ -369,7 +339,7 @@ public class HttpBindServlet extends HttpServlet {
             throws IOException {
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("GET".equals(method) ? "text/javascript" : "text/xml");
-        response.setCharacterEncoding("UTF-8");
+        response.setCharacterEncoding("utf-8");
 
         if ("GET".equals(method)) {
             if (JiveGlobals.getBooleanProperty("xmpp.httpbind.client.no-cache.enabled", true)) {
@@ -381,14 +351,10 @@ public class HttpBindServlet extends HttpServlet {
             content = "_BOSH_(\"" + StringEscapeUtils.escapeJavaScript(content) + "\")";
         }
 
-		response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        response.addHeader("Access-Control-Allow-Origin", "*");
-        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
-
         if (JiveGlobals.getBooleanProperty("log.httpbind.enabled", false)) {
             System.out.println(new Date()+": HTTP SENT(" + session.getStreamID().getID() + "): " + content);
         }
-        byte[] byteContent = content.getBytes("UTF-8");
+        byte[] byteContent = content.getBytes("utf-8");
         response.setContentLength(byteContent.length);
         response.getOutputStream().write(byteContent);
         response.getOutputStream().close();
@@ -438,6 +404,6 @@ public class HttpBindServlet extends HttpServlet {
     private Document createDocument(InputStream request) throws
             DocumentException, IOException, XmlPullParserException
     {
-        return getPacketReader().read("UTF-8", request);
+        return getPacketReader().read("utf-8", request);
     }
 }

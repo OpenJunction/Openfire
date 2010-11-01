@@ -4,20 +4,27 @@
  *
  * Copyright (C) 2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.archive;
+
+import org.jivesoftware.database.DbConnectionManager;
+import org.jivesoftware.database.JiveID;
+import org.jivesoftware.database.SequenceManager;
+import org.jivesoftware.openfire.XMPPServer;
+import org.jivesoftware.openfire.muc.MUCRole;
+import org.jivesoftware.openfire.muc.MUCRoom;
+import org.jivesoftware.openfire.user.UserNameManager;
+import org.jivesoftware.openfire.user.UserNotFoundException;
+import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.NotFoundException;
+import org.jivesoftware.util.cache.ExternalizableUtil;
+import org.xmpp.packet.JID;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -27,33 +34,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.jivesoftware.database.DbConnectionManager;
-import org.jivesoftware.database.JiveID;
-import org.jivesoftware.database.SequenceManager;
-import org.jivesoftware.openfire.XMPPServer;
-import org.jivesoftware.openfire.muc.MUCRole;
-import org.jivesoftware.openfire.muc.MUCRoom;
 import org.jivesoftware.openfire.plugin.MonitoringPlugin;
-import org.jivesoftware.openfire.user.UserNameManager;
-import org.jivesoftware.openfire.user.UserNotFoundException;
-import org.jivesoftware.util.JiveGlobals;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.NotFoundException;
-import org.jivesoftware.util.cache.ExternalizableUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.JID;
 
 /**
  * Represents an IM conversation between two people. A conversation encompasses a
@@ -81,8 +65,6 @@ import org.xmpp.packet.JID;
 @JiveID(50)
 public class Conversation implements Externalizable {
 
-	private static final Logger Log = LoggerFactory.getLogger(Conversation.class);
-	
     private static final String INSERT_CONVERSATION =
             "INSERT INTO ofConversation(conversationID, room, isExternal, startDate, " +
                     "lastActivity, messageCount) VALUES (?,?,?,?,?,0)";
@@ -149,7 +131,7 @@ public class Conversation implements Externalizable {
                 insertIntoDb();
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }
@@ -184,7 +166,7 @@ public class Conversation implements Externalizable {
                 insertIntoDb();
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }
@@ -325,7 +307,7 @@ public class Conversation implements Externalizable {
             }
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);
@@ -381,8 +363,7 @@ public class Conversation implements Externalizable {
         return messages;
     }
 
-    @Override
-	public String toString() {
+    public String toString() {
         StringBuilder buf = new StringBuilder();
         buf.append("Conversation [").append(conversationID).append("]");
         if (room != null) {
@@ -443,7 +424,7 @@ public class Conversation implements Externalizable {
                 }
             }
             catch (Exception e) {
-                Log.error(e.getMessage(), e);
+                Log.error(e);
             }
         }
     }
@@ -585,7 +566,7 @@ public class Conversation implements Externalizable {
             }
         }
         catch (SQLException sqle) {
-            Log.error(sqle.getMessage(), sqle);
+            Log.error(sqle);
         }
         finally {
             DbConnectionManager.closeConnection(rs, pstmt, con);

@@ -4,25 +4,14 @@
   -
   - Copyright (C) 2005-2008 Jive Software. All rights reserved.
   -
-  - Licensed under the Apache License, Version 2.0 (the "License");
-  - you may not use this file except in compliance with the License.
-  - You may obtain a copy of the License at
-  -
-  -     http://www.apache.org/licenses/LICENSE-2.0
-  -
-  - Unless required by applicable law or agreed to in writing, software
-  - distributed under the License is distributed on an "AS IS" BASIS,
-  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  - See the License for the specific language governing permissions and
-  - limitations under the License.
+  - This software is published under the terms of the GNU Public License (GPL),
+  - a copy of which is included in this distribution, or a commercial license
+  - agreement with Jive.
 --%>
 <%@ page import="org.jivesoftware.util.ParamUtils" %>
-<%@ page import="java.io.File" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.HashMap" %>
 <%@ page import="org.jivesoftware.util.Log" %>
-<%@ page import="org.jivesoftware.util.StringUtils" %>
-<%@ page import="org.jivesoftware.openfire.http.FlashCrossDomainServlet" %>
 <%@ page import="org.jivesoftware.openfire.http.HttpBindManager" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib uri="http://java.sun.com/jstl/fmt_rt" prefix="fmt" %>
@@ -72,8 +61,7 @@
     int securePort = serverManager.getHttpBindSecurePort();
     boolean isScriptSyntaxEnabled = serverManager.isScriptSyntaxEnabled();
 %>
-
-<%@page import="org.jivesoftware.openfire.http.FlashCrossDomainServlet"%><html>
+<html>
 <head>
     <title>
         <fmt:message key="httpbind.settings.title"/>
@@ -82,11 +70,10 @@
     <script type="text/javascript">
         var enabled = <%=isHttpBindEnabled%>;
         var setEnabled = function() {
-            $("port").disabled = !enabled;
+            $("port").disabled = !enabled
             $("securePort").disabled = !enabled;
-            $("rb03").disabled = !enabled;
-            $("rb04").disabled = !enabled;
-            $("crossdomain").disabled = !enabled;
+            $("rb03").disabled = !enabled
+            $("rb04").disabled = !enabled
         }
         window.onload = setTimeout("setEnabled()", 500);
     </script>
@@ -198,16 +185,6 @@
 		</tbody>
 		</table>
     </div>
-    <div class="jive-contentBoxHeader">Cross-domain policy</div>
-    <div class="jive-contentbox">
-    	<p><fmt:message key="httpbind.settings.crossdomain.info.general" /></p>
-    	<p><fmt:message key="httpbind.settings.crossdomain.info.override">
-            <fmt:param value="<tt>&lt;openfireHome&gt;/conf/crossdomain.xml</tt>" />
-        </fmt:message></p>
-    	<p><fmt:message key="httpbind.settings.crossdomain.info.policy" /></p>
-    	<textarea id="crossdomain" cols="120" rows="10" wrap="virtual" readonly="readonly"><%= (isHttpBindEnabled ? StringUtils.escapeForXML(FlashCrossDomainServlet.getCrossDomainContent()) : "") %></textarea>
-    </div>
-    
     <input type="submit" id="settingsUpdate" name="update"
                value="<fmt:message key="global.save_settings" />">
 </form>

@@ -5,32 +5,21 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 package org.jivesoftware.util.log.util;
 
+import org.mortbay.log.Logger;
 import org.jivesoftware.util.JiveGlobals;
-
-import org.eclipse.jetty.util.log.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 
 /**
  * A Logger implementation to override the default Jetty logging behavior. All log statements
  * are written to the Openfire logs. Info level logging is sent to debug.
  */
-public class JettyLog implements org.eclipse.jetty.util.log.Logger {
-
-	private static final org.slf4j.Logger Log = LoggerFactory.getLogger(JettyLog.class);
+public class JettyLog implements Logger {
 
     /**
      * Only enable Jetty debug logging if it's specifically enabled. Otherwise, Jetty debug logs
@@ -42,25 +31,13 @@ public class JettyLog implements org.eclipse.jetty.util.log.Logger {
         return debugEnabled && Log.isDebugEnabled();
     }
 
-    public String getName() {
-        return "JettyLog";
-    }
-
     public void setDebugEnabled(boolean b) {
         // Do nothing.
-    }
-
-    public void info(String string) {
-        Log.info("JettyLog: " + string);
     }
 
     public void info(String string, Object object, Object object1) {
         // Send info log messages to debug because they are generally not useful.
         Log.debug("JettyLog: "+format(string,object,object1));
-    }
-
-    public void debug(String string) {
-        Log.debug("JettyLog: " + string);
     }
 
     public void debug(String string, Throwable throwable) {
@@ -69,10 +46,6 @@ public class JettyLog implements org.eclipse.jetty.util.log.Logger {
 
     public void debug(String string, Object object, Object object1) {
         Log.debug("JettyLog: "+format(string,object,object1));
-    }
-
-    public void warn(String string) {
-        Log.warn("JettyLog: " + string);
     }
 
     public void warn(String string, Object object, Object object1) {
@@ -99,5 +72,4 @@ public class JettyLog implements org.eclipse.jetty.util.log.Logger {
 
         return msg;
     }
-
 }

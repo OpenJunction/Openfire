@@ -4,26 +4,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.auth;
-
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 
 import org.jivesoftware.database.DbConnectionManager;
 import org.jivesoftware.openfire.XMPPServer;
@@ -31,9 +17,10 @@ import org.jivesoftware.openfire.user.UserAlreadyExistsException;
 import org.jivesoftware.openfire.user.UserManager;
 import org.jivesoftware.openfire.user.UserNotFoundException;
 import org.jivesoftware.util.JiveGlobals;
+import org.jivesoftware.util.Log;
 import org.jivesoftware.util.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import java.sql.*;
 
 /**
  * The JDBC auth provider allows you to authenticate users against any database
@@ -69,15 +56,11 @@ import org.slf4j.LoggerFactory;
  *      <li>{@link PasswordType#plain plain}
  *      <li>{@link PasswordType#md5 md5}
  *      <li>{@link PasswordType#sha1 sha1}
- *      <li>{@link PasswordType#sha256 sha256}
- *      <li>{@link PasswordType#sha512 sha512}
  *  </ul>
  *
  * @author David Snopek
  */
 public class JDBCAuthProvider implements AuthProvider {
-
-	private static final Logger Log = LoggerFactory.getLogger(JDBCAuthProvider.class);
 
     private String connectionString;
 
@@ -126,7 +109,7 @@ public class JDBCAuthProvider implements AuthProvider {
                     JiveGlobals.getProperty("jdbcAuthProvider.passwordType", "plain"));
         }
         catch (IllegalArgumentException iae) {
-            Log.error(iae.getMessage(), iae);
+            Log.error(iae);
         }
     }
 
@@ -160,12 +143,6 @@ public class JDBCAuthProvider implements AuthProvider {
         }
         else if (passwordType == PasswordType.sha1) {
             password = StringUtils.hash(password, "SHA-1");
-        }
-        else if (passwordType == PasswordType.sha256) {
-            password = StringUtils.hash(password, "SHA-256");
-        }
-        else if (passwordType == PasswordType.sha512) {
-            password = StringUtils.hash(password, "SHA-512");
         }
         if (!password.equals(userPassword)) {
             throw new UnauthorizedException();
@@ -315,6 +292,7 @@ public class JDBCAuthProvider implements AuthProvider {
     private void setPasswordValue(String username, String password) throws UserNotFoundException {
         Connection con = null;
         PreparedStatement pstmt = null;
+        ResultSet rs = null;
         if (username.contains("@")) {
             // Check that the specified domain matches the server's domain
             int index = username.indexOf("@");
@@ -329,28 +307,24 @@ public class JDBCAuthProvider implements AuthProvider {
         try {
             con = getConnection();
             pstmt = con.prepareStatement(setPasswordSQL);
-            pstmt.setString(2, username);
+            pstmt.setString(1, username);
             if (passwordType == PasswordType.md5) {
                 password = StringUtils.hash(password, "MD5");
             }
             else if (passwordType == PasswordType.sha1) {
                 password = StringUtils.hash(password, "SHA-1");
             }
-            else if (passwordType == PasswordType.sha256) {
-                password = StringUtils.hash(password, "SHA-256");
-            }
-            else if (passwordType == PasswordType.sha512) {
-                password = StringUtils.hash(password, "SHA-512");
-            }
-            pstmt.setString(1, password);
-            pstmt.executeQuery();
+            pstmt.setString(2, password);
+
+            rs = pstmt.executeQuery();
+
         }
         catch (SQLException e) {
             Log.error("Exception in JDBCAuthProvider", e);
             throw new UserNotFoundException();
         }
         finally {
-            DbConnectionManager.closeConnection(pstmt, con);
+            DbConnectionManager.closeConnection(rs, pstmt, con);
         }
         
     }
@@ -374,18 +348,8 @@ public class JDBCAuthProvider implements AuthProvider {
         /**
          * The password is stored as a hex-encoded SHA-1 hash.
          */
-        sha1,
-        
-        /**
-         * The password is stored as a hex-encoded SHA-256 hash.
-         */
-        sha256,
-              
-        /**
-          * The password is stored as a hex-encoded SHA-512 hash.
-          */
-        sha512;
-   }
+        sha1;
+    }
 
     /**
      * Checks to see if the user exists; if not, a new user is created.

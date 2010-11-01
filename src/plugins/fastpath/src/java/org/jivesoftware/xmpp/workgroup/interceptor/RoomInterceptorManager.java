@@ -5,27 +5,18 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.interceptor;
 
+import org.xmpp.packet.Packet;
+import org.xmpp.component.ComponentManagerFactory;
+
 import java.util.Arrays;
 import java.util.Collection;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xmpp.packet.Packet;
 
 /**
  * Manages the packet interceptors that will be invoked when sending packets for creating and
@@ -36,8 +27,6 @@ import org.xmpp.packet.Packet;
  */
 public class RoomInterceptorManager extends InterceptorManager {
 
-	private static final Logger Log = LoggerFactory.getLogger(RoomInterceptorManager.class);
-	
     private static RoomInterceptorManager instance = new RoomInterceptorManager();
 
     /**
@@ -49,24 +38,21 @@ public class RoomInterceptorManager extends InterceptorManager {
         return instance;
     }
 
-    @Override
-	protected String getPropertySuffix() {
+    protected String getPropertySuffix() {
         return "room";
     }
 
-    @Override
-	public void invokeInterceptors(String workgroup, Packet packet, boolean read, boolean processed) {
+    public void invokeInterceptors(String workgroup, Packet packet, boolean read, boolean processed) {
         try {
             super.invokeInterceptors(workgroup, packet, read, processed);
         }
         catch (PacketRejectedException e) {
-            Log.error("Cannot reject " +
+            ComponentManagerFactory.getComponentManager().getLog().error("Cannot reject " +
                     "room packet",e);
         }
     }
 
-    @Override
-	protected Collection<Class> getBuiltInInterceptorClasses() {
+    protected Collection<Class> getBuiltInInterceptorClasses() {
         return Arrays.asList((Class) TrafficMonitor.class);
     }
 }

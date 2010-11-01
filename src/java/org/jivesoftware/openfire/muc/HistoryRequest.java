@@ -5,36 +5,23 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.muc;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.ListIterator;
-import java.util.TimeZone;
-
 import org.dom4j.Element;
 import org.jivesoftware.openfire.muc.spi.LocalMUCRole;
 import org.jivesoftware.util.JiveConstants;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.Message;
+
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * Represents the amount of history requested by an occupant while joining a room. There are 
@@ -49,8 +36,6 @@ import org.xmpp.packet.Message;
  * @author Gaston Dombiak
  */
 public class HistoryRequest {
-
-	private static final Logger Log = LoggerFactory.getLogger(HistoryRequest.class);
 
     private static final DateFormat formatter = new SimpleDateFormat(JiveConstants.XMPP_DATETIME_FORMAT);
     private static final DateFormat delayedFormatter = new SimpleDateFormat(
@@ -155,13 +140,8 @@ public class HistoryRequest {
             }
         }
         else {
-            Message changedSubject = roomHistory.getChangedSubject();
-            boolean addChangedSubject = (changedSubject != null) ? true : false;
             if (getMaxChars() == 0) {
                 // The user requested to receive no history
-                if (addChangedSubject) {
-                    joinRole.send(changedSubject);
-                }
                 return;
             }
             Message message;
@@ -218,18 +198,7 @@ public class HistoryRequest {
 
                 }
 
-                // Don't add the latest subject change if it's already in the history.
-                if (addChangedSubject) {
-                    if (changedSubject != null && changedSubject.equals(message)) {
-                        addChangedSubject = false;
-                    }
-                }
-
                 historyToSend.addFirst(message);
-            }
-            // Check if we should add the latest subject change.
-            if (addChangedSubject) {
-                historyToSend.addFirst(changedSubject);
             }
             // Send the smallest amount of traffic to the user
             for (Object aHistoryToSend : historyToSend) {

@@ -5,23 +5,14 @@
  *
  * Copyright (C) 2004-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.xmpp.workgroup.dispatcher;
 
 import org.jivesoftware.xmpp.workgroup.DbProperties;
-import org.jivesoftware.xmpp.workgroup.Offer;
 import org.jivesoftware.xmpp.workgroup.RequestQueue;
 import org.jivesoftware.xmpp.workgroup.UnauthorizedException;
 import org.jivesoftware.xmpp.workgroup.WorkgroupResultFilter;
@@ -70,7 +61,7 @@ public interface Dispatcher extends DbProperties {
      *
      * @return An iterator over Offers currently being made
      */
-    Iterator<Offer> getOffers();
+    Iterator getOffers();
 
     /**
      * <p>Obtain an iterator over the offers currently outstanding with results filtered by given filter.</p>
@@ -78,7 +69,7 @@ public interface Dispatcher extends DbProperties {
      * @param filter The filter to apply to the search results
      * @return An iterator over Offers currently being made
      */
-    Iterator<Offer> getOffers(WorkgroupResultFilter filter);
+    Iterator getOffers(WorkgroupResultFilter filter);
 
     /**
      * Returns the algorithm that selects the best agent of the queue for receiving an offer.

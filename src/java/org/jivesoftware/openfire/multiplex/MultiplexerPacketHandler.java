@@ -5,22 +5,12 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire.multiplex;
-
-import java.util.List;
 
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
@@ -30,12 +20,13 @@ import org.jivesoftware.openfire.XMPPServer;
 import org.jivesoftware.openfire.session.ClientSession;
 import org.jivesoftware.openfire.session.ConnectionMultiplexerSession;
 import org.jivesoftware.openfire.session.LocalClientSession;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jivesoftware.util.Log;
 import org.xmpp.packet.IQ;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.Packet;
 import org.xmpp.packet.PacketError;
+
+import java.util.List;
 
 /**
  * IQ packets sent from Connection Managers themselves to the server will be handled by
@@ -47,8 +38,6 @@ import org.xmpp.packet.PacketError;
  * @author Gaston Dombiak
  */
 public class MultiplexerPacketHandler {
-
-	private static final Logger Log = LoggerFactory.getLogger(MultiplexerPacketHandler.class);
 
     private String connectionManagerDomain;
     private final ConnectionMultiplexerManager multiplexerManager;

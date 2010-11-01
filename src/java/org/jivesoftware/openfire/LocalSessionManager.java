@@ -5,39 +5,21 @@
  *
  * Copyright (C) 2005-2008 Jive Software. All rights reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * This software is published under the terms of the GNU Public License (GPL),
+ * a copy of which is included in this distribution, or a commercial license
+ * agreement with Jive.
  */
 
 package org.jivesoftware.openfire;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TimerTask;
+import org.jivesoftware.openfire.session.*;
+import org.jivesoftware.util.LocaleUtils;
+import org.jivesoftware.util.Log;
+import org.jivesoftware.util.TaskEngine;
+
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import org.jivesoftware.openfire.session.LocalClientSession;
-import org.jivesoftware.openfire.session.LocalComponentSession;
-import org.jivesoftware.openfire.session.LocalConnectionMultiplexerSession;
-import org.jivesoftware.openfire.session.LocalIncomingServerSession;
-import org.jivesoftware.openfire.session.LocalSession;
-import org.jivesoftware.util.LocaleUtils;
-import org.jivesoftware.util.TaskEngine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A LocalSessionManager keeps track of sessions that are connected to this JVM and for
@@ -61,9 +43,6 @@ import org.slf4j.LoggerFactory;
  * @author Gaston Dombiak
  */
 class LocalSessionManager {
-	
-	private static final Logger Log = LoggerFactory.getLogger(LocalSessionManager.class);
-
     /**
      * Map that holds sessions that has been created but haven't been authenticated yet. The Map
      * will hold client sessions.
@@ -166,8 +145,7 @@ class LocalSessionManager {
         /**
          * Close incoming server sessions that have been idle for a long time.
          */
-        @Override
-		public void run() {
+        public void run() {
             // Do nothing if this feature is disabled
             int idleTime = SessionManager.getInstance().getServerSessionIdleTime();
             if (idleTime == -1) {

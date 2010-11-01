@@ -12,7 +12,6 @@
                 org.jivesoftware.xmpp.workgroup.WorkgroupAdminManager,
                 org.jivesoftware.xmpp.workgroup.WorkgroupManager,
                 org.jivesoftware.xmpp.workgroup.dispatcher.DispatcherInfo,
-                org.jivesoftware.util.Log,
                 org.jivesoftware.util.ParamUtils,
                 org.jivesoftware.openfire.group.Group,
                 org.jivesoftware.openfire.group.GroupManager,
@@ -78,7 +77,7 @@
             }
             catch (Exception e) {
                 errors.put("groups", "Group not found.");
-                Log.error(e);
+                ComponentManagerFactory.getComponentManager().getLog().error(e);
             }
         }
 
