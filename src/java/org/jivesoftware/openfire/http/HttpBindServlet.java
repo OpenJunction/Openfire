@@ -111,6 +111,19 @@ public class HttpBindServlet extends HttpServlet {
 
 
     @Override
+    protected void doOptions(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setContentType("text/plain");
+        response.setCharacterEncoding("UTF-8");
+
+		response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         if (isContinuation(request, response)) {
@@ -350,6 +363,10 @@ public class HttpBindServlet extends HttpServlet {
             }
             content = "_BOSH_(\"" + StringEscapeUtils.escapeJavaScript(content) + "\")";
         }
+
+		response.addHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        response.addHeader("Access-Control-Allow-Origin", "*");
+        response.addHeader("Access-Control-Allow-Headers", "Content-Type");
 
         if (JiveGlobals.getBooleanProperty("log.httpbind.enabled", false)) {
             System.out.println(new Date()+": HTTP SENT(" + session.getStreamID().getID() + "): " + content);
